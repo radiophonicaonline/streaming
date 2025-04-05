@@ -1,127 +1,177 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Radiophonica on line</title>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
+    body {
       font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    .box {
+      background: #fff;
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 0 10px #ccc;
     }
 
     iframe {
       width: 100%;
-      height: 70vh;
+      height: 300px;
       border: none;
-    }
-
-    .container {
-      padding: 20px;
-      text-align: center;
+      border-radius: 10px;
     }
 
     textarea {
-      width: 100%;
-      max-width: 600px;
-      height: 100px;
+      width: 90%;
       padding: 10px;
-      margin-top: 15px;
-      font-size: 16px;
-      resize: none;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
-    .btn {
-      margin-top: 15px;
-      padding: 12px 25px;
-      font-size: 16px;
-      border: none;
+    input[type="text"] {
+      width: 90%;
+      padding: 10px;
+      margin-top: 10px;
       border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
       background-color: #25D366;
+      border: none;
       color: white;
+      border-radius: 5px;
       cursor: pointer;
     }
 
-    .btn:hover {
+    button:hover {
       background-color: #1ebe5d;
     }
 
     .contador {
-      font-size: 18px;
-      margin-top: 20px;
-      color: #555;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #777;
     }
+
+    .chat {
+      text-align: left;
+      background: #fff;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-top: 15px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .chat p {
+      padding: 5px;
+      margin: 5px 0;
+      background: #e1f3e5;
+      border-radius: 5px;
+    }
+
   </style>
 </head>
 <body>
 
-  <!-- Contenido incrustado -->
-  <iframe id="iframeUrl"></iframe>
-
-  <div class="container">
-    <h2>¿Tienes algún comentario?</h2>
-    <textarea id="comentario" placeholder="Escribe tu mensaje aquí..."></textarea><br>
-
-    <button class="btn" onclick="enviarComentarioWhatsApp()">
-      💬 Envíanos tu comentario
-    </button>
-
-    <div class="contador" id="contadorTexto">Hay 1 persona viendo esta página</div>
+  <div class="box">
+    <h3>🌐 Enlace incrustado</h3>
+    <iframe src="https://temperatures-recommendation-style-fog.trycloudflare.com"></iframe>
   </div>
+
+  <div class="box">
+    <h3>💬 Envíanos tu comentario</h3>
+    <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
+    <button onclick="enviarComentario()">Envíanos tu comentario</button>
+  </div>
+
+  <div class="box">
+    <h3>🧑‍💬 Chat en tiempo real</h3>
+    <input type="text" id="nombre" placeholder="Tu nombre"/><br>
+    <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
+    <button onclick="enviarChat()">Enviar mensaje</button>
+
+    <div class="chat" id="chatbox"></div>
+  </div>
+
+  <div class="contador" id="contador">Cargando visitas...</div>
 
   <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, push, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
       authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-      databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
       projectId: "contador-de-personas-5f8aa",
       storageBucket: "contador-de-personas-5f8aa.appspot.com",
       messagingSenderId: "1063230344919",
-      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92",
-      measurementId: "G-81WTW2Q87X"
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
     };
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // Registrar conexión
-    const connectionsRef = ref(database, "/connections");
-    const con = push(connectionsRef, {
-      conectado: serverTimestamp()
+    // 🔢 Contador en tiempo real
+    const conexionesRef = ref(database, "conexiones");
+    const miConexion = push(conexionesRef);
+    set(miConexion, true);
+    onDisconnect(miConexion).remove();
+
+    onValue(conexionesRef, (snapshot) => {
+      const cantidad = snapshot.size;
+      document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
     });
 
-    // Eliminar al salir
-    onDisconnect(con).remove();
-
-    // Escuchar conexiones activas
-    onValue(connectionsRef, (snapshot) => {
-      const count = snapshot.size;
-      const texto = `Hay ${count} ${count === 1 ? "persona" : "personas"} viendo esta página`;
-      document.getElementById("contadorTexto").textContent = texto;
-    });
-
-    // Cambiar URL incrustada
-    const urlDinamica = "https://temperatures-recommendation-style-fog.trycloudflare.com"; // cámbiala por la que necesites
-    document.getElementById("iframeUrl").src = urlDinamica;
-
-    // Enviar comentario por WhatsApp
-    window.enviarComentarioWhatsApp = function () {
-      const mensaje = document.getElementById("comentario").value.trim();
-      if (mensaje === "") {
-        alert("Por favor, escribe un comentario antes de enviarlo.");
-        return;
-      }
-      const texto = encodeURIComponent(mensaje);
-      const whatsappURL = `https://api.whatsapp.com/send?phone=56944896523&text=${texto}`;
-      window.open(whatsappURL, "_blank");
+    // 💬 Comentario por WhatsApp
+    window.enviarComentario = function () {
+      const comentario = document.getElementById("comentario").value.trim();
+      if (!comentario) return alert("Por favor escribe un comentario.");
+      const numero = "+56944896523";
+      const mensaje = encodeURIComponent(comentario);
+      const url = `https://api.whatsapp.com/send?phone=${numero}&text=${mensaje}`;
+      window.open(url, "_blank");
       document.getElementById("comentario").value = "";
     };
-  </script>
 
+    // 🧑‍💬 Chat en tiempo real
+    const chatRef = ref(database, "chat");
+    onValue(chatRef, (snapshot) => {
+      const chatbox = document.getElementById("chatbox");
+      chatbox.innerHTML = "";
+      snapshot.forEach((msg) => {
+        const datos = msg.val();
+        const parrafo = document.createElement("p");
+        parrafo.textContent = `${datos.nombre}: ${datos.mensaje}`;
+        chatbox.appendChild(parrafo);
+      });
+      chatbox.scrollTop = chatbox.scrollHeight;
+    });
+
+    window.enviarChat = function () {
+      const nombre = document.getElementById("nombre").value.trim();
+      const mensaje = document.getElementById("mensaje").value.trim();
+      if (!nombre || !mensaje) return alert("Completa tu nombre y el mensaje.");
+      const nuevoMensaje = push(chatRef);
+      set(nuevoMensaje, {
+        nombre,
+        mensaje
+      });
+      document.getElementById("mensaje").value = "";
+    };
+  </script>
 </body>
 </html>
