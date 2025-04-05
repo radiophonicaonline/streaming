@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Contenido incrustado</title>
+  <title>Contador en vivo + WhatsApp</title>
   <style>
     body, html {
       margin: 0;
@@ -46,6 +46,12 @@
     .btn:hover {
       background-color: #1ebe5d;
     }
+
+    .contador {
+      font-size: 18px;
+      margin-top: 20px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -60,29 +66,61 @@
     <button class="btn" onclick="enviarComentarioWhatsApp()">
       💬 Envíanos tu comentario
     </button>
+
+    <div class="contador" id="contadorTexto">Hay 1 persona viendo esta página</div>
   </div>
 
-  <script>
-    // Aquí cambias la URL que quieres mostrar
-    const urlDinamica = "https://temperatures-recommendation-style-fog.trycloudflare.com"; // reemplaza esta URL por la que tú necesites
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, push, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92",
+      measurementId: "G-81WTW2Q87X"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Registrar conexión
+    const connectionsRef = ref(database, "/connections");
+    const con = push(connectionsRef, {
+      conectado: serverTimestamp()
+    });
+
+    // Eliminar al salir
+    onDisconnect(con).remove();
+
+    // Escuchar conexiones activas
+    onValue(connectionsRef, (snapshot) => {
+      const count = snapshot.size;
+      const texto = `Hay ${count} ${count === 1 ? "persona" : "personas"} viendo esta página`;
+      document.getElementById("contadorTexto").textContent = texto;
+    });
+
+    // Cambiar URL incrustada
+    const urlDinamica = "https://temperatures-recommendation-style-fog.trycloudflare.com"; // cámbiala por la que necesites
     document.getElementById("iframeUrl").src = urlDinamica;
 
-    function enviarComentarioWhatsApp() {
+    // Enviar comentario por WhatsApp
+    window.enviarComentarioWhatsApp = function () {
       const mensaje = document.getElementById("comentario").value.trim();
-
       if (mensaje === "") {
         alert("Por favor, escribe un comentario antes de enviarlo.");
         return;
       }
-
       const texto = encodeURIComponent(mensaje);
       const whatsappURL = `https://api.whatsapp.com/send?phone=56944896523&text=${texto}`;
-
       window.open(whatsappURL, "_blank");
-
-      // Limpia el campo de texto
       document.getElementById("comentario").value = "";
-    }
+    };
   </script>
 
 </body>
