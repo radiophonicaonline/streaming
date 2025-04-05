@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Incrustar URL Dinámica</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    iframe {
+      width: 100%;
+      height: 100vh;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <iframe id="iframeUrl"></iframe>
+
+  <script>
+    // AQUÍ CAMBIAS SOLO ESTA LÍNEA PARA MODIFICAR LA URL
+    const urlDinamica = "https://temperatures-recommendation-style-fog.trycloudflare.com";
+
+    // Asignamos la URL al iframe
+    document.getElementById("iframeUrl").src = urlDinamica;
+  </script>
+
+</body>
+</html>
