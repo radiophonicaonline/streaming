@@ -2,30 +2,87 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Incrustar URL Dinámica</title>
+  <title>Contenido incrustado</title>
   <style>
     body, html {
       margin: 0;
       padding: 0;
-      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
     }
+
     iframe {
       width: 100%;
-      height: 100vh;
+      height: 70vh;
       border: none;
+    }
+
+    .container {
+      padding: 20px;
+      text-align: center;
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 600px;
+      height: 100px;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 16px;
+      resize: none;
+    }
+
+    .btn {
+      margin-top: 15px;
+      padding: 12px 25px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #25D366;
+      color: white;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #1ebe5d;
     }
   </style>
 </head>
 <body>
 
+  <!-- Contenido incrustado -->
   <iframe id="iframeUrl"></iframe>
 
-  <script>
-    // AQUÍ CAMBIAS SOLO ESTA LÍNEA PARA MODIFICAR LA URL
-    const urlDinamica = "https://temperatures-recommendation-style-fog.trycloudflare.com";
+  <div class="container">
+    <h2>¿Tienes algún comentario?</h2>
+    <textarea id="comentario" placeholder="Escribe tu mensaje aquí..."></textarea><br>
 
-    // Asignamos la URL al iframe
+    <button class="btn" onclick="enviarComentarioWhatsApp()">
+      💬 Envíanos tu comentario
+    </button>
+  </div>
+
+  <script>
+    // Aquí cambias la URL que quieres mostrar
+    const urlDinamica = "https://temperatures-recommendation-style-fog.trycloudflare.com"; // reemplaza esta URL por la que tú necesites
     document.getElementById("iframeUrl").src = urlDinamica;
+
+    function enviarComentarioWhatsApp() {
+      const mensaje = document.getElementById("comentario").value.trim();
+
+      if (mensaje === "") {
+        alert("Por favor, escribe un comentario antes de enviarlo.");
+        return;
+      }
+
+      const texto = encodeURIComponent(mensaje);
+      const whatsappURL = `https://api.whatsapp.com/send?phone=56944896523&text=${texto}`;
+
+      window.open(whatsappURL, "_blank");
+
+      // Limpia el campo de texto
+      document.getElementById("comentario").value = "";
+    }
   </script>
 
 </body>
