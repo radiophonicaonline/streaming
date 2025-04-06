@@ -114,7 +114,8 @@
 
   <div class="box">
     <h3>🧑‍💬 Chatea con nosostros</h3>
-    <button onclick="borrarChat()" style="background-color: red;">🗑️ Borrar chat</button>
+  id="admin-controls" style="display:none;">
+  <button onclick="borrarChat()">🗑️ Borrar Chat</button>
 
     <input type="text" id="nombre" placeholder="Tu nombre"/><br>
     <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
@@ -151,7 +152,17 @@
     onValue(conexionesRef, (snapshot) => {
       const cantidad = snapshot.size;
       document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
-   window.borrarChat = function () {
+    const adminPassword = "radiophonica2025";
+
+  function checkAdmin() {
+    const input = prompt("Ingresa clave de administrador:");
+    if (input === adminPassword) {
+      document.getElementById("admin-controls").style.display = "block";
+    }
+  }
+
+  window.onload = checkAdmin;
+      window.borrarChat = function () {
   if (confirm("¿Estás seguro de que quieres borrar todos los mensajes del chat?")) {
     set(ref(database, "chat"), {});
   }
