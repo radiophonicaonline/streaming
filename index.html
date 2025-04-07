@@ -174,17 +174,32 @@
       const cantidad = snapshot.size;
       document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
     });
+   
+    import { get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+   
+    // Referencia al contador de likes en Firebase
+const likeRef = ref(database, "likes/contador");
 
-    // ✅ Botón de "me gusta"
-    const likesRef = ref(database, "likes");
-    onValue(likesRef, (snapshot) => {
-      const total = snapshot.val() || 0;
-      document.getElementById("contadorLikes").innerText = `Likes: ${total}`;
-    });
+// Mostrar el contador actual de likes
+onValue(likeRef, (snapshot) => {
+  const cantidad = snapshot.val() || 0;
+  document.getElementById("contadorLikes").innerText = `Likes: ${cantidad}`;
+});
 
-    window.darLike = function () {
-      runTransaction(likesRef, (current) => (current || 0) + 1);
-    };
+// Función para dar like
+window.darLike = function () {
+  if (localStorage.getItem("yaDioLike")) {
+    alert("¡Ya diste like! Gracias por tu apoyo ❤️");
+    return;
+  }
+
+  get(likeRef).then((snapshot) => {
+    const current = snapshot.val() || 0;
+    set(likeRef, current + 1);
+    localStorage.setItem("yaDioLike", "true");
+    alert("¡Gracias por tu like! 👍");
+  });
+};
 
     // 💬 Comentario por WhatsApp
     window.enviarComentario = function () {
