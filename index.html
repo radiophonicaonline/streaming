@@ -8,10 +8,15 @@
     body {
       background-color: #121212;
       color: #e0e0e0;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, sans-serif;
+      text-align: center;
       margin: 0;
       padding: 0;
-      text-align: center;
+    }
+
+    header img {
+      width: 200px;
+      margin-top: 20px;
     }
 
     main {
@@ -20,136 +25,109 @@
       padding: 20px;
     }
 
-    .logo {
-      width: 180px;
-      margin-top: 20px;
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #555;
+      margin-bottom: 15px;
     }
 
-    h3 {
-      color: #ffffff;
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      align-items: center;
+      justify-content: center;
     }
 
-    input, textarea {
-      background-color: #1e1e1e;
-      color: #ffffff;
-      border: 1px solid #444;
-      border-radius: 5px;
-      padding: 10px;
+    .modal-content {
+      width: 90%;
+      max-width: 600px;
+      height: 400px;
+      border: none;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 25px;
+      font-size: 30px;
+      color: white;
+      cursor: pointer;
+    }
+
+    textarea, input {
       width: 80%;
       max-width: 400px;
       margin: 10px auto;
+      padding: 10px;
+      background: #1e1e1e;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 5px;
     }
 
     button {
-      background-color: #1e90ff;
-      border: none;
+      background: #1e90ff;
       color: white;
+      border: none;
       padding: 10px 20px;
-      margin: 10px;
+      margin-top: 10px;
       border-radius: 5px;
       cursor: pointer;
     }
 
     button:hover {
-      background-color: #3ea0ff;
+      background: #3ea0ff;
     }
 
-    .chat {
-      margin-top: 20px;
-      max-height: 300px;
-      overflow-y: auto;
-      background-color: #1e1e1e;
-      padding: 10px;
-      border-radius: 5px;
+    .chat p {
+      margin: 5px 0;
+      text-align: left;
     }
 
     .contador {
-      margin-top: 15px;
-      font-size: 16px;
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 100;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-    }
-
-    .modal-content {
-      background-color: #1e1e1e;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 600px;
-    }
-
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      cursor: pointer;
-    }
-
-    .close:hover {
-      color: white;
+      margin-top: 20px;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
-  <!-- Logo -->
-  <img src="logo.png" alt="Logo" class="logo">
+
+  <header>
+    <img src="https://tuusuario.github.io/tu-repo/logo.png" alt="Logo Radiophonica" />
+  </header>
 
   <main>
-    <h3>🎙️ Transmisión en Vivo</h3>
-    <button onclick="mostrarModal()">🔗 Abrir Player</button>
-
-    <!-- Modal -->
-    <div id="miModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="cerrarModal()">&times;</span>
-        <iframe id="iframeURL" src="https://customs-tonight-brother-shift.trycloudflare.com" width="100%" height="300" allow="autoplay"></iframe>
-      </div>
+    <h3>🎙️ Transmisión en vivo</h3>
+    <button onclick="abrirModal()">🔗 Abrir transmisión en ventana flotante</button>
+    <div class="modal" id="modal">
+      <span class="close-btn" onclick="cerrarModal()">×</span>
+      <iframe class="modal-content" src="https://customs-tonight-brother-shift.trycloudflare.com" allowfullscreen></iframe>
     </div>
 
     <h3>💬 Envíanos tu comentario por WhatsApp</h3>
-    <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
+    <textarea id="comentario" placeholder="Escribe tu comentario..."></textarea><br>
     <button onclick="enviarComentario()">Enviar comentario</button>
 
-    <h3>🧑‍💬 Chatea con nosotros</h3>
-    <div id="adminOnly">
-      <button onclick="borrarChat()" style="background-color: red;">🗑️ Borrar chat</button>
+    <h3>🧑‍💬 Chat en tiempo real</h3>
+    <div id="admin-tools" style="display:none;">
+      <button onclick="borrarChat()" style="background: red;">🗑️ Borrar chat</button>
     </div>
     <input type="text" id="nombre" placeholder="Tu nombre"/><br>
-    <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
+    <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
     <button onclick="enviarChat()">Enviar mensaje</button>
     <div class="chat" id="chatbox"></div>
 
     <div class="contador" id="contador">Cargando visitas...</div>
   </main>
 
-  <!-- Scripts -->
-  <script>
-    function mostrarModal() {
-      document.getElementById("miModal").style.display = "block";
-    }
-
-    function cerrarModal() {
-      document.getElementById("miModal").style.display = "none";
-    }
-
-    window.onclick = function(event) {
-      const modal = document.getElementById("miModal");
-      if (event.target == modal) modal.style.display = "none";
-    }
-  </script>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -161,34 +139,25 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    const db = getDatabase(app);
 
-    // 🔢 Contador
-    const conexionesRef = ref(database, "conexiones");
+    // Contador en tiempo real
+    const conexionesRef = ref(db, "conexiones");
     const miConexion = push(conexionesRef);
     set(miConexion, true);
     onDisconnect(miConexion).remove();
 
-    onValue(conexionesRef, (snapshot) => {
-      const cantidad = snapshot.size;
-      document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
+    onValue(conexionesRef, (snap) => {
+      const total = snap.size;
+      document.getElementById("contador").innerText = `👀 Hay ${total} persona(s) viendo esta página.`;
     });
 
-    // 💬 WhatsApp comentario
-    window.enviarComentario = function () {
-      const comentario = document.getElementById("comentario").value.trim();
-      if (!comentario) return alert("Escribe tu comentario");
-      const mensaje = encodeURIComponent(comentario);
-      window.open(`https://api.whatsapp.com/send?phone=+56944896523&text=${mensaje}`, "_blank");
-      document.getElementById("comentario").value = "";
-    };
-
-    // 🧑‍💬 Chat en tiempo real
-    const chatRef = ref(database, "chat");
-    onValue(chatRef, (snapshot) => {
+    // Chat en tiempo real
+    const chatRef = ref(db, "chat");
+    onValue(chatRef, (snap) => {
       const chatbox = document.getElementById("chatbox");
       chatbox.innerHTML = "";
-      snapshot.forEach((msg) => {
+      snap.forEach((msg) => {
         const datos = msg.val();
         const p = document.createElement("p");
         p.textContent = `${datos.nombre}: ${datos.mensaje}`;
@@ -196,26 +165,40 @@
       });
     });
 
-    window.enviarChat = function () {
+    window.enviarChat = () => {
       const nombre = document.getElementById("nombre").value.trim();
       const mensaje = document.getElementById("mensaje").value.trim();
-      if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje");
-      const nuevoMensaje = push(chatRef);
-      set(nuevoMensaje, { nombre, mensaje });
+      if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje.");
+      const nuevo = push(chatRef);
+      set(nuevo, { nombre, mensaje });
       document.getElementById("mensaje").value = "";
     };
 
-    // Solo mostrar botón de borrar si eres el admin (por ejemplo, desde cierto navegador o clave local)
-    const esAdmin = true; // cambia a false si quieres ocultarlo
-    if (!esAdmin) {
-      document.getElementById("adminOnly").style.display = "none";
-    }
-
-    window.borrarChat = function () {
+    window.borrarChat = () => {
       if (confirm("¿Borrar todos los mensajes del chat?")) {
         set(chatRef, {});
       }
     };
+
+    // Comentario por WhatsApp
+    window.enviarComentario = () => {
+      const texto = document.getElementById("comentario").value.trim();
+      if (!texto) return alert("Escribe un comentario.");
+      const numero = "+56944896523";
+      const enlace = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(texto)}`;
+      window.open(enlace, "_blank");
+      document.getElementById("comentario").value = "";
+    };
+
+    // Modal
+    window.abrirModal = () => document.getElementById("modal").style.display = "flex";
+    window.cerrarModal = () => document.getElementById("modal").style.display = "none";
+
+    // Mostrar botón solo al admin
+    if (window.location.search.includes("admin=si")) {
+      document.getElementById("admin-tools").style.display = "block";
+    }
   </script>
+
 </body>
 </html>
