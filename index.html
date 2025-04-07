@@ -8,43 +8,25 @@
     body {
       background-color: #121212;
       color: #e0e0e0;
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       margin: 0;
       padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       text-align: center;
     }
 
-    header {
-      margin: 20px;
-    }
-
-    .logo {
-      width: 200px;
-      margin-bottom: 20px;
-    }
-
     main {
-      width: 100%;
       max-width: 800px;
+      margin: auto;
       padding: 20px;
     }
 
-    button {
-      background-color: #1e90ff;
-      color: white;
-      padding: 10px 20px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
+    .logo {
+      width: 180px;
+      margin-top: 20px;
     }
 
-    button:hover {
-      background-color: #3ea0ff;
+    h3 {
+      color: #ffffff;
     }
 
     input, textarea {
@@ -53,120 +35,187 @@
       border: 1px solid #444;
       border-radius: 5px;
       padding: 10px;
-      margin: 10px;
       width: 80%;
       max-width: 400px;
+      margin: 10px auto;
+    }
+
+    button {
+      background-color: #1e90ff;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3ea0ff;
     }
 
     .chat {
-      margin-top: 15px;
-      text-align: left;
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
       background-color: #1e1e1e;
       padding: 10px;
       border-radius: 5px;
-      max-height: 200px;
-      overflow-y: auto;
     }
 
     .contador {
-      margin: 20px 0;
+      margin-top: 15px;
       font-size: 16px;
-      color: #cccccc;
     }
 
-    /* Modal (ventana flotante) */
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
-      z-index: 1000;
-      padding-top: 60px;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.8);
+      z-index: 100;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
     }
 
     .modal-content {
-      margin: auto;
-      background-color: #222;
+      background-color: #1e1e1e;
+      margin: 10% auto;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 8px;
       width: 90%;
       max-width: 600px;
-      text-align: center;
     }
 
     .close {
-      color: #fff;
+      color: #aaa;
       float: right;
       font-size: 28px;
-      font-weight: bold;
       cursor: pointer;
+    }
+
+    .close:hover {
+      color: white;
     }
   </style>
 </head>
 <body>
+  <!-- Logo -->
+  <img src="logo.png" alt="Logo" class="logo">
 
-<header>
-  <img src="https://radiophonicaonline.github.io/logo-radiophonica.png" alt="Logo" class="logo" />
-  <h2>🎙️ Radiophonica Online</h2>
-</header>
+  <main>
+    <h3>🎙️ Transmisión en Vivo</h3>
+    <button onclick="mostrarModal()">🔗 Abrir Player</button>
 
-<main>
-
-  <button onclick="mostrarModal()">📡 Ver transmisión en vivo</button>
-
-  <div id="modalStream" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal()">&times;</span>
-      <h3>🔴 Transmisión en vivo</h3>
-      <iframe id="iframeURL" src="https://customs-tonight-brother-shift.trycloudflare.com" width="100%" height="300"></iframe>
+    <!-- Modal -->
+    <div id="miModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="cerrarModal()">&times;</span>
+        <iframe id="iframeURL" src="https://customs-tonight-brother-shift.trycloudflare.com" width="100%" height="300" allow="autoplay"></iframe>
+      </div>
     </div>
-  </div>
 
-  <h3>💬 Envíanos tu comentario</h3>
-  <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
-  <button onclick="enviarComentario()">Enviar por WhatsApp</button>
+    <h3>💬 Envíanos tu comentario por WhatsApp</h3>
+    <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
+    <button onclick="enviarComentario()">Enviar comentario</button>
 
-  <h3>🧑‍💬 Chatea con nosotros</h3>
-  <input type="text" id="nombre" placeholder="Tu nombre"/><br>
-  <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
-  <button onclick="enviarChat()">Enviar mensaje</button>
-  <div class="chat" id="chatbox"></div>
+    <h3>🧑‍💬 Chatea con nosotros</h3>
+    <div id="adminOnly">
+      <button onclick="borrarChat()" style="background-color: red;">🗑️ Borrar chat</button>
+    </div>
+    <input type="text" id="nombre" placeholder="Tu nombre"/><br>
+    <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
+    <button onclick="enviarChat()">Enviar mensaje</button>
+    <div class="chat" id="chatbox"></div>
 
-  <div class="contador" id="contador">Cargando visitas...</div>
-</main>
+    <div class="contador" id="contador">Cargando visitas...</div>
+  </main>
 
-<!-- Scripts -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-  import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  <!-- Scripts -->
+  <script>
+    function mostrarModal() {
+      document.getElementById("miModal").style.display = "block";
+    }
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-    authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-    projectId: "contador-de-personas-5f8aa",
-    storageBucket: "contador-de-personas-5f8aa.appspot.com",
-    messagingSenderId: "1063230344919",
-    appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-  };
+    function cerrarModal() {
+      document.getElementById("miModal").style.display = "none";
+    }
 
-  const app = initializeApp(firebaseConfig);
-  const database = getDatabase(app);
+    window.onclick = function(event) {
+      const modal = document.getElementById("miModal");
+      if (event.target == modal) modal.style.display = "none";
+    }
+  </script>
 
-  // Contador en tiempo real
-  const conexionesRef = ref(database, "conexiones");
-  const miConexion = push(conexionesRef);
-  set(miConexion, true);
-  onDisconnect(miConexion).remove();
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-  onValue(conexionesRef, (snapshot) => {
-    const cantidad = snapshot.size;
-    document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
-  });
+    const firebaseConfig = {
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+    };
 
-  // Enviar comentario por WhatsApp
-  window.enviarComentario = function () {
-    const comentario = document.getElementById("comentario").value.trim();
-    if (!comentario) return alert
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // 🔢 Contador
+    const conexionesRef = ref(database, "conexiones");
+    const miConexion = push(conexionesRef);
+    set(miConexion, true);
+    onDisconnect(miConexion).remove();
+
+    onValue(conexionesRef, (snapshot) => {
+      const cantidad = snapshot.size;
+      document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
+    });
+
+    // 💬 WhatsApp comentario
+    window.enviarComentario = function () {
+      const comentario = document.getElementById("comentario").value.trim();
+      if (!comentario) return alert("Escribe tu comentario");
+      const mensaje = encodeURIComponent(comentario);
+      window.open(`https://api.whatsapp.com/send?phone=+56944896523&text=${mensaje}`, "_blank");
+      document.getElementById("comentario").value = "";
+    };
+
+    // 🧑‍💬 Chat en tiempo real
+    const chatRef = ref(database, "chat");
+    onValue(chatRef, (snapshot) => {
+      const chatbox = document.getElementById("chatbox");
+      chatbox.innerHTML = "";
+      snapshot.forEach((msg) => {
+        const datos = msg.val();
+        const p = document.createElement("p");
+        p.textContent = `${datos.nombre}: ${datos.mensaje}`;
+        chatbox.appendChild(p);
+      });
+    });
+
+    window.enviarChat = function () {
+      const nombre = document.getElementById("nombre").value.trim();
+      const mensaje = document.getElementById("mensaje").value.trim();
+      if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje");
+      const nuevoMensaje = push(chatRef);
+      set(nuevoMensaje, { nombre, mensaje });
+      document.getElementById("mensaje").value = "";
+    };
+
+    // Solo mostrar botón de borrar si eres el admin (por ejemplo, desde cierto navegador o clave local)
+    const esAdmin = true; // cambia a false si quieres ocultarlo
+    if (!esAdmin) {
+      document.getElementById("adminOnly").style.display = "none";
+    }
+
+    window.borrarChat = function () {
+      if (confirm("¿Borrar todos los mensajes del chat?")) {
+        set(chatRef, {});
+      }
+    };
+  </script>
+</body>
+</html>
