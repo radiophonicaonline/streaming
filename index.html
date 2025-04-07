@@ -84,7 +84,42 @@
     font-size: 16px;
     color: #cccccc;
     margin-top: 15px;
-  }
+ /* Ventana flotante (modal) */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%; 
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+  background-color: #1e1e1e;
+  margin: 10% auto;
+  padding: 20px;
+  border: 1px solid #444;
+  width: 90%;
+  max-width: 600px;
+  color: #fff;
+  border-radius: 10px;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #fff;
+}
+ }
   </style>
 </head>
 <body>
@@ -96,14 +131,16 @@
 <iframe id="iframeURL" src="https://customs-tonight-brother-shift.trycloudflare.com" width="100%" height="300" style="border:1px solid #ccc;"></iframe><br><br>
 
 <!-- Botón para abrir la URL en una ventana externa -->
-<button onclick="abrirEnVentana()" style="padding: 10px 20px; font-size: 16px;"> Abre video en ventana externa</button>
+<button onclick="abrirModal()">🔗 Ver transmisión en ventana flotante</button>
 
-<script>
-  function abrirEnVentana() {
-    const iframe = document.getElementById("iframeURL");
-    const url = iframe.src;
-    window.open(url, "_blank");
-  }
+<!-- MODAL -->
+<div id="miModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="cerrarModal()">&times;</span>
+    <iframe src="https://plans-tomato-camera-escape.trycloudflare.com" width="100%" height="300" style="border:none;"></iframe>
+  </div>
+</div>
+
 </script>
 
 
@@ -194,7 +231,21 @@
         mensaje
       });
       document.getElementById("mensaje").value = "";
-    };
-  </script>
+  function abrirModal() {
+    document.getElementById("miModal").style.display = "block";
+  }
+
+  function cerrarModal() {
+    document.getElementById("miModal").style.display = "none";
+  }
+
+  // Cierra el modal si hacen clic fuera de él
+  window.onclick = function(event) {
+    const modal = document.getElementById("miModal");
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
+</script>
 </body>
 </html>
