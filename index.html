@@ -141,8 +141,11 @@
     <button onclick="darLike()">👍 Me gusta</button>
     <p id="contadorLikes">Likes: 0</p>
   </div>
-
-  <div class="contador" id="contador">Cargando visitas...</div>
+  <div class="box">
+  <h3>📲 Comparte esta página</h3>
+  <button onclick="compartirPagina()">🔗 Compartir</button>
+</div>
+ <div class="contador" id="contador">Cargando visitas...</div>
 
   <!-- Firebase SDK -->
   <script type="module">
@@ -235,6 +238,20 @@
     window.cerrarModal = function () {
       document.getElementById("modalReproductor").style.display = "none";
     };
+    window.compartirPagina = function () {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Radiophonica Online',
+      text: '¡Escucha Radiophonica Online en vivo!',
+      url: window.location.href
+    })
+    .then(() => console.log('Compartido con éxito'))
+    .catch((error) => console.error('Error al compartir', error));
+  } else {
+    alert("Tu navegador no soporta el botón de compartir. Copia el enlace manualmente.");
+  }
+};
+
   </script>
 
 </body>
