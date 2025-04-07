@@ -93,6 +93,12 @@
       margin-top: 20px;
       color: #ccc;
     }
+    #contadorLikes {
+  font-size: 18px;
+  margin-top: 10px;
+  color: #ffffff;
+}
+    
   </style>
 </head>
 <body>
@@ -121,11 +127,33 @@
     <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
     <button onclick="enviarChat()">Enviar mensaje</button>
     <div class="chat" id="chatbox"></div>
+<div class="box">
+  <h3>❤️ ¿Te gusta esta página?</h3>
+  <button onclick="darLike()">👍 Me gusta</button>
+  <p id="contadorLikes">Likes: 0</p>
+</div>
 
     <div class="contador" id="contador">Cargando visitas...</div>
   </main>
 
   <script type="module">
+    // Referencia a los likes en Firebase
+const likesRef = ref(database, "likes");
+
+// Escuchar los cambios en tiempo real
+onValue(likesRef, (snapshot) => {
+  const cantidadLikes = snapshot.val() || 0;
+  document.getElementById("contadorLikes").innerText = `Likes: ${cantidadLikes}`;
+});
+
+// Función para dar Like
+window.darLike = function () {
+  onValue(likesRef, (snapshot) => {
+    const cantidad = snapshot.val() || 0;
+    set(likesRef, cantidad + 1);
+  }, { onlyOnce: true });
+};
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
