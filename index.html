@@ -9,120 +9,125 @@
       background-color: #121212;
       color: #e0e0e0;
       font-family: Arial, sans-serif;
+      text-align: center;
       margin: 0;
       padding: 0;
-      text-align: center;
     }
-    header {
+
+    header img {
+      width: 200px;
       margin-top: 20px;
     }
-    .logo {
-      width: 200px;
-    }
+
     main {
-      padding: 20px;
       max-width: 800px;
       margin: auto;
+      padding: 20px;
     }
+
     iframe {
       width: 100%;
       height: 300px;
+      border: 1px solid #555;
+      margin-bottom: 15px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      width: 90%;
+      max-width: 600px;
+      height: 400px;
       border: none;
     }
-    button {
-      background-color: #1e90ff;
-      border: none;
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 25px;
+      font-size: 30px;
       color: white;
+      cursor: pointer;
+    }
+
+    textarea, input {
+      width: 80%;
+      max-width: 400px;
+      margin: 10px auto;
+      padding: 10px;
+      background: #1e1e1e;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 5px;
+    }
+
+    button {
+      background: #1e90ff;
+      color: white;
+      border: none;
       padding: 10px 20px;
       margin-top: 10px;
       border-radius: 5px;
-      font-weight: bold;
       cursor: pointer;
     }
-    input, textarea {
-      background-color: #1e1e1e;
-      color: #ffffff;
-      border: 1px solid #444;
-      border-radius: 5px;
-      padding: 10px;
-      margin: 10px;
-      width: 80%;
-      max-width: 400px;
+
+    button:hover {
+      background: #3ea0ff;
     }
-    .chat, .contador, .box {
+
+    .chat p {
+      margin: 5px 0;
+      text-align: left;
+    }
+
+    .contador {
       margin-top: 20px;
-    }
-    #playerModal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.95);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-    #playerModal iframe {
-      max-width: 600px;
-      height: 300px;
-    }
-    #playerModal button {
-      margin-top: 20px;
-      background-color: red;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
+
   <header>
-    <img src="logo.png" alt="Logo" class="logo" />
+    <img src="https://tuusuario.github.io/tu-repo/logo.png" alt="Logo Radiophonica" />
   </header>
 
   <main>
-    <h3>🔴 Transmisión en vivo</h3>
-    <button onclick="abrirModal()">▶️ Abrir Reproductor</button>
-    <p id="contadorReproductor">👀 espectadores: 0</p>
-
-    <div id="playerModal">
-      <iframe id="iframeURL" src="https://customs-tonight-brother-shift.trycloudflare.com"></iframe>
-      <button onclick="cerrarModal()">Cerrar</button>
+    <h3>🎙️ Transmisión en vivo</h3>
+    <button onclick="abrirModal()">🔗 Abrir transmisión en ventana flotante</button>
+    <div class="modal" id="modal">
+      <span class="close-btn" onclick="cerrarModal()">×</span>
+      <iframe class="modal-content" src="https://customs-tonight-brother-shift.trycloudflare.com" allowfullscreen></iframe>
     </div>
 
-    <div class="box">
-      <h3>💬 Envíanos tu comentario</h3>
-      <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
-      <button onclick="enviarComentario()">Enviar por WhatsApp</button>
-    </div>
+    <h3>💬 Envíanos tu comentario por WhatsApp</h3>
+    <textarea id="comentario" placeholder="Escribe tu comentario..."></textarea><br>
+    <button onclick="enviarComentario()">Enviar comentario</button>
 
-    <div class="box">
-      <h3>🧑‍💬 Chat en vivo</h3>
-      <div id="adminTools" style="display:none;">
-        <button onclick="borrarChat()" style="background-color: red;">🗑️ Borrar chat</button>
-      </div>
-      <input id="nombre" placeholder="Tu nombre"/><br>
-      <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
-      <button onclick="enviarChat()">Enviar mensaje</button>
-      <div class="chat" id="chatbox"></div>
+    <h3>🧑‍💬 Chat en tiempo real</h3>
+    <div id="admin-tools" style="display:none;">
+      <button onclick="borrarChat()" style="background: red;">🗑️ Borrar chat</button>
     </div>
-
-    <div class="box">
-      <h3>Dejanos tu like</h3>
-      <button onclick="darLike()">👍 Me gusta</button>
-      <p id="contadorLikes">Likes: 0</p>
-    </div>
-
-    <div class="box">
-      <h3>🔗 Comparte esta página</h3>
-      <button onclick="compartirPagina()">📲 Compartir</button>
-    </div>
+    <input type="text" id="nombre" placeholder="Tu nombre"/><br>
+    <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
+    <button onclick="enviarChat()">Enviar mensaje</button>
+    <div class="chat" id="chatbox"></div>
 
     <div class="contador" id="contador">Cargando visitas...</div>
   </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, onDisconnect, get, child, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -136,98 +141,64 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Contador general
+    // Contador en tiempo real
     const conexionesRef = ref(db, "conexiones");
     const miConexion = push(conexionesRef);
     set(miConexion, true);
     onDisconnect(miConexion).remove();
+
     onValue(conexionesRef, (snap) => {
-      document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
+      const total = snap.size;
+      document.getElementById("contador").innerText = `👀 Hay ${total} persona(s) viendo esta página.`;
     });
-
-    // Contador de reproductor
-    const conexionesPlayerRef = ref(db, "reproductor");
-    let miPlayerConexion;
-    function abrirModal() {
-      document.getElementById("playerModal").style.display = "flex";
-      miPlayerConexion = push(conexionesPlayerRef);
-      set(miPlayerConexion, true);
-      onDisconnect(miPlayerConexion).remove();
-    }
-    function cerrarModal() {
-      document.getElementById("playerModal").style.display = "none";
-      if (miPlayerConexion) miPlayerConexion.remove();
-    }
-    onValue(conexionesPlayerRef, (snap) => {
-      document.getElementById("contadorReproductor").innerText = `👀 Radiovidentes: ${snap.size}`;
-    });
-
-    // Comentarios por WhatsApp
-    window.enviarComentario = function () {
-      const texto = document.getElementById("comentario").value.trim();
-      if (!texto) return alert("Escribe algo primero");
-      window.open(`https://api.whatsapp.com/send?phone=+56944896523&text=${encodeURIComponent(texto)}`);
-      document.getElementById("comentario").value = "";
-    }
 
     // Chat en tiempo real
     const chatRef = ref(db, "chat");
     onValue(chatRef, (snap) => {
-      const chat = document.getElementById("chatbox");
-      chat.innerHTML = "";
-      snap.forEach(msg => {
+      const chatbox = document.getElementById("chatbox");
+      chatbox.innerHTML = "";
+      snap.forEach((msg) => {
         const datos = msg.val();
         const p = document.createElement("p");
         p.textContent = `${datos.nombre}: ${datos.mensaje}`;
-        chat.appendChild(p);
+        chatbox.appendChild(p);
       });
     });
-    window.enviarChat = function () {
+
+    window.enviarChat = () => {
       const nombre = document.getElementById("nombre").value.trim();
       const mensaje = document.getElementById("mensaje").value.trim();
-      if (!nombre || !mensaje) return alert("Completa nombre y mensaje");
+      if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje.");
       const nuevo = push(chatRef);
       set(nuevo, { nombre, mensaje });
       document.getElementById("mensaje").value = "";
-    }
-
-    // Solo admin puede ver el botón de borrar chat
-    if (window.location.search.includes("admin=si")) {
-      document.getElementById("adminTools").style.display = "block";
-      window.borrarChat = function () {
-        if (confirm("¿Borrar todo el chat?")) {
-          set(chatRef, {});
-        }
-      };
-    }
-
-    // Botón Like (solo uno por usuario)
-    const likesRef = ref(db, "likes");
-    const userId = "like_" + (localStorage.getItem("likeUser") || crypto.randomUUID());
-    localStorage.setItem("likeUser", userId);
-    window.darLike = function () {
-      get(child(ref(db), `likes/${userId}`)).then((snap) => {
-        if (!snap.exists()) {
-          set(ref(db, `likes/${userId}`), true);
-        } else {
-          alert("¡Ya diste tu like!");
-        }
-      });
     };
-    onValue(likesRef, (snap) => {
-      document.getElementById("contadorLikes").innerText = `Likes: ${snap.size}`;
-    });
 
-    // Compartir página
-    window.compartirPagina = function () {
-      const url = window.location.href;
-      if (navigator.share) {
-        navigator.share({ title: "Radiophonica Online", url });
-      } else {
-        navigator.clipboard.writeText(url);
-        alert("Enlace copiado para compartir!");
+    window.borrarChat = () => {
+      if (confirm("¿Borrar todos los mensajes del chat?")) {
+        set(chatRef, {});
       }
     };
+
+    // Comentario por WhatsApp
+    window.enviarComentario = () => {
+      const texto = document.getElementById("comentario").value.trim();
+      if (!texto) return alert("Escribe un comentario.");
+      const numero = "+56944896523";
+      const enlace = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(texto)}`;
+      window.open(enlace, "_blank");
+      document.getElementById("comentario").value = "";
+    };
+
+    // Modal
+    window.abrirModal = () => document.getElementById("modal").style.display = "flex";
+    window.cerrarModal = () => document.getElementById("modal").style.display = "none";
+
+    // Mostrar botón solo al admin
+    if (window.location.search.includes("admin=si")) {
+      document.getElementById("admin-tools").style.display = "block";
+    }
   </script>
+
 </body>
 </html>
