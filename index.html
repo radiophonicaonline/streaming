@@ -121,13 +121,9 @@
     <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
     <button onclick="enviarChat()">Enviar mensaje</button>
     <div class="chat" id="chatbox"></div>
-<div class="box">
-  <h3>Dejanos tu like</h3>
-  <button id="btnLike" onclick="darLike()">👍 Me gusta</button>
-  <p id="contadorLikes">Likes: 0</p>
-</div>
 
-    <div class="contador" id="contador">Cargando visitas...</div>
+
+   <div class="contador" id="contador">Cargando visitas...</div>
   </main>
 
   <script type="module">
@@ -205,30 +201,6 @@
       document.getElementById("admin-tools").style.display = "block";
     }
    
-// Referencia al contador de likes en Firebase
-const likeRef = ref(database, "likes/contador");
-
-// Mostrar el contador actual de likes
-onValue(likeRef, (snapshot) => {
-  const cantidad = snapshot.val() || 0;
-  document.getElementById("contadorLikes").innerText = `Likes: ${cantidad}`;
-});
-
-// Función para dar like
-window.darLike = function () {
-  if (localStorage.getItem("yaDioLike")) {
-    alert("¡Ya diste like! Gracias por tu apoyo ❤️");
-    return;
-  }
-
-  get(likeRef).then((snapshot) => {
-    const current = snapshot.val() || 0;
-    set(likeRef, current + 1);
-    localStorage.setItem("yaDioLike", "true");
-    alert("¡Gracias por tu like! 👍");
-  });
-};
-
   </script>
 
 </body>
