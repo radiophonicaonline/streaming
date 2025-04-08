@@ -122,11 +122,7 @@
     <button onclick="enviarChat()">Enviar mensaje</button>
     <div class="chat" id="chatbox"></div>
 
-    <div class="box">
-      <h3>Dejanos tu like</h3>
-      <button onclick="darLike()">👍 Me gusta</button>
-      <p id="contadorLikes">Likes: 0</p>
-    </div>
+    
     
     <div class="box">
   <h3>📲 Comparte esta página</h3>
@@ -202,22 +198,7 @@
       window.open(enlace, "_blank");
       document.getElementById("comentario").value = "";
     };
-    // Botón Like (solo uno por usuario)
-    const likesRef = ref(db, "likes");
-    const userId = "like_" + (localStorage.getItem("likeUser") || crypto.randomUUID());
-    localStorage.setItem("likeUser", userId);
-    window.darLike = function () {
-      get(child(ref(db), `likes/${userId}`)).then((snap) => {
-        if (!snap.exists()) {
-          set(ref(db, `likes/${userId}`), true);
-        } else {
-          alert("¡Ya diste tu like!");
-        }
-      });
-    };
-    onValue(likesRef, (snap) => {
-      document.getElementById("contadorLikes").innerText = `Likes: ${snap.size}`;
-    });
+    
     window.compartirPagina = function () {
   if (navigator.share) {
     navigator.share({
