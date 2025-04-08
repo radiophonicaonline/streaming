@@ -8,40 +8,40 @@
     body {
       background-color: #121212;
       color: #e0e0e0;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
       text-align: center;
     }
-
-    .box {
+    header {
+      margin-top: 20px;
+    }
+    .logo {
+      width: 200px;
+    }
+    main {
       padding: 20px;
       max-width: 800px;
       margin: auto;
     }
-
-    h1, h2, h3 {
-      color: #ffffff;
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: none;
     }
-
     button {
       background-color: #1e90ff;
+      border: none;
       color: white;
       padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
       margin-top: 10px;
+      border-radius: 5px;
       font-weight: bold;
       cursor: pointer;
     }
-
-    button:hover {
-      background-color: #3ea0ff;
-    }
-
     input, textarea {
       background-color: #1e1e1e;
-      color: white;
+      color: #ffffff;
       border: 1px solid #444;
       border-radius: 5px;
       padding: 10px;
@@ -49,108 +49,80 @@
       width: 80%;
       max-width: 400px;
     }
-
-    iframe {
-      width: 90%;
+    .chat, .contador, .box {
+      margin-top: 20px;
+    }
+    #playerModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.95);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    #playerModal iframe {
       max-width: 600px;
       height: 300px;
-      border: none;
     }
-
-    .chat {
-      background-color: #1e1e1e;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .contador, #contadorLikes {
-      margin-top: 15px;
-      color: #ccc;
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-    }
-
-    .modal-content {
-      background-color: #222;
-      margin: 10% auto;
-      padding: 20px;
-      width: 90%;
-      max-width: 600px;
-      border-radius: 10px;
-    }
-
-    .close {
-      color: #fff;
-      float: right;
-      font-size: 28px;
-      cursor: pointer;
-    }
-
-    .logo {
-      width: 180px;
+    #playerModal button {
       margin-top: 20px;
+      background-color: red;
     }
   </style>
 </head>
 <body>
+  <header>
+    <img src="logo.png" alt="Logo" class="logo" />
+  </header>
 
-  <img src="logo.png" alt="Logo Radiophonica" class="logo"/>
+  <main>
+    <h3>🔴 Transmisión en vivo</h3>
+    <button onclick="abrirModal()">▶️ Abrir Reproductor</button>
+    <p id="contadorReproductor">👀 espectadores: 0</p>
 
-  <div class="box">
-    <h3>🎧 Livestream</h3>
-    <button onclick="abrirModal()">🔗 Abrir reproductor</button>
- <p id="contadorReproductor">👀 Radiovidentes: 0</p>
-  </div>
-  <div id="modalReproductor" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal()">&times;</span>
+    <div id="playerModal">
       <iframe id="iframeURL" src="https://customs-tonight-brother-shift.trycloudflare.com"></iframe>
+      <button onclick="cerrarModal()">Cerrar</button>
     </div>
-  </div>
 
-  <div class="box">
-    <h3>💬 Envíanos tu mensaje por WhatsApp</h3>
-    <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
-    <button onclick="enviarComentario()">Enviar comentario</button>
-  </div>
-
-  <div class="box">
-    <h3>🧑‍💬 Chatea con nosotros</h3>
-    <div id="adminControls" style="display: none;">
-      <button onclick="borrarChat()" style="background-color: red;">🗑️ Borrar chat</button>
+    <div class="box">
+      <h3>💬 Envíanos tu comentario</h3>
+      <textarea id="comentario" rows="3" placeholder="Escribe tu comentario..."></textarea><br>
+      <button onclick="enviarComentario()">Enviar por WhatsApp</button>
     </div>
-    <input type="text" id="nombre" placeholder="Tu nombre"/><br>
-    <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
-    <button onclick="enviarChat()">Enviar mensaje</button>
-    <div class="chat" id="chatbox"></div>
-  </div>
 
-  <div class="box">
-     <h3>Dejanos tu Like</h3>
-    <button onclick="darLike()">👍 Me gusta</button>
-    <p id="contadorLikes">Likes: 0</p>
-  </div>
-  <div class="box">
-  <h3>📲 Comparte esta página</h3>
-  <button onclick="compartirPagina()">🔗 Compartir</button>
-</div>
- <div class="contador" id="contador">Cargando visitas...</div>
+    <div class="box">
+      <h3>🧑‍💬 Chat en vivo</h3>
+      <div id="adminTools" style="display:none;">
+        <button onclick="borrarChat()" style="background-color: red;">🗑️ Borrar chat</button>
+      </div>
+      <input id="nombre" placeholder="Tu nombre"/><br>
+      <textarea id="mensaje" rows="2" placeholder="Escribe un mensaje..."></textarea><br>
+      <button onclick="enviarChat()">Enviar mensaje</button>
+      <div class="chat" id="chatbox"></div>
+    </div>
 
-  <!-- Firebase SDK -->
+    <div class="box">
+      <h3>Dejanos tu like</h3>
+      <button onclick="darLike()">👍 Me gusta</button>
+      <p id="contadorLikes">Likes: 0</p>
+    </div>
+
+    <div class="box">
+      <h3>🔗 Comparte esta página</h3>
+      <button onclick="compartirPagina()">📲 Compartir</button>
+    </div>
+
+    <div class="contador" id="contador">Cargando visitas...</div>
+  </main>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, onDisconnect, increment, runTransaction } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue, onDisconnect, get, child, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -162,19 +134,18 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    const db = getDatabase(app);
 
-    // 🔢 Contador de vistas
-    const conexionesRef = ref(database, "conexiones");
+    // Contador general
+    const conexionesRef = ref(db, "conexiones");
     const miConexion = push(conexionesRef);
     set(miConexion, true);
     onDisconnect(miConexion).remove();
+    onValue(conexionesRef, (snap) => {
+      document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
+    });
 
-    onValue(conexionesRef, (snapshot) => {
-      const cantidad = snapshot.size;
-      document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
-     });
-     // Contador de reproductor
+    // Contador de reproductor
     const conexionesPlayerRef = ref(db, "reproductor");
     let miPlayerConexion;
     function abrirModal() {
@@ -191,100 +162,72 @@
       document.getElementById("contadorReproductor").innerText = `👀 Radiovidentes: ${snap.size}`;
     });
 
-   
-    import { get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-   
-    // Referencia al contador de likes en Firebase
-const likeRef = ref(database, "likes/contador");
-
-// Mostrar el contador actual de likes
-onValue(likeRef, (snapshot) => {
-  const cantidad = snapshot.val() || 0;
-  document.getElementById("contadorLikes").innerText = `Likes: ${cantidad}`;
-});
-
-// Función para dar like
-window.darLike = function () {
-  if (localStorage.getItem("yaDioLike")) {
-    alert("¡Ya diste like! Gracias por tu apoyo ❤️");
-    return;
-  }
-
-  get(likeRef).then((snapshot) => {
-    const current = snapshot.val() || 0;
-    set(likeRef, current + 1);
-    localStorage.setItem("yaDioLike", "true");
-    alert("¡Gracias por tu like! 👍");
-  });
-};
-
-    // 💬 Comentario por WhatsApp
+    // Comentarios por WhatsApp
     window.enviarComentario = function () {
-      const comentario = document.getElementById("comentario").value.trim();
-      if (!comentario) return alert("Escribe tu comentario primero.");
-      const numero = "+56944896523";
-      const mensaje = encodeURIComponent(comentario);
-      const url = `https://api.whatsapp.com/send?phone=${numero}&text=${mensaje}`;
-      window.open(url, "_blank");
+      const texto = document.getElementById("comentario").value.trim();
+      if (!texto) return alert("Escribe algo primero");
+      window.open(`https://api.whatsapp.com/send?phone=+56944896523&text=${encodeURIComponent(texto)}`);
       document.getElementById("comentario").value = "";
-    };
+    }
 
-    // 🧑‍💬 Chat
-    const chatRef = ref(database, "chat");
-    onValue(chatRef, (snapshot) => {
-      const chatbox = document.getElementById("chatbox");
-      chatbox.innerHTML = "";
-      snapshot.forEach((msg) => {
+    // Chat en tiempo real
+    const chatRef = ref(db, "chat");
+    onValue(chatRef, (snap) => {
+      const chat = document.getElementById("chatbox");
+      chat.innerHTML = "";
+      snap.forEach(msg => {
         const datos = msg.val();
-        const parrafo = document.createElement("p");
-        parrafo.textContent = `${datos.nombre}: ${datos.mensaje}`;
-        chatbox.appendChild(parrafo);
+        const p = document.createElement("p");
+        p.textContent = `${datos.nombre}: ${datos.mensaje}`;
+        chat.appendChild(p);
       });
-      chatbox.scrollTop = chatbox.scrollHeight;
     });
-
     window.enviarChat = function () {
       const nombre = document.getElementById("nombre").value.trim();
       const mensaje = document.getElementById("mensaje").value.trim();
-      if (!nombre || !mensaje) return alert("Completa tu nombre y el mensaje.");
-      const nuevoMensaje = push(chatRef);
-      set(nuevoMensaje, { nombre, mensaje });
+      if (!nombre || !mensaje) return alert("Completa nombre y mensaje");
+      const nuevo = push(chatRef);
+      set(nuevo, { nombre, mensaje });
       document.getElementById("mensaje").value = "";
+    }
+
+    // Solo admin puede ver el botón de borrar chat
+    if (window.location.search.includes("admin=si")) {
+      document.getElementById("adminTools").style.display = "block";
+      window.borrarChat = function () {
+        if (confirm("¿Borrar todo el chat?")) {
+          set(chatRef, {});
+        }
+      };
+    }
+
+    // Botón Like (solo uno por usuario)
+    const likesRef = ref(db, "likes");
+    const userId = "like_" + (localStorage.getItem("likeUser") || crypto.randomUUID());
+    localStorage.setItem("likeUser", userId);
+    window.darLike = function () {
+      get(child(ref(db), `likes/${userId}`)).then((snap) => {
+        if (!snap.exists()) {
+          set(ref(db, `likes/${userId}`), true);
+        } else {
+          alert("¡Ya diste tu like!");
+        }
+      });
     };
+    onValue(likesRef, (snap) => {
+      document.getElementById("contadorLikes").innerText = `Likes: ${snap.size}`;
+    });
 
-    // 🔒 Mostrar botón borrar solo para admin
-    const esAdmin = new URLSearchParams(window.location.search).get("admin") === "si";
-    if (esAdmin) document.getElementById("adminControls").style.display = "block";
-
-    window.borrarChat = function () {
-      if (confirm("¿Estás seguro de borrar todo el chat?")) {
-        set(chatRef, {});
+    // Compartir página
+    window.compartirPagina = function () {
+      const url = window.location.href;
+      if (navigator.share) {
+        navigator.share({ title: "Radiophonica Online", url });
+      } else {
+        navigator.clipboard.writeText(url);
+        alert("Enlace copiado para compartir!");
       }
     };
-
-    // 🔲 Ventana modal
-    window.abrirModal = function () {
-      document.getElementById("modalReproductor").style.display = "block";
-    };
-
-    window.cerrarModal = function () {
-      document.getElementById("modalReproductor").style.display = "none";
-    };
-    window.compartirPagina = function () {
-  if (navigator.share) {
-    navigator.share({
-      title: 'Radiophonica Online',
-      text: '¡Escucha Radiophonica Online en vivo!',
-      url: window.location.href
-    })
-    .then(() => console.log('Compartido con éxito'))
-    .catch((error) => console.error('Error al compartir', error));
-  } else {
-    alert("Tu navegador no soporta el botón de compartir. Copia el enlace manualmente.");
-  }
-};
-
   </script>
-
 </body>
 </html>
