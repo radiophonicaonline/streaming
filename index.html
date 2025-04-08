@@ -110,8 +110,8 @@
   <div class="box">
     <h3>🎧 Livestream</h3>
     <button onclick="abrirModal()">🔗 Abrir reproductor</button>
+ <p id="contadorReproductor">👀 Radiovidentes: 0</p>
   </div>
-
   <div id="modalReproductor" class="modal">
     <div class="modal-content">
       <span class="close" onclick="cerrarModal()">&times;</span>
@@ -173,7 +173,24 @@
     onValue(conexionesRef, (snapshot) => {
       const cantidad = snapshot.size;
       document.getElementById("contador").innerText = `👀 Hay ${cantidad} persona(s) viendo esta página.`;
+     });
+     // Contador de reproductor
+    const conexionesPlayerRef = ref(db, "reproductor");
+    let miPlayerConexion;
+    function abrirModal() {
+      document.getElementById("playerModal").style.display = "flex";
+      miPlayerConexion = push(conexionesPlayerRef);
+      set(miPlayerConexion, true);
+      onDisconnect(miPlayerConexion).remove();
+    }
+    function cerrarModal() {
+      document.getElementById("playerModal").style.display = "none";
+      if (miPlayerConexion) miPlayerConexion.remove();
+    }
+    onValue(conexionesPlayerRef, (snap) => {
+      document.getElementById("contadorReproductor").innerText = `👀 Radiovidentes: ${snap.size}`;
     });
+
    
     import { get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
    
