@@ -133,6 +133,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+     import { get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -203,8 +204,7 @@
     if (window.location.search.includes("admin=si")) {
       document.getElementById("admin-tools").style.display = "block";
     }
-    import { get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-
+   
 // Referencia al contador de likes en Firebase
 const likeRef = ref(database, "likes/contador");
 
