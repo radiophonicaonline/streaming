@@ -209,42 +209,7 @@
     if (window.location.search.includes("admin=si")) {
       document.getElementById("admin-tools").style.display = "block";
     }
-   // Referencia al contador de likes en Firebase
-const likeRef = ref(database, "likes/contador");
 
-// Mostrar el contador actual de likes
-onValue(likeRef, (snapshot) => {
-  const cantidad = snapshot.val() || 0;
-  document.getElementById("contadorLikes").innerText = `Likes: ${cantidad}`;
-});
-
-// Función para dar like
-window.darLike = function () {
-  if (localStorage.getItem("yaDioLike")) {
-    alert("¡Ya diste like! Gracias por tu apoyo ❤️");
-    return;
-  }
-
-  get(likeRef).then((snapshot) => {
-    const current = snapshot.val() || 0;
-    set(likeRef, current + 1);
-    localStorage.setItem("yaDioLike", "true");
-    alert("¡Gracias por tu like! 👍");
-  });
-};
-    window.compartirPagina = function () {
-  if (navigator.share) {
-    navigator.share({
-      title: 'Radiophonica Online',
-      text: '¡Escucha Radiophonica Online en vivo!',
-      url: window.location.href
-    })
-    .then(() => console.log('Compartido con éxito'))
-    .catch((error) => console.error('Error al compartir', error));
-  } else {
-    alert("Tu navegador no soporta el botón de compartir. Copia el enlace manualmente.");
-  }
-};
 
   </script>
 
