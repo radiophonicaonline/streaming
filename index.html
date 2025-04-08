@@ -121,6 +121,15 @@
     <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
     <button onclick="enviarChat()">Enviar mensaje</button>
     <div class="chat" id="chatbox"></div>
+<div class="box">
+  <h3>Dejanos tu like</h3>
+  <button id="btnLike" onclick="darLike()">👍 Me gusta</button>
+  <p id="contadorLikes">Likes: 0</p>
+</div>
+<div class="box">
+  <h3>📲 Comparte esta página</h3>
+  <button onclick="compartirPagina()">🔗 Compartir</button>
+</div>
 
 
    <div class="contador" id="contador">Cargando visitas...</div>
@@ -129,7 +138,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, push, set, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-     import { get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+     
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -200,7 +209,43 @@
     if (window.location.search.includes("admin=si")) {
       document.getElementById("admin-tools").style.display = "block";
     }
-   
+   // Referencia al contador de likes en Firebase
+const likeRef = ref(database, "likes/contador");
+
+// Mostrar el contador actual de likes
+onValue(likeRef, (snapshot) => {
+  const cantidad = snapshot.val() || 0;
+  document.getElementById("contadorLikes").innerText = `Likes: ${cantidad}`;
+});
+
+// Función para dar like
+window.darLike = function () {
+  if (localStorage.getItem("yaDioLike")) {
+    alert("¡Ya diste like! Gracias por tu apoyo ❤️");
+    return;
+  }
+
+  get(likeRef).then((snapshot) => {
+    const current = snapshot.val() || 0;
+    set(likeRef, current + 1);
+    localStorage.setItem("yaDioLike", "true");
+    alert("¡Gracias por tu like! 👍");
+  });
+};
+    window.compartirPagina = function () {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Radiophonica Online',
+      text: '¡Escucha Radiophonica Online en vivo!',
+      url: window.location.href
+    })
+    .then(() => console.log('Compartido con éxito'))
+    .catch((error) => console.error('Error al compartir', error));
+  } else {
+    alert("Tu navegador no soporta el botón de compartir. Copia el enlace manualmente.");
+  }
+};
+
   </script>
 
 </body>
