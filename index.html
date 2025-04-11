@@ -217,50 +217,26 @@
     document.getElementById("modal").style.display = "none";
   };
 
-   // --- Notificaciones tipo campanita ---
-  const alertaRef = ref(db, "alertaEnVivo");
+  if (window.location.search.includes("admin=si")) {
+    document.getElementById("admin-tools").style.display = "block";
+  }
 
-  window.suscribirse = async () => {
-    try {
-      const messaging = getMessaging();
-      const token = await getToken(messaging, {
-        vapidKey: "BLwt9ZJryiJhcwabvu8ZWsG7JZ-2BKk-5jtbOVNj0yy173t6F5wQTBAReshsjhvea5gCJq0ViU06okHHdftzJK0"
-      });
-      if (token) {
-        localStorage.setItem("notificacionActiva", "true");
-        alert("✅ ¡Te avisaremos cuando estemos en vivo!");
-      } else {
-        alert("❌ No se pudo activar la notificación.");
-      }
-    } catch (error) {
-      alert("Error al activar notificaciones: " + error);
-    }
+  const alertaRef = ref(db, "alertaEnVivo");
+  window.suscribirse = () => {
+    localStorage.setItem("notificacionActiva", "true");
+    alert("✅ ¡Te avisaremos cuando estemos en vivo!");
   };
 
   window.activarAlerta = () => {
-    set(alertaRef, "🎙️ ¡Estamos transmitiendo en vivo ahora mismo!");
+    set(alertaRef, "¡🎙️ Estamos transmitiendo en vivo ahora mismo!");
     setTimeout(() => set(alertaRef, ""), 10000);
   };
 
   if (localStorage.getItem("notificacionActiva") === "true") {
     onValue(alertaRef, (snap) => {
       const mensaje = snap.val();
-      document.getElementById("alertaEnVivo").textContent = mensaje;
-    });
-  }
-
-  // Mostrar notificación cuando se recibe en primer plano
-  const messaging = getMessaging();
-  onMessage(messaging, (payload) => {
-    alert("🔔 " + payload.notification.title + "\n" + payload.notification.body);
-  });
-</script>
-
-<!-- Registro del service worker -->
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("firebase-messaging-sw.js").then((reg) => {
-      console.log("Service Worker registrado", reg);
+      const alertaDiv = document.getElementById("alertaEnVivo");
+      alertaDiv.textContent = mensaje;
     });
   }
 </script>
