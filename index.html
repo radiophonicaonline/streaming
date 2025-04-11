@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Radiophonica Online</title>
+  <link rel="manifest" href="manifest.json" />
   <style>
     body {
       background-color: #121212;
@@ -55,26 +56,21 @@
     .modal {
       display: none;
       position: fixed;
-      z-index: 999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.8);
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
       justify-content: center;
       align-items: center;
+      z-index: 1000;
     }
     .modal-content {
-      width: 80%;
-      max-width: 700px;
+      width: 90%;
       height: 400px;
-      border: none;
     }
     .close-btn {
       position: absolute;
-      top: 20px;
-      right: 30px;
-      font-size: 40px;
+      top: 10px;
+      right: 20px;
+      font-size: 30px;
       color: white;
       cursor: pointer;
     }
@@ -91,7 +87,7 @@
   <button onclick="abrirModal()">Abrir player</button>
   <div class="modal" id="modal">
     <span class="close-btn" onclick="cerrarModal()">×</span>
-    <iframe class="modal-content" id="iframePlayer" src="" allowfullscreen></iframe>
+    <iframe class="modal-content" id="playerIframe" allowfullscreen></iframe>
   </div>
 
   <h3>Pídenos tu tema al WhatsApp</h3>
@@ -109,7 +105,7 @@
   <div class="chat" id="chatbox"></div>
 
   <div>
-    <h3>Activa la🔔 y te avisaremos cuando estemos en vivo</h3>
+    <h3>activa la 🔔 y te avisaremos cuando estemos en vivo</h3>
     <button onclick="suscribirse()">🔔 Activar notificación</button>
     <p id="alertaEnVivo" style="color: #00ffcc; font-weight: bold;"></p>
   </div>
@@ -124,7 +120,10 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-  import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  import {
+    getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child
+  } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -138,6 +137,14 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  // --- Player dinámico desde Firebase ---
+  const playerRef = ref(db, "playerURL");
+  onValue(playerRef, (snap) => {
+    const url = snap.val();
+    document.getElementById("playerIframe").src = url;
+  });
+
+  // --- Contador de visitas ---
   const conexionesRef = ref(db, "conexiones");
   const miConexion = push(conexionesRef);
   set(miConexion, true);
@@ -146,6 +153,7 @@
     document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
   });
 
+  // --- Chat en tiempo real ---
   const chatRef = ref(db, "chat");
   onValue(chatRef, (snap) => {
     const chatbox = document.getElementById("chatbox");
@@ -194,49 +202,57 @@
     }
   };
 
-  window.abrirModal = async () => {
-    const iframe = document.getElementById("iframePlayer");
-    const modal = document.getElementById("modal");
-
-    try {
-      const urlSnap = await get(ref(db, "urlReproductor"));
-      const url = urlSnap.exists() ? urlSnap.val() : null;
-      if (url) {
-        iframe.src = url;
-        modal.style.display = "flex";
-      } else {
-        alert("No se pudo cargar el reproductor. URL no disponible.");
-      }
-    } catch (error) {
-      console.error("Error al obtener la URL del reproductor:", error);
-      alert("Ocurrió un error al abrir el reproductor.");
-    }
-  };
-
-  window.cerrarModal = () => {
-    document.getElementById("modal").style.display = "none";
-  };
+  window.abrirModal = () => document.getElementById("modal").style.display = "flex";
+  window.cerrarModal = () => document.getElementById("modal").style.display = "none";
 
   if (window.location.search.includes("admin=si")) {
     document.getElementById("admin-tools").style.display = "block";
   }
 
+  // --- Notificaciones tipo campanita ---
   const alertaRef = ref(db, "alertaEnVivo");
-  window.suscribirse = () => {
-    localStorage.setItem("notificacionActiva", "true");
-    alert("✅ ¡Te avisaremos cuando estemos en vivo!");
+
+  window.suscribirse = async () => {
+    try {
+      const messaging = getMessaging();
+      const token = await getToken(messaging, {
+        vapidKey: "BLwt9ZJryiJhcwabvu8ZWsG7JZ-2BKk-5jtbOVNj0yy173t6F5wQTBAReshsjhvea5gCJq0ViU06okHHdftzJK0"
+      });
+      if (token) {
+        localStorage.setItem("notificacionActiva", "true");
+        alert("✅ ¡Te avisaremos cuando estemos en vivo!");
+      } else {
+        alert("❌ No se pudo activar la notificación.");
+      }
+    } catch (error) {
+      alert("Error al activar notificaciones: " + error);
+    }
   };
 
   window.activarAlerta = () => {
-    set(alertaRef, "¡🎙️ Estamos transmitiendo en vivo ahora mismo!");
+    set(alertaRef, "🎙️ ¡Estamos transmitiendo en vivo ahora mismo!");
     setTimeout(() => set(alertaRef, ""), 10000);
   };
 
   if (localStorage.getItem("notificacionActiva") === "true") {
     onValue(alertaRef, (snap) => {
       const mensaje = snap.val();
-      const alertaDiv = document.getElementById("alertaEnVivo");
-      alertaDiv.textContent = mensaje;
+      document.getElementById("alertaEnVivo").textContent = mensaje;
+    });
+  }
+
+  // Mostrar notificación cuando se recibe en primer plano
+  const messaging = getMessaging();
+  onMessage(messaging, (payload) => {
+    alert("🔔 " + payload.notification.title + "\n" + payload.notification.body);
+  });
+</script>
+
+<!-- Registro del service worker -->
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("firebase-messaging-sw.js").then((reg) => {
+      console.log("Service Worker registrado", reg);
     });
   }
 </script>
