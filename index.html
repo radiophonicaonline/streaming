@@ -123,122 +123,175 @@
 </main>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-  import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import {getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-    authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-    projectId: "contador-de-personas-5f8aa",
-    storageBucket: "contador-de-personas-5f8aa.appspot.com",
-    messagingSenderId: "1063230344919",
-    appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+  projectId: "contador-de-personas-5f8aa",
+  storageBucket: "contador-de-personas-5f8aa.appspot.com",
+  messagingSenderId: "1063230344919",
+  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  const conexionesRef = ref(db, "conexiones");
-  const miConexion = push(conexionesRef);
-  set(miConexion, true);
-  onDisconnect(miConexion).remove();
-  onValue(conexionesRef, (snap) => {
-    document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
+// ---------------- CONTADOR GENERAL DE VISITAS ---------------- //
+const hoy = new Date().toISOString().split("T")[0]; // formato YYYY-MM-DD
+const visitasRef = ref(db, "visitas/" + hoy);
+push(visitasRef, true);
+
+// ---------------- CONTADOR DE PERSONAS EN LA PÁGINA ---------------- //
+const conexionesRef = ref(db, "conexiones");
+const miConexion = push(conexionesRef);
+set(miConexion, true);
+onDisconnect(miConexion).remove();
+onValue(conexionesRef, (snap) => {
+  document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
+});
+
+// ---------------- CONTADOR DE RADIOVIDENTES ---------------- //
+let miRadiovidenteRef = null;
+function registrarRadiovidente() {
+  const radiovidentesRef = ref(db, "radiovidentes");
+  miRadiovidenteRef = push(radiovidentesRef);
+  set(miRadiovidenteRef, true);
+  onDisconnect(miRadiovidenteRef).remove();
+  const contadorDiv = document.createElement("div");
+  contadorDiv.id = "contadorRadiovidentes";
+  contadorDiv.style.marginTop = "10px";
+  document.querySelector("main").appendChild(contadorDiv);
+
+  onValue(radiovidentesRef, (snap) => {
+    const count = snap.size;
+    document.getElementById("contadorRadiovidentes").innerText = `🎧 Radiovidentes activos: ${count}`;
   });
+}
+function cerrarRadiovidente() {
+  if (miRadiovidenteRef) remove(miRadiovidenteRef);
+}
 
-  const chatRef = ref(db, "chat");
-  onValue(chatRef, (snap) => {
-    const chatbox = document.getElementById("chatbox");
-    chatbox.innerHTML = "";
-    snap.forEach((msg) => {
-      const datos = msg.val();
-      const p = document.createElement("p");
-      p.textContent = `${datos.nombre}: ${datos.mensaje}`;
-      chatbox.appendChild(p);
+// ---------------- CHAT ---------------- //
+const chatRef = ref(db, "chat");
+onValue(chatRef, (snap) => {
+  const chatbox = document.getElementById("chatbox");
+  chatbox.innerHTML = "";
+  snap.forEach((msg) => {
+    const datos = msg.val();
+    const p = document.createElement("p");
+    p.textContent = `${datos.nombre}: ${datos.mensaje}`;
+    chatbox.appendChild(p);
+  });
+});
+
+window.enviarChat = () => {
+  const nombre = document.getElementById("nombre").value.trim();
+  const mensaje = document.getElementById("mensaje").value.trim();
+  if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje.");
+  const nuevo = push(chatRef);
+  set(nuevo, { nombre, mensaje });
+  document.getElementById("mensaje").value = "";
+};
+
+window.borrarChat = () => {
+  if (confirm("¿Borrar todos los mensajes del chat?")) {
+    set(chatRef, {});
+  }
+};
+
+// ---------------- COMENTARIOS POR WHATSAPP ---------------- //
+window.enviarComentario = () => {
+  const texto = document.getElementById("comentario").value.trim();
+  if (!texto) return alert("Escribe un comentario.");
+  const numero = "+56944896523";
+  const enlace = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(texto)}`;
+  window.open(enlace, "_blank");
+  document.getElementById("comentario").value = "";
+};
+
+// ---------------- COMPARTIR ---------------- //
+window.compartirPagina = function () {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Radiophonica Online',
+      text: '¡Escucha Radiophonica Online en vivo!',
+      url: window.location.href
     });
-  });
+  } else {
+    alert("Tu navegador no soporta el botón de compartir.");
+  }
+};
 
-  window.enviarChat = () => {
-    const nombre = document.getElementById("nombre").value.trim();
-    const mensaje = document.getElementById("mensaje").value.trim();
-    if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje.");
-    const nuevo = push(chatRef);
-    set(nuevo, { nombre, mensaje });
-    document.getElementById("mensaje").value = "";
-  };
+// ---------------- PLAYER MODAL + RADIOVIDENTES ---------------- //
+window.abrirModal = async () => {
+  const iframe = document.getElementById("iframePlayer");
+  const modal = document.getElementById("modal");
 
-  window.borrarChat = () => {
-    if (confirm("¿Borrar todos los mensajes del chat?")) {
-      set(chatRef, {});
-    }
-  };
-
-  window.enviarComentario = () => {
-    const texto = document.getElementById("comentario").value.trim();
-    if (!texto) return alert("Escribe un comentario.");
-    const numero = "+56944896523";
-    const enlace = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(texto)}`;
-    window.open(enlace, "_blank");
-    document.getElementById("comentario").value = "";
-  };
-
-  window.compartirPagina = function () {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Radiophonica Online',
-        text: '¡Escucha Radiophonica Online en vivo!',
-        url: window.location.href
-      });
+  try {
+    const urlSnap = await get(ref(db, "urlReproductor"));
+    const url = urlSnap.exists() ? urlSnap.val() : null;
+    if (url) {
+      iframe.src = url;
+      modal.style.display = "flex";
+      registrarRadiovidente(); // <- acá contamos el radiovidente
     } else {
-      alert("Tu navegador no soporta el botón de compartir.");
+      alert("No se pudo cargar el reproductor. URL no disponible.");
     }
-  };
-
-  window.abrirModal = async () => {
-    const iframe = document.getElementById("iframePlayer");
-    const modal = document.getElementById("modal");
-
-    try {
-      const urlSnap = await get(ref(db, "urlReproductor"));
-      const url = urlSnap.exists() ? urlSnap.val() : null;
-      if (url) {
-        iframe.src = url;
-        modal.style.display = "flex";
-      } else {
-        alert("No se pudo cargar el reproductor. URL no disponible.");
-      }
-    } catch (error) {
-      console.error("Error al obtener la URL del reproductor:", error);
-      alert("Ocurrió un error al abrir el reproductor.");
-    }
-  };
-
-  window.cerrarModal = () => {
-    document.getElementById("modal").style.display = "none";
-  };
-
-  if (window.location.search.includes("admin=si")) {
-    document.getElementById("admin-tools").style.display = "block";
+  } catch (error) {
+    console.error("Error al obtener la URL del reproductor:", error);
+    alert("Ocurrió un error al abrir el reproductor.");
   }
+};
 
-  const alertaRef = ref(db, "alertaEnVivo");
-  window.suscribirse = () => {
-    localStorage.setItem("notificacionActiva", "true");
-    alert("✅ ¡Te avisaremos cuando estemos en vivo!");
-  };
+window.cerrarModal = () => {
+  document.getElementById("modal").style.display = "none";
+  cerrarRadiovidente();
+};
 
-  window.activarAlerta = () => {
-    set(alertaRef, "¡🎙️ Estamos transmitiendo en vivo ahora mismo!");
-    setTimeout(() => set(alertaRef, ""), 10000);
-  };
+// ---------------- ALERTA EN VIVO ---------------- //
+const alertaRef = ref(db, "alertaEnVivo");
+window.suscribirse = () => {
+  localStorage.setItem("notificacionActiva", "true");
+  alert("✅ ¡Te avisaremos cuando estemos en vivo!");
+};
 
-  if (localStorage.getItem("notificacionActiva") === "true") {
-    onValue(alertaRef, (snap) => {
-      const mensaje = snap.val();
-      const alertaDiv = document.getElementById("alertaEnVivo");
-      alertaDiv.textContent = mensaje;
+window.activarAlerta = () => {
+  set(alertaRef, "¡🎙️ Estamos transmitiendo en vivo ahora mismo!");
+  setTimeout(() => set(alertaRef, ""), 10000);
+};
+
+if (localStorage.getItem("notificacionActiva") === "true") {
+  onValue(alertaRef, (snap) => {
+    const mensaje = snap.val();
+    const alertaDiv = document.getElementById("alertaEnVivo");
+    alertaDiv.textContent = mensaje;
+  });
+}
+
+// ---------------- ESTADÍSTICAS EN MODO ADMIN ---------------- //
+if (window.location.search.includes("admin=si")) {
+  document.getElementById("admin-tools").style.display = "block";
+
+  const visitasAdminRef = ref(db, "visitas");
+  onValue(visitasAdminRef, (snap) => {
+    let resumen = "📅 Visitas diarias:\n";
+    snap.forEach(dia => {
+      const fecha = dia.key;
+      const cantidad = dia.size;
+      resumen += `📌 ${fecha}: ${cantidad} visita(s)\n`;
     });
-  }
+    const div = document.createElement("pre");
+    div.style.marginTop = "20px";
+    div.style.textAlign = "left";
+    div.style.background = "#1e1e1e";
+    div.style.padding = "10px";
+    div.style.borderRadius = "5px";
+    div.textContent = resumen;
+    document.querySelector("main").appendChild(div);
+  });
+}
 </script>
 </body>
 </html>
