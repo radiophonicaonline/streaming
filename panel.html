@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Admin - Radiophonica</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Arial', sans-serif;
+      padding: 30px;
+      text-align: left;
+    }
+    h1 { font-size: 24px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .dato { font-size: 20px; margin: 15px 0; }
+    .negado { color: red; font-weight: bold; text-align: center; margin-top: 100px; font-size: 24px; }
+  </style>
+</head>
+<body>
+
+<div id="contenido" style="display: none;">
+  <h1>📊 Panel de estadísticas</h1>
+  <div class="dato" id="visitasHoy">Visitas hoy: cargando...</div>
+  <div class="dato" id="visitasTotales">Total de visitas: cargando...</div>
+  <div class="dato" id="enLinea">Personas en la página ahora: cargando...</div>
+  <div class="dato" id="radiovidentes">Radiovidentes con player activo: cargando...</div>
+</div>
+
+<div id="accesoDenegado" class="negado" style="display: none;">
+  ❌ Acceso denegado. Parámetro de admin no detectado.
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import {
+    getDatabase, ref, onValue
+  } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const esAdmin = urlParams.get("admin") === "si";
+
+  if (!esAdmin) {
+    document.getElementById("accesoDenegado").style.display = "block";
+  } else {
+    document.getElementById("contenido").style.display = "block";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const hoy = new Date().toISOString().split("T")[0];
+
+    const visitasHoyRef = ref(db, "visitas/" + hoy);
+    onValue(visitasHoyRef, (snap) => {
+      document.getElementById("visitasHoy").innerText = `Visitas hoy: ${snap.size}`;
+    });
+
+    const visitasTotalesRef = ref(db, "visitas");
+    onValue(visitasTotalesRef, (snap) => {
+      let total = 0;
+      snap.forEach(dia => total += dia.size);
+      document.getElementById("visitasTotales").innerText = `Total de visitas: ${total}`;
+    });
+
+    const conexionesRef = ref(db, "conexiones");
+    onValue(conexionesRef, (snap) => {
+      document.getElementById("enLinea").innerText = `Personas en la página ahora: ${snap.size}`;
+    });
+
+    const radiovidentesRef = ref(db, "radiovidentes");
+    onValue(radiovidentesRef, (snap) => {
+      document.getElementById("radiovidentes").innerText = `Radiovidentes con player activo: ${snap.size}`;
+    });
+  }
+</script>
+</body>
+</html>
