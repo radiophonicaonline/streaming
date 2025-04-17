@@ -315,28 +315,6 @@ window.cerrarModal = () => {
   document.getElementById("modal").style.display = "none";
   cerrarRadiovidente();
 };
-
-// ---------------- ESTADÍSTICAS EN MODO ADMIN ---------------- //
-if (window.location.search.includes("admin=si")) {
-  document.getElementById("admin-tools").style.display = "block";
-
-  const visitasAdminRef = ref(db, "visitas");
-  onValue(visitasAdminRef, (snap) => {
-    let resumen = "📅 Visitas diarias:\n";
-    snap.forEach(dia => {
-      const fecha = dia.key;
-      const cantidad = dia.size;
-      resumen += `📌 ${fecha}: ${cantidad} visita(s)\n`;
-    });
-    const div = document.createElement("pre");
-    div.style.marginTop = "20px";
-    div.style.textAlign = "left";
-    div.style.background = "#1e1e1e";
-    div.style.padding = "10px";
-    div.style.borderRadius = "5px";
-    div.textContent = resumen;
-    document.querySelector("main").appendChild(div);
-  });
 }
 </script>
 </body>
