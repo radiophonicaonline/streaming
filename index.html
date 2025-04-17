@@ -130,11 +130,13 @@
   <button onclick="enviarChat()">Enviar mensaje</button>
   <div class="chat" id="chatbox"></div>
 
-  <div>
-    <h3>Activa la🔔 y te avisaremos cuando estemos en vivo</h3>
-    <button onclick="suscribirse()">🔔 Activar notificación</button>
-    <p id="alertaEnVivo" style="color: #00ffcc; font-weight: bold;"></p>
-  </div>
+<div>
+  <h3>📣 Síguenos y te avisaremos cuando estemos en vivo</h3>
+  <button onclick="window.open('https://whatsapp.com/channel/0029VbAMucgAO7RCFwSZxx10', '_blank')">💬 Unirse al canal de WhatsApp</button>
+  <br>
+  <button onclick="window.open('https://t.me/boost/radiophonicaonline', '_blank')">📢 Unirse al canal de Telegram</button>
+</div>
+
 
 <div class="social-bar">
   <button class="like-btn" id="btnLike">
@@ -313,26 +315,6 @@ window.cerrarModal = () => {
   document.getElementById("modal").style.display = "none";
   cerrarRadiovidente();
 };
-
-// ---------------- ALERTA EN VIVO ---------------- //
-const alertaRef = ref(db, "alertaEnVivo");
-window.suscribirse = () => {
-  localStorage.setItem("notificacionActiva", "true");
-  alert("✅ ¡Te avisaremos cuando estemos en vivo!");
-};
-
-window.activarAlerta = () => {
-  set(alertaRef, "¡🎙️ Estamos transmitiendo en vivo ahora mismo!");
-  setTimeout(() => set(alertaRef, ""), 10000);
-};
-
-if (localStorage.getItem("notificacionActiva") === "true") {
-  onValue(alertaRef, (snap) => {
-    const mensaje = snap.val();
-    const alertaDiv = document.getElementById("alertaEnVivo");
-    alertaDiv.textContent = mensaje;
-  });
-}
 
 // ---------------- ESTADÍSTICAS EN MODO ADMIN ---------------- //
 if (window.location.search.includes("admin=si")) {
