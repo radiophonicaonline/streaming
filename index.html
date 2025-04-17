@@ -202,31 +202,17 @@ function cerrarRadiovidente() {
 }
 
 // ---------------- CHAT ---------------- //
+const chatRef = ref(db, "chat");
 onValue(chatRef, (snap) => {
   const chatbox = document.getElementById("chatbox");
   chatbox.innerHTML = "";
   snap.forEach((msg) => {
     const datos = msg.val();
-    const msgId = msg.key;
     const p = document.createElement("p");
-    p.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
-
-    // Solo para admin: botón destacar
-    if (window.location.search.includes("admin=si")) {
-      const btn = document.createElement("button");
-      btn.textContent = "⭐";
-      btn.style.marginLeft = "10px";
-      btn.onclick = () => {
-        set(ref(db, "chatDestacado"), msgId);
-        alert("✅ Mensaje destacado.");
-      };
-      p.appendChild(btn);
-    }
-
+    p.textContent = `${datos.nombre}: ${datos.mensaje}`;
     chatbox.appendChild(p);
   });
 });
-
 
 window.enviarChat = () => {
   const nombre = document.getElementById("nombre").value.trim();
