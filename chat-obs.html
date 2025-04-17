@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat OBS - Radiophonica</title>
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+      overflow: hidden;
+    }
+
+    #chatbox {
+      padding: 10px;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .mensaje {
+      margin: 8px 0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .mensaje:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .destacado {
+      background-color: rgba(0, 123, 255, 0.8);
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="chatbox"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const chatRef = ref(db, "chat");
+    const chatbox = document.getElementById("chatbox");
+
+    onValue(chatRef, (snap) => {
+      chatbox.innerHTML = "";
+      snap.forEach((msg) => {
+        const datos = msg.val();
+        const p = document.createElement("div");
+        p.className = "mensaje";
+        p.textContent = `${datos.nombre}: ${datos.mensaje}`;
+
+        p.onclick = () => {
+          // Remover anteriores destacados
+          document.querySelectorAll(".mensaje").forEach(el => el.classList.remove("destacado"));
+          // Marcar este
+          p.classList.add("destacado");
+        };
+
+        chatbox.appendChild(p);
+      });
+
+      // Auto scroll al final
+      chatbox.scrollTop = chatbox.scrollHeight;
+    });
+  </script>
+</body>
+</html>
