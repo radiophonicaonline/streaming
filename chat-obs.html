@@ -60,27 +60,42 @@
     const chatRef = ref(db, "chat");
     const chatbox = document.getElementById("chatbox");
 
-    onValue(chatRef, (snap) => {
-      chatbox.innerHTML = "";
-      snap.forEach((msg) => {
-        const datos = msg.val();
-        const p = document.createElement("div");
-        p.className = "mensaje";
-        p.textContent = `${datos.nombre}: ${datos.mensaje}`;
+   let idDestacadoActual = null;
 
-        p.onclick = () => {
-          // Remover anteriores destacados
-          document.querySelectorAll(".mensaje").forEach(el => el.classList.remove("destacado"));
-          // Marcar este
-          p.classList.add("destacado");
-        };
+// Escuchar el mensaje destacado
+const destacadoRef = ref(db, "chatDestacado");
+onValue(destacadoRef, (snap) => {
+  idDestacadoActual = snap.exists() ? snap.val() : null;
+  renderChat(); // vuelve a dibujar con el nuevo destacado
+});
 
-        chatbox.appendChild(p);
-      });
+function renderChat() {
+  onValue(chatRef, (snap) => {
+    chatbox.innerHTML = "";
+    snap.forEach((msg) => {
+      const datos = msg.val();
+      const msgId = msg.key;
+      const div = document.createElement("div");
+      div.className = "mensaje";
+      div.textContent = `${datos.nombre}: ${datos.mensaje}`;
 
-      // Auto scroll al final
-      chatbox.scrollTop = chatbox.scrollHeight;
+      if (msgId === idDestacadoActual) {
+        div.classList.add("destacado");
+      }
+
+      // También puedes seguir haciendo clic para destacar desde OBS si quieres:
+      div.onclick = () => {
+        document.querySelectorAll(".mensaje").forEach(el => el.classList.remove("destacado"));
+        div.classList.add("destacado");
+      };
+
+      chatbox.appendChild(div);
     });
+
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }, { onlyOnce: true });
+}
+
   </script>
 </body>
 </html>
