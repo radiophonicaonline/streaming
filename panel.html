@@ -31,6 +31,8 @@
       margin-top: 30px;
       border-top: 1px solid #333;
       padding-top: 20px;
+      max-height: 500px;
+      overflow-y: auto;
     }
     .mensaje {
       margin-bottom: 10px;
@@ -149,44 +151,46 @@
     });
 
     function renderChat() {
-  onValue(chatRef, (snap) => {
-    const chatbox = document.getElementById("chatbox");
-    chatbox.innerHTML = "";
-    snap.forEach((msg) => {
-      const datos = msg.val();
-      const msgId = msg.key;
-      const div = document.createElement("div");
-      div.className = "mensaje";
-      if (msgId === idDestacado) div.classList.add("destacado");
-      div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
+      onValue(chatRef, (snap) => {
+        const chatbox = document.getElementById("chatbox");
+        chatbox.innerHTML = "";
+        snap.forEach((msg) => {
+          const datos = msg.val();
+          const msgId = msg.key;
+          const div = document.createElement("div");
+          div.className = "mensaje";
+          if (msgId === idDestacado) div.classList.add("destacado");
+          div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
 
-      const btnDestacar.onclick = () => {
-  get(destacadoRef).then((actual) => {
-    if (actual.exists() && actual.val() === msgId) {
-      set(destacadoRef, null); // quitar destacado si ya es este
-    } else {
-      set(destacadoRef, msgId); // destacar nuevo mensaje
+          const btnDestacar = document.createElement("button");
+          btnDestacar.textContent = "⭐";
+          btnDestacar.onclick = () => {
+            get(destacadoRef).then((actual) => {
+              if (actual.exists() && actual.val() === msgId) {
+                set(destacadoRef, null); // quitar si ya es el mismo
+              } else {
+                set(destacadoRef, msgId);
+              }
+            });
+          };
+
+          const btnBorrar = document.createElement("button");
+          btnBorrar.textContent = "🗑️";
+          btnBorrar.onclick = () => {
+            if (confirm("¿Eliminar este mensaje?")) {
+              remove(ref(db, `chat/${msgId}`));
+            }
+          };
+
+          div.appendChild(btnDestacar);
+          div.appendChild(btnBorrar);
+          chatbox.appendChild(div);
+        });
+
+        // Auto scroll al final
+        chatbox.scrollTop = chatbox.scrollHeight;
+      });
     }
-  });
-};
-
-
-
-      const btnBorrar = document.createElement("button");
-      btnBorrar.textContent = "🗑️";
-      btnBorrar.onclick = () => {
-        if (confirm("¿Eliminar este mensaje?")) {
-          remove(ref(db, `chat/${msgId}`));
-        }
-      };
-
-      div.appendChild(btnDestacar);
-      div.appendChild(btnBorrar);
-      chatbox.appendChild(div);
-    });
-  });
-}
-
 
     window.borrarChat = () => {
       if (confirm("¿Estás seguro de borrar todo el chat?")) {
