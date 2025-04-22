@@ -8,35 +8,180 @@
     body {
       background-color: #121212;
       color: #e0e0e0;
-      font-family: 'Arial', sans-serif;
-      padding: 30px;
-      text-align: left;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
     }
-    h1 { font-size: 24px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-    .dato { font-size: 20px; margin: 15px 0; }
-    .negado { color: red; font-weight: bold; text-align: center; margin-top: 100px; font-size: 24px; }
+    /* Estilos para la sección de estadísticas */
+    .stats {
+      margin-bottom: 20px;
+    }
+    .stats pre {
+      text-align: left;
+      display: inline-block;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    /* Estilos para el chat */
+    #chatbox {
+      text-align: left;
+      max-height: 50vh;
+      overflow-y: auto;
+      margin: 0 auto;
+      width: 80%;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .mensaje {
+      margin: 8px 0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: background 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mensaje:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .destacado {
+      background-color: rgba(0, 123, 255, 0.8);
+      font-weight: bold;
+      /* Puedes agregar una animación sutil si lo deseas */
+      animation: glow 1s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+      from { box-shadow: 0 0 5px rgba(0,123,255,0.5); }
+      to { box-shadow: 0 0 15px rgba(0,123,255,1); }
+    }
+    .chat-btn {
+      margin-left: 5px;
+      background: #2a2a2a;
+      border: none;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .chat-btn:hover {
+      background: #3a3a3a;
+    }
+    /* Barra social para likes y compartir */
+    .social-bar {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .social-bar button {
+      background: #1e1e1e;
+      border: 1px solid #555;
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      position: relative;
+    }
+    .social-bar button:hover {
+      background: #2a2a2a;
+    }
+    .social-bar button.share-btn:hover::after {
+      content: "Compartir";
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .control-bar {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .control-bar button {
+      background: #ff5252;
+      border: none;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .control-bar button:hover {
+      background: #ff7979;
+    }
+    /* Mensaje de acceso denegado */
+    .negado {
+      color: red;
+      font-weight: bold;
+      margin-top: 100px;
+      font-size: 24px;
+    }
   </style>
 </head>
 <body>
 
-<div id="contenido" style="display: none;">
-  <h1>📊 Panel de estadísticas</h1>
-  <div class="dato" id="visitasHoy">Visitas hoy: cargando...</div>
-  <div class="dato" id="visitasTotales">Total de visitas: cargando...</div>
-  <div class="dato" id="enLinea">Personas en la página ahora: cargando...</div>
-  <div class="dato" id="radiovidentes">Radiovidentes con player activo: cargando...</div>
+<div id="accesoDenegado" class="negado" style="display: none;">
+  ❌ Acceso denegado. Parámetro admin no detectado.
 </div>
 
-<div id="accesoDenegado" class="negado" style="display: none;">
-  ❌ Acceso denegado. Parámetro de admin no detectado.
+<div id="contenido" style="display: none;">
+
+  <h1>📊 Panel de Estadísticas y Chat</h1>
+
+  <!-- Estadísticas -->
+  <div class="stats">
+    <pre id="statsPre">
+Visitas hoy: Cargando...
+Total de visitas: Cargando...
+Personas en línea: Cargando...
+Radiovidentes: Cargando...
+Likes totales: Cargando...
+Compartidos: Cargando...
+    </pre>
+    <!-- Botón para limpiar visitas, si lo deseas -->
+    <button onclick="limpiarVisitas()" style="background: orange;">🧹 Limpiar visitas</button>
+  </div>
+
+  <!-- Chat -->
+  <div id="chatbox"></div>
+
+  <!-- Control de chat: Borrar chat completo -->
+  <div class="control-bar">
+    <button onclick="borrarChat()">Borrar chat completo</button>
+  </div>
+
+  <!-- Barra social: Like y Compartir -->
+  <div class="social-bar">
+    <button class="like-btn" id="btnLike">
+      👍 <span id="likeCount">0</span>
+    </button>
+    <button class="share-btn" id="btnShare">
+      ➡️ <span id="shareCount">0</span>
+    </button>
+  </div>
+
 </div>
 
 <script type="module">
+  // Importar Firebase
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
   import {
-    getDatabase, ref, onValue
+    getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child
   } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
+  // Comprobar acceso admin: solo se muestra el contenido si ?admin=si está presente
   const urlParams = new URLSearchParams(window.location.search);
   const esAdmin = urlParams.get("admin") === "si";
 
@@ -44,43 +189,221 @@
     document.getElementById("accesoDenegado").style.display = "block";
   } else {
     document.getElementById("contenido").style.display = "block";
+  }
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-      projectId: "contador-de-personas-5f8aa",
-      storageBucket: "contador-de-personas-5f8aa.appspot.com",
-      messagingSenderId: "1063230344919",
-      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-    };
+  // Configuración de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+    authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+    projectId: "contador-de-personas-5f8aa",
+    storageBucket: "contador-de-personas-5f8aa.appspot.com",
+    messagingSenderId: "1063230344919",
+    appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-    const hoy = new Date().toISOString().split("T")[0];
+  // ---------------- ESTADÍSTICAS ---------------- //
+  const hoy = new Date().toISOString().split("T")[0];
+  const statsPre = document.getElementById("statsPre");
 
-    const visitasHoyRef = ref(db, "visitas/" + hoy);
-    onValue(visitasHoyRef, (snap) => {
-      document.getElementById("visitasHoy").innerText = `Visitas hoy: ${snap.size}`;
-    });
+  // Visitas de hoy
+  const visitasHoyRef = ref(db, "visitas/" + hoy);
+  onValue(visitasHoyRef, (snap) => {
+    actualizarStats();
+  });
 
-    const visitasTotalesRef = ref(db, "visitas");
-    onValue(visitasTotalesRef, (snap) => {
-      let total = 0;
-      snap.forEach(dia => total += dia.size);
-      document.getElementById("visitasTotales").innerText = `Total de visitas: ${total}`;
-    });
+  // Total visitas
+  const visitasTotalesRef = ref(db, "visitas");
+  onValue(visitasTotalesRef, (snap) => {
+    actualizarStats();
+  });
 
-    const conexionesRef = ref(db, "conexiones");
-    onValue(conexionesRef, (snap) => {
-      document.getElementById("enLinea").innerText = `Personas en la página ahora: ${snap.size}`;
-    });
+  // Conexiones y Radiovidentes (se asumen que ya se están contabilizando en index, pero podemos leerlos aquí)
+  const conexionesRef = ref(db, "conexiones");
+  onValue(conexionesRef, (snap) => {
+    actualizarStats();
+  });
+  const radiovidentesRef = ref(db, "radiovidentes");
+  onValue(radiovidentesRef, (snap) => {
+    actualizarStats();
+  });
 
-    const radiovidentesRef = ref(db, "radiovidentes");
-    onValue(radiovidentesRef, (snap) => {
-      document.getElementById("radiovidentes").innerText = `Radiovidentes con player activo: ${snap.size}`;
+  // Likes
+  const likesRef = ref(db, "likes/total");
+  onValue(likesRef, (snap) => {
+    actualizarStats();
+    document.getElementById("likeCount").innerText = snap.exists() ? snap.val() : 0;
+  });
+
+  // Shares (compartidos)
+  const sharesRef = ref(db, "shares/total");
+  onValue(sharesRef, (snap) => {
+    actualizarStats();
+    document.getElementById("shareCount").innerText = snap.exists() ? snap.val() : 0;
+  });
+
+  function actualizarStats() {
+    // Obtener visitas de hoy
+    get(visitasHoyRef).then(snapHoy => {
+      const visitasHoy = snapHoy.exists() ? snapHoy.size : 0;
+      // Calcular total de visitas
+      get(visitasTotalesRef).then(snapTotal => {
+        let total = 0;
+        snapTotal.forEach(dia => total += dia.size);
+        // Conexiones y radiovidentes
+        get(conexionesRef).then(snapConex => {
+          const enLinea = snapConex.size;
+          get(radiovidentesRef).then(snapRadio => {
+            const radiovidentes = snapRadio.size;
+            // Likes y Shares ya se actualizan aparte, pero se leen en los spans
+            statsPre.textContent = 
+`Visitas hoy: ${visitasHoy}
+Total de visitas: ${total}
+Personas en línea: ${enLinea}
+Radiovidentes: ${radiovidentes}
+Likes totales: ${document.getElementById("likeCount").innerText}
+Compartidos: ${document.getElementById("shareCount").innerText}`;
+          });
+        });
+      });
     });
   }
+
+  // Botón para limpiar visitas (borrar estadísticas de visitas)
+  window.limpiarVisitas = () => {
+    if (confirm("¿Seguro que quieres borrar todas las visitas? Esto no se puede deshacer.")) {
+      set(ref(db, "visitas"), {});
+      alert("✅ Historial de visitas limpiado.");
+    }
+  };
+
+  // ---------------- CHAT ---------------- //
+  const chatRef = ref(db, "chat");
+  const chatbox = document.getElementById("chatbox");
+
+  let idDestacadoActual = null;
+  // Escuchar el mensaje destacado (guardado en /chatDestacado)
+  const destacadoRef = ref(db, "chatDestacado");
+  onValue(destacadoRef, (snap) => {
+    idDestacadoActual = snap.exists() ? snap.val() : null;
+    renderChat();
+  });
+
+  // Función para renderizar chat
+  function renderChat() {
+    onValue(chatRef, (snap) => {
+      chatbox.innerHTML = "";
+      snap.forEach((msg) => {
+        const datos = msg.val();
+        const msgId = msg.key;
+        // Contenedor de cada mensaje
+        const div = document.createElement("div");
+        div.className = "mensaje";
+        div.style.justifyContent = "space-between";
+        
+        const spanTexto = document.createElement("span");
+        spanTexto.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
+        div.appendChild(spanTexto);
+
+        // Si es el mensaje destacado, agregar la clase
+        if (msgId === idDestacadoActual) {
+          div.classList.add("destacado");
+        }
+
+        // Botones para admin: Destacar y Borrar individualmente
+        if (esAdmin) {
+          const btnContainer = document.createElement("div");
+
+          // Botón Destacar
+          const btnDestacar = document.createElement("button");
+          btnDestacar.className = "chat-btn";
+          btnDestacar.textContent = "⭐";
+          btnDestacar.onclick = () => {
+            set(ref(db, "chatDestacado"), msgId);
+            alert("✅ Mensaje destacado.");
+          };
+          btnContainer.appendChild(btnDestacar);
+
+          // Botón Borrar mensaje individual
+          const btnBorrar = document.createElement("button");
+          btnBorrar.className = "chat-btn";
+          btnBorrar.textContent = "🗑️";
+          btnBorrar.onclick = () => {
+            if (confirm("¿Borrar este mensaje?")) {
+              remove(ref(db, "chat/" + msgId));
+            }
+          };
+          btnContainer.appendChild(btnBorrar);
+          
+          div.appendChild(btnContainer);
+        }
+
+        // Al hacer click en el mensaje se puede destacarlo localmente (opcional)
+        div.onclick = () => {
+          document.querySelectorAll(".mensaje").forEach(el => el.classList.remove("destacado"));
+          div.classList.add("destacado");
+        };
+
+        chatbox.appendChild(div);
+      });
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }, { onlyOnce: true });
+  }
+
+  // Botón para borrar todo el chat
+  window.borrarChat = () => {
+    if (confirm("¿Borrar todos los mensajes del chat?")) {
+      set(chatRef, {});
+    }
+  };
+
+  // ---------------- LIKES ---------------- //
+  const userId = localStorage.getItem("usuarioLike") || crypto.randomUUID();
+  localStorage.setItem("usuarioLike", userId);
+  const likeBtn = document.getElementById("btnLike");
+
+  // Verificar si ya dio like
+  get(child(ref(db), "likes/usuarios/" + userId)).then((snap) => {
+    if (snap.exists()) {
+      likeBtn.disabled = true;
+      likeBtn.style.opacity = 0.6;
+    }
+  });
+
+  likeBtn.addEventListener("click", async () => {
+    const usuarioYaLikeo = await get(child(ref(db), "likes/usuarios/" + userId));
+    if (!usuarioYaLikeo.exists()) {
+      const totalSnap = await get(likesRef);
+      const nuevoTotal = totalSnap.exists() ? totalSnap.val() + 1 : 1;
+      set(likesRef, nuevoTotal);
+      set(ref(db, "likes/usuarios/" + userId), true);
+      likeBtn.disabled = true;
+      likeBtn.style.opacity = 0.6;
+    } else {
+      alert("Ya diste like desde este dispositivo 👍");
+    }
+  });
+
+  // ---------------- COMPARTIR ---------------- //
+  const shareBtn = document.getElementById("btnShare");
+  shareBtn.addEventListener("click", async () => {
+    // Incrementar contador de compartidos
+    const shareSnap = await get(sharesRef);
+    const nuevoCompartido = shareSnap.exists() ? shareSnap.val() + 1 : 1;
+    set(sharesRef, nuevoCompartido);
+    // Intentar usar el API nativo si está disponible
+    if (navigator.share) {
+      navigator.share({
+        title: 'Radiophonica Online',
+        text: '¡Escucha Radiophonica Online en vivo!',
+        url: window.location.href
+      });
+    } else {
+      alert("Tu navegador no soporta el botón de compartir.");
+    }
+  });
 </script>
 </body>
 </html>
