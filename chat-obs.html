@@ -3,48 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat OBS - Radiophonica</title>
+  <title>Mensaje Destacado</title>
   <style>
     body {
       margin: 0;
       background: transparent;
       color: #ffffff;
       font-family: Arial, sans-serif;
-      font-size: 18px;
-      overflow: hidden;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
     }
-
-    #chatbox {
-      padding: 10px;
-      max-height: 100vh;
-      overflow-y: auto;
-    }
-
-    .mensaje {
-      margin: 8px 0;
-      padding: 6px 10px;
-      border-radius: 8px;
-      background-color: rgba(255, 255, 255, 0.1);
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-
-    .mensaje:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .destacado {
-      background-color: rgba(0, 123, 255, 0.8);
+    #mensajeDestacado {
+      padding: 20px;
+      border-radius: 12px;
+      background-color: rgba(0, 123, 255, 0.75);
       font-weight: bold;
+      max-width: 80%;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <div id="chatbox"></div>
+  <div id="mensajeDestacado">Esperando mensaje destacado...</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -57,29 +49,23 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const chatRef = ref(db, "chat");
-    const chatbox = document.getElementById("chatbox");
+    const mensajeDiv = document.getElementById("mensajeDestacado");
 
-    onValue(chatRef, (snap) => {
-      chatbox.innerHTML = "";
-      snap.forEach((msg) => {
-        const datos = msg.val();
-        const p = document.createElement("div");
-        p.className = "mensaje";
-        p.textContent = `${datos.nombre}: ${datos.mensaje}`;
+    const destacadoRef = ref(db, "chatDestacado");
+    onValue(destacadoRef, async (snap) => {
+      if (!snap.exists()) {
+        mensajeDiv.textContent = "Esperando mensaje destacado...";
+        return;
+      }
 
-        p.onclick = () => {
-          // Remover anteriores destacados
-          document.querySelectorAll(".mensaje").forEach(el => el.classList.remove("destacado"));
-          // Marcar este
-          p.classList.add("destacado");
-        };
-
-        chatbox.appendChild(p);
-      });
-
-      // Auto scroll al final
-      chatbox.scrollTop = chatbox.scrollHeight;
+      const msgId = snap.val();
+      const msgSnap = await get(ref(db, `chat/${msgId}`));
+      if (msgSnap.exists()) {
+        const datos = msgSnap.val();
+        mensajeDiv.textContent = `${datos.nombre}: ${datos.mensaje}`;
+      } else {
+        mensajeDiv.textContent = "Mensaje destacado no encontrado.";
+      }
     });
   </script>
 </body>
