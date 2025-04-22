@@ -160,14 +160,16 @@
       if (msgId === idDestacado) div.classList.add("destacado");
       div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
 
-      const btnDestacar.onclick = async () => {
-  const actual = await get(destacadoRef);
-  if (actual.exists() && actual.val() === msgId) {
-    set(destacadoRef, null); // desactivar si ya está destacado
-  } else {
-    set(destacadoRef, msgId); // destacar nuevo mensaje
-  }
+      const btnDestacar.onclick = () => {
+  get(destacadoRef).then((actual) => {
+    if (actual.exists() && actual.val() === msgId) {
+      set(destacadoRef, null); // quitar destacado si ya es este
+    } else {
+      set(destacadoRef, msgId); // destacar nuevo mensaje
+    }
+  });
 };
+
 
 
       const btnBorrar = document.createElement("button");
