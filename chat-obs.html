@@ -53,10 +53,11 @@
 
     const destacadoRef = ref(db, "chatDestacado");
     onValue(destacadoRef, async (snap) => {
-      if (!snap.exists()) {
-        mensajeDiv.textContent = "Esperando mensaje destacado...";
-        return;
-      }
+     if (!snap.exists() || snap.val() === null) {
+  mensajeDiv.innerHTML = "";
+  return;
+}
+
 
       const msgId = snap.val();
       const msgSnap = await get(ref(db, `chat/${msgId}`));
