@@ -158,8 +158,8 @@
           const div = document.createElement("div");
           div.className = "mensaje";
           if (msgId === idDestacado) div.classList.add("destacado");
-          div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje>}`;
-
+          div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
+          
           const btnDestacar = document.createElement("button");
           btnDestacar.textContent = "⭐";
           btnDestacar.onclick = () => {
