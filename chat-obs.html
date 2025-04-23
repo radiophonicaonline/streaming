@@ -76,7 +76,7 @@
       const msgSnap = await get(ref(db, `chat/${msgId}`));
       if (msgSnap.exists()) {
         const datos = msgSnap.val();
-        mensajeDiv.textContent = `${datos.nombre}: ${datos.mensaje}`;
+        mensajeDiv.innerHTML = `<div class="pin-icon">📌</div><strong>${datos.nombre}:</strong> ${datos.mensaje}`;
       } else {
         mensajeDiv.textContent = "";
       }
