@@ -5,29 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mensaje Destacado</title>
   <style>
-    body {
-  margin: 0;
-  background: transparent;
-  color: #ffffff;
-  font-family: Arial, sans-serif;
-  font-size: 24px;
-  padding: 20px;
-  text-align: left;
-}
+  body {
+    margin: 0;
+    background: transparent;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    text-align: left;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    padding: 20px;
+  }
 
-    #mensajeDestacado {
-      padding: 20px;
-      border-radius: 12px;
-      background-color: rgba(0, 123, 255, 0.75);
-      font-weight: bold;
-      max-width: 80%;
-      animation: fadeIn 0.5s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  #mensajeDestacado {
+    padding: 16px 20px;
+    border-radius: 12px;
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo negro semitransparente */
+    font-weight: bold;
+    max-width: 90vw;
+    animation: fadeIn 0.5s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
 </head>
 <body>
   <div id="mensajeDestacado"></div>
