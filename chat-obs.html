@@ -18,15 +18,19 @@
     padding: 20px;
   }
 
-  #mensajeDestacado {
-    padding: 16px 20px;
-    border-radius: 12px;
-    background-color: rgba(0, 0, 0, 0.7); /* Fondo negro semitransparente */
-    font-weight: bold;
-    max-width: 90vw;
-    animation: fadeIn 0.5s ease;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-  }
+ #mensajeDestacado {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
+  font-weight: bold;
+  max-width: 90vw;
+  animation: fadeIn 0.5s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.3;
+  font-size: clamp(16px, 2vw, 24px); /* ← aquí se autoajusta el tamaño */
+}
 
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
