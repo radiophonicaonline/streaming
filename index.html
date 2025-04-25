@@ -109,85 +109,26 @@
 </header>
 
 <main>
-  <!-- 🧑‍💬 Chat en vivo -->
-<h3>🧑‍💬 Chat en vivo</h3>
-<div id="admin-tools" style="display:none;">
-  <button onclick="borrarChat()" style="background: red;">🗑️ Borrar chat</button>
-  <button onclick="activarAlerta()">🚨 Avisar que estamos en vivo</button>
-</div>
-
-<div class="chat-container">
-  <div class="chat-form">
-    <input type="text" id="nombre" placeholder="Tu nombre" />
-    <input type="color" id="colorNombre" value="#00bcd4" title="Elige tu color" />
-    <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea>
-    <button onclick="enviarChat()">Enviar mensaje</button>
+  <h3>🎙️Livestream</h3>
+  <button onclick="abrirModal()">Abrir player</button>
+  <div class="modal" id="modal">
+    <span class="close-btn" onclick="cerrarModal()">×</span>
+    <iframe class="modal-content" id="iframePlayer" src="" allowfullscreen></iframe>
   </div>
-  <div id="chatbox" class="chatbox"></div>
-</div>
 
-<style>
-.chat-container {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 15px;
-  max-width: 600px;
-  margin: 20px auto;
-  color: white;
-  font-family: Arial, sans-serif;
-}
-.chat-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-.chat-form input[type="text"],
-.chat-form textarea {
-  background: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 6px;
-  padding: 8px;
-}
-.chat-form textarea {
-  resize: vertical;
-  height: 60px;
-}
-.chat-form button {
-  background: #00bcd4;
-  border: none;
-  padding: 10px;
-  border-radius: 6px;
-  color: #fff;
-  font-weight: bold;
-  cursor: pointer;
-}
-.chat-form button:hover {
-  background: #019ab5;
-}
-.chatbox {
-  max-height: 300px;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-.mensaje {
-  background: #2a2a2a;
-  padding: 8px 12px;
-  border-radius: 8px;
-  margin-bottom: 6px;
-  animation: fadeIn 0.3s ease;
-}
-.mensaje strong {
-  font-weight: bold;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>
+  <h3>Pídenos tu tema al WhatsApp</h3>
+  <textarea id="comentario" placeholder="Escribe tu comentario..."></textarea><br>
+  <button onclick="enviarComentario()">Enviar comentario</button>
 
+  <h3>🧑‍💬 Chat en vivo</h3>
+  <div id="admin-tools" style="display:none;">
+    <button onclick="borrarChat()" style="background: red;">🗑️ Borrar chat</button>
+    <button onclick="activarAlerta()">🚨 Avisar que estamos en vivo</button>
+  </div>
+  <input type="text" id="nombre" placeholder="Tu nombre"/><br>
+  <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
+  <button onclick="enviarChat()">Enviar mensaje</button>
+  <div class="chat" id="chatbox"></div>
 
 <div>
   <h3>📣 Síguenos y te avisaremos cuando estemos en vivo</h3>
@@ -261,27 +202,24 @@ function cerrarRadiovidente() {
 }
 
 // ---------------- CHAT ---------------- //
+const chatRef = ref(db, "chat");
 onValue(chatRef, (snap) => {
   const chatbox = document.getElementById("chatbox");
   chatbox.innerHTML = "";
   snap.forEach((msg) => {
     const datos = msg.val();
-    const p = document.createElement("div");
-    p.className = "mensaje";
-    const color = datos.color || "#ccc";
-    p.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${datos.mensaje}`;
+    const p = document.createElement("p");
+    p.textContent = `${datos.nombre}: ${datos.mensaje}`;
     chatbox.appendChild(p);
   });
-  chatbox.scrollTop = chatbox.scrollHeight;
 });
 
 window.enviarChat = () => {
   const nombre = document.getElementById("nombre").value.trim();
   const mensaje = document.getElementById("mensaje").value.trim();
-  const color = document.getElementById("colorNombre").value;
   if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje.");
   const nuevo = push(chatRef);
-  set(nuevo, { nombre, mensaje, color });
+  set(nuevo, { nombre, mensaje });
   document.getElementById("mensaje").value = "";
 };
 
