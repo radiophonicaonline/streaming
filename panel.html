@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,67 +8,60 @@
     body {
       background-color: #121212;
       color: #e0e0e0;
-      font-family: Arial, sans-serif;
+      font-family: 'Arial', sans-serif;
       padding: 30px;
     }
-    h1, h2 {
-      font-size: 20px;
+    h1 {
+      font-size: 24px;
       border-bottom: 1px solid #333;
-      padding-bottom: 6px;
+      padding-bottom: 10px;
     }
-    .dato, .mensaje {
-      font-size: 16px;
+    .dato {
+      font-size: 18px;
       margin: 10px 0;
     }
+    .negado {
+      color: red;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 100px;
+      font-size: 24px;
+    }
     .chat-box {
-      margin-top: 20px;
+      margin-top: 30px;
       border-top: 1px solid #333;
-      padding-top: 10px;
-      max-height: 400px;
+      padding-top: 20px;
+      max-height: 500px;
       overflow-y: auto;
     }
     .mensaje {
+      margin-bottom: 10px;
+      padding: 10px;
       background: #1e1e1e;
-      padding: 8px 12px;
       border-radius: 6px;
-      margin-bottom: 8px;
     }
-    .mensaje strong {
+    .mensaje.destacado {
+      background: #0056b3;
       font-weight: bold;
     }
-    input, textarea, select, button {
-      background: #1e1e1e;
-      color: white;
-      border: 1px solid #444;
-      border-radius: 5px;
-      padding: 8px;
-      margin: 5px 0;
-      font-size: 14px;
-    }
     button {
+      margin-left: 10px;
+      padding: 4px 8px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
     }
     button:hover {
-      background: #2a2a2a;
-    }
-    iframe {
-      width: 100%;
-      height: 100px;
-      border: 1px solid #333;
-      border-radius: 6px;
-      margin-bottom: 20px;
+      background-color: #555;
     }
   </style>
 </head>
 <body>
 
 <div id="contenido" style="display: none;">
-  <h1>🎛️ Panel de administración</h1>
-
-  <h2>🎧 Reproductor en vivo</h2>
-  <iframe id="playerEmbed" src="" allow="autoplay"></iframe>
-
-  <h2>📊 Estadísticas</h2>
+  <h1>📊 Panel de estadísticas</h1>
   <div class="dato" id="visitasHoy">Visitas hoy: cargando...</div>
   <div class="dato" id="visitasTotales">Total de visitas: cargando...</div>
   <div class="dato" id="enLinea">Personas en la página ahora: cargando...</div>
@@ -77,24 +69,28 @@
   <div class="dato" id="likeCount">👍 Likes totales: cargando...</div>
   <div class="dato" id="shareCount">📤 Compartidos: cargando...</div>
 
-  <div class="chat-box" id="chatbox"></div>
-
-  <h2>✍️ Enviar mensaje como admin</h2>
-  <input type="text" id="adminNombre" value="Rodrigo" />
+  <div class="chat-box">
+    <h2>💬 Chat en vivo</h2>
+    <button onclick="borrarChat()" style="background: red;">🗑️ Borrar todo el chat</button>
+    <div id="chatbox"></div>
+  </div>
+</div>
+<div style="margin-top: 30px;">
+  <h2>🎙️ Enviar mensaje como admin</h2>
+  <input type="text" id="adminNombre" value="Rodrigo" placeholder="Tu nombre" />
   <input type="color" id="adminColor" value="#ffcc00" />
-  <textarea id="adminMensaje" placeholder="Mensaje del moderador"></textarea><br>
-  <button onclick="enviarAdmin()">Enviar mensaje</button>
-  <button onclick="borrarChat()" style="background: red; margin-left: 10px;">🗑️ Borrar chat</button>
+  <textarea id="adminMensaje" placeholder="Mensaje del moderador"></textarea>
+  <button onclick="enviarAdmin()">Enviar</button>
 </div>
 
-<div id="accesoDenegado" style="display: none; color: red; font-size: 18px; text-align:center;">
-  ❌ Acceso denegado. Agrega <code>?admin=si</code> a la URL.
+<div id="accesoDenegado" class="negado" style="display: none;">
+  ❌ Acceso denegado. Parámetro de admin no detectado.
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
   import {
-    getDatabase, ref, onValue, set, remove, push, get
+    getDatabase, ref, onValue, set, remove, get
   } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
   const params = new URLSearchParams(window.location.search);
@@ -126,14 +122,7 @@
     const likesRef = ref(db, "likes/total");
     const sharesRef = ref(db, "compartidos");
     const chatRef = ref(db, "chat");
-    const urlRef = ref(db, "urlReproductor");
-
-    const player = document.getElementById("playerEmbed");
-    get(urlRef).then((snap) => {
-      if (snap.exists()) {
-        player.src = snap.val();
-      }
-    });
+    const destacadoRef = ref(db, "chatDestacado");
 
     onValue(visitasHoyRef, (snap) => {
       document.getElementById("visitasHoy").innerText = `Visitas hoy: ${snap.size}`;
@@ -161,37 +150,71 @@
       document.getElementById("shareCount").innerText = `📤 Compartidos: ${snap.exists() ? snap.val() : 0}`;
     });
 
-    onValue(chatRef, (snap) => {
-      const chatbox = document.getElementById("chatbox");
-      chatbox.innerHTML = "";
-      snap.forEach((msg) => {
-        const datos = msg.val();
-        const div = document.createElement("div");
-        div.className = "mensaje";
-        const color = datos.color || "#ccc";
-        div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${datos.mensaje}`;
-        chatbox.appendChild(div);
-      });
-      chatbox.scrollTop = chatbox.scrollHeight;
+    let idDestacado = null;
+
+    onValue(destacadoRef, (snap) => {
+      idDestacado = snap.exists() ? snap.val() : null;
+      renderChat();
     });
 
     window.enviarAdmin = () => {
-      const nombre = document.getElementById("adminNombre").value.trim();
-      const mensaje = document.getElementById("adminMensaje").value.trim();
-      const color = document.getElementById("adminColor").value;
-      if (!nombre || !mensaje) return alert("Completa el mensaje.");
-      const nuevo = push(chatRef);
-      set(nuevo, { nombre, mensaje, color });
-      document.getElementById("adminMensaje").value = "";
-    };
+  const nombre = document.getElementById("adminNombre").value.trim();
+  const mensaje = document.getElementById("adminMensaje").value.trim();
+  const color = document.getElementById("adminColor").value;
+  if (!nombre || !mensaje) return alert("Completa tu mensaje.");
+  const nuevo = push(ref(db, "chat"));
+  set(nuevo, { nombre, mensaje, color });
+  document.getElementById("adminMensaje").value = "";
+};
+
+    function renderChat() {
+      onValue(chatRef, (snap) => {
+        const chatbox = document.getElementById("chatbox");
+        chatbox.innerHTML = "";
+        snap.forEach((msg) => {
+          const datos = msg.val();
+          const msgId = msg.key;
+          const div = document.createElement("div");
+          div.className = "mensaje";
+          if (msgId === idDestacado) div.classList.add("destacado");
+          div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
+
+          const btnDestacar = document.createElement("button");
+          btnDestacar.textContent = "⭐";
+          btnDestacar.onclick = () => {
+            get(destacadoRef).then((actual) => {
+              if (actual.exists() && actual.val() === msgId) {
+                set(destacadoRef, null); // quitar si ya es el mismo
+              } else {
+                set(destacadoRef, msgId);
+              }
+            });
+          };
+
+          const btnBorrar = document.createElement("button");
+          btnBorrar.textContent = "🗑️";
+          btnBorrar.onclick = () => {
+            if (confirm("¿Eliminar este mensaje?")) {
+              remove(ref(db, `chat/${msgId}`));
+            }
+          };
+
+          div.appendChild(btnDestacar);
+          div.appendChild(btnBorrar);
+          chatbox.appendChild(div);
+        });
+
+        // Auto scroll al final
+        chatbox.scrollTop = chatbox.scrollHeight;
+      });
+    }
 
     window.borrarChat = () => {
-      if (confirm("¿Borrar todo el chat?")) {
+      if (confirm("¿Estás seguro de borrar todo el chat?")) {
         set(chatRef, {});
       }
     };
   }
 </script>
-
 </body>
 </html>
