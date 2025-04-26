@@ -178,12 +178,16 @@
 
   <h3>🧑‍💬 Chat en vivo</h3>
   <div class="chat-container">
-    <div class="chat-form">
-      <input type="text" id="nombre" placeholder="Tu nombre" />
-      <input type="color" id="colorNombre" value="#00bcd4" title="Elige tu color" />
-      <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea>
-      <button onclick="enviarChat()">Enviar mensaje</button>
-    </div>
+   <div class="chat-form">
+  <input type="text" id="nombre" placeholder="Tu nombre" />
+
+  <label for="colorNombre" style="margin-top:10px; margin-bottom:5px; font-size:14px;">🎨 Dale color a tu nombre:</label>
+  <input type="color" id="colorNombre" value="#00bcd4" title="Dale color a tu nombre" />
+
+  <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea>
+  <button onclick="enviarChat()">Enviar mensaje</button>
+</div>
+
     <div id="chatbox" class="chatbox"></div>
   </div>
 
