@@ -75,6 +75,13 @@
     <div id="chatbox"></div>
   </div>
 </div>
+<div style="margin-top: 30px;">
+  <h2>🎙️ Enviar mensaje como admin</h2>
+  <input type="text" id="adminNombre" value="Rodrigo" placeholder="Tu nombre" />
+  <input type="color" id="adminColor" value="#ffcc00" />
+  <textarea id="adminMensaje" placeholder="Mensaje del moderador"></textarea>
+  <button onclick="enviarAdmin()">Enviar</button>
+</div>
 
 <div id="accesoDenegado" class="negado" style="display: none;">
   ❌ Acceso denegado. Parámetro de admin no detectado.
@@ -191,6 +198,15 @@
         chatbox.scrollTop = chatbox.scrollHeight;
       });
     }
+window.enviarAdmin = () => {
+  const nombre = document.getElementById("adminNombre").value.trim();
+  const mensaje = document.getElementById("adminMensaje").value.trim();
+  const color = document.getElementById("adminColor").value;
+  if (!nombre || !mensaje) return alert("Completa tu mensaje.");
+  const nuevo = push(ref(db, "chat"));
+  set(nuevo, { nombre, mensaje, color });
+  document.getElementById("adminMensaje").value = "";
+};
 
     window.borrarChat = () => {
       if (confirm("¿Estás seguro de borrar todo el chat?")) {
