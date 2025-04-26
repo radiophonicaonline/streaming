@@ -201,5 +201,18 @@
 
 <script type="module" src="https://radiophonicaonline.github.io/streaming/scripts/main-chat-color.js"></script>
 
+<script>
+  // Cambiar el color del nombre en vivo
+  const colorInput = document.getElementById("colorNombre");
+  const nombreInput = document.getElementById("nombre");
+
+  colorInput.addEventListener("input", () => {
+    nombreInput.style.color = colorInput.value;
+  });
+</script>
+
+</body>
+</html>
+
 </body>
 </html>
