@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -50,7 +51,6 @@
     button:hover {
       background: #3ea0ff;
     }
-    .chat p { margin: 5px 0; text-align: left; }
     .contador { margin-top: 20px; color: #ccc; }
     .modal {
       display: none;
@@ -79,27 +79,83 @@
       cursor: pointer;
     }
     .social-bar {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.like-btn, .share-btn {
-  background: #1e1e1e;
-  color: white;
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.like-btn:hover, .share-btn:hover {
-  background: #2a2a2a;
-}
-
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .like-btn, .share-btn {
+      background: #1e1e1e;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .like-btn:hover, .share-btn:hover {
+      background: #2a2a2a;
+    }
+    .chat-container {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 15px;
+      max-width: 600px;
+      margin: 20px auto;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    .chat-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    .chat-form input[type="text"],
+    .chat-form textarea {
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .chat-form textarea {
+      resize: vertical;
+      height: 60px;
+    }
+    .chat-form button {
+      background: #00bcd4;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .chat-form button:hover {
+      background: #019ab5;
+    }
+    .chatbox {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+    .mensaje {
+      background: #2a2a2a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      animation: fadeIn 0.3s ease;
+    }
+    .mensaje strong {
+      font-weight: bold;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -109,7 +165,7 @@
 </header>
 
 <main>
-  <h3>🎙️Livestream</h3>
+  <h3>🎙️ Livestream</h3>
   <button onclick="abrirModal()">Abrir player</button>
   <div class="modal" id="modal">
     <span class="close-btn" onclick="cerrarModal()">×</span>
@@ -121,223 +177,25 @@
   <button onclick="enviarComentario()">Enviar comentario</button>
 
   <h3>🧑‍💬 Chat en vivo</h3>
-  <div id="admin-tools" style="display:none;">
-    <button onclick="borrarChat()" style="background: red;">🗑️ Borrar chat</button>
-    <button onclick="activarAlerta()">🚨 Avisar que estamos en vivo</button>
+  <div class="chat-container">
+    <div class="chat-form">
+      <input type="text" id="nombre" placeholder="Tu nombre" />
+      <input type="color" id="colorNombre" value="#00bcd4" title="Elige tu color" />
+      <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea>
+      <button onclick="enviarChat()">Enviar mensaje</button>
+    </div>
+    <div id="chatbox" class="chatbox"></div>
   </div>
-  <input type="text" id="nombre" placeholder="Tu nombre"/><br>
-  <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea><br>
-  <button onclick="enviarChat()">Enviar mensaje</button>
-  <div class="chat" id="chatbox"></div>
 
-<div>
-  <h3>📣 Síguenos y te avisaremos cuando estemos en vivo</h3>
-  <button onclick="window.open('https://whatsapp.com/channel/0029VbAMucgAO7RCFwSZxx10', '_blank')">💬 Unirse al canal de WhatsApp</button>
-  <br>
-  <button onclick="window.open('https://t.me/boost/radiophonicaonline', '_blank')">📢 Unirse al canal de Telegram</button>
-</div>
-
-
-<div class="social-bar">
-  <button class="like-btn" id="btnLike">
-    👍 <span id="likeCount">0</span>
-  </button>
-  <button class="share-btn" onclick="compartirPagina()" title="Compartir">
-    ➡️
-  </button>
-</div>
+  <div class="social-bar">
+    <button class="like-btn" id="btnLike">👍 <span id="likeCount">0</span></button>
+    <button class="share-btn" onclick="compartirPagina()" title="Compartir">➡️</button>
+  </div>
 
   <div class="contador" id="contador">Cargando visitas...</div>
 </main>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import {getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+<script type="module" src="https://radiophonicaonline.github.io/streaming/scripts/main-chat-color.js"></script>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-  projectId: "contador-de-personas-5f8aa",
-  storageBucket: "contador-de-personas-5f8aa.appspot.com",
-  messagingSenderId: "1063230344919",
-  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// ---------------- CONTADOR GENERAL DE VISITAS ---------------- //
-const hoy = new Date().toISOString().split("T")[0]; // formato YYYY-MM-DD
-const visitasRef = ref(db, "visitas/" + hoy);
-push(visitasRef, true);
-
-// ---------------- CONTADOR DE PERSONAS EN LA PÁGINA ---------------- //
-const conexionesRef = ref(db, "conexiones");
-const miConexion = push(conexionesRef);
-set(miConexion, true);
-onDisconnect(miConexion).remove();
-onValue(conexionesRef, (snap) => {
-  document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
-});
-
-// ---------------- CONTADOR DE RADIOVIDENTES ---------------- //
-let miRadiovidenteRef = null;
-function registrarRadiovidente() {
-  const radiovidentesRef = ref(db, "radiovidentes");
-  miRadiovidenteRef = push(radiovidentesRef);
-  set(miRadiovidenteRef, true);
-  onDisconnect(miRadiovidenteRef).remove();
-  const contadorDiv = document.createElement("div");
-  contadorDiv.id = "contadorRadiovidentes";
-  contadorDiv.style.marginTop = "10px";
-  document.querySelector("main").appendChild(contadorDiv);
-
-  onValue(radiovidentesRef, (snap) => {
-    const count = snap.size;
-    document.getElementById("contadorRadiovidentes").innerText = `🎧 Radiovidentes activos: ${count}`;
-  });
-}
-function cerrarRadiovidente() {
-  if (miRadiovidenteRef) remove(miRadiovidenteRef);
-}
-
-// ---------------- CHAT ---------------- //
-const chatRef = ref(db, "chat");
-onValue(chatRef, (snap) => {
-  const chatbox = document.getElementById("chatbox");
-  chatbox.innerHTML = "";
-  snap.forEach((msg) => {
-    const datos = msg.val();
-    const p = document.createElement("p");
-    p.textContent = `${datos.nombre}: ${datos.mensaje}`;
-    chatbox.appendChild(p);
-  });
-});
-
-window.enviarChat = () => {
-  const nombre = document.getElementById("nombre").value.trim();
-  const mensaje = document.getElementById("mensaje").value.trim();
-  if (!nombre || !mensaje) return alert("Completa tu nombre y mensaje.");
-  const nuevo = push(chatRef);
-  set(nuevo, { nombre, mensaje });
-  document.getElementById("mensaje").value = "";
-};
-
-window.borrarChat = () => {
-  if (confirm("¿Borrar todos los mensajes del chat?")) {
-    set(chatRef, {});
-  }
-};
-
-// ---------------- COMENTARIOS POR WHATSAPP ---------------- //
-window.enviarComentario = () => {
-  const texto = document.getElementById("comentario").value.trim();
-  if (!texto) return alert("Escribe un comentario.");
-  const numero = "+56944896523";
-  const enlace = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(texto)}`;
-  window.open(enlace, "_blank");
-  document.getElementById("comentario").value = "";
-};
-
-// ---- LIKES ---- //
-const likesRef = ref(db, "likes/total");
-const usuariosRef = ref(db, "likes/usuarios");
-
-// Mostrar total de likes al cargar
-onValue(likesRef, (snap) => {
-  document.getElementById("likeCount").innerText = snap.exists() ? snap.val() : 0;
-});
-
-// Detectar si ya dio like este navegador
-const userId = localStorage.getItem("usuarioLike") || crypto.randomUUID();
-localStorage.setItem("usuarioLike", userId);
-
-const likeBtn = document.getElementById("btnLike");
-
-get(child(ref(db), "likes/usuarios/" + userId)).then((snap) => {
-  if (snap.exists()) {
-    likeBtn.disabled = true;
-    likeBtn.style.opacity = 0.6;
-  }
-});
-
-likeBtn.addEventListener("click", async () => {
-  const usuarioYaLikeo = await get(child(ref(db), "likes/usuarios/" + userId));
-  if (!usuarioYaLikeo.exists()) {
-    // Sumar like
-    const totalSnap = await get(likesRef);
-    const nuevoTotal = totalSnap.exists() ? totalSnap.val() + 1 : 1;
-    set(likesRef, nuevoTotal);
-    set(ref(db, "likes/usuarios/" + userId), true);
-    likeBtn.disabled = true;
-    likeBtn.style.opacity = 0.6;
-  } else {
-    alert("Ya diste like desde este dispositivo 👍");
-  }
-});
-
-// ---- COMPARTIR ---- //
-window.compartirPagina = function () {
-  if (navigator.share) {
-    navigator.share({
-      title: 'Radiophonica Online',
-      text: '¡Escucha Radiophonica Online en vivo!',
-      url: window.location.href
-    });
-  } else {
-    alert("Tu navegador no soporta el botón de compartir.");
-  }
-};
-
-
-// ---------------- PLAYER MODAL + RADIOVIDENTES ---------------- //
-window.abrirModal = async () => {
-  const iframe = document.getElementById("iframePlayer");
-  const modal = document.getElementById("modal");
-
-  try {
-    const urlSnap = await get(ref(db, "urlReproductor"));
-    const url = urlSnap.exists() ? urlSnap.val() : null;
-    if (url) {
-      iframe.src = url;
-      modal.style.display = "flex";
-      registrarRadiovidente(); // <- acá contamos el radiovidente
-    } else {
-      alert("No se pudo cargar el reproductor. URL no disponible.");
-    }
-  } catch (error) {
-    console.error("Error al obtener la URL del reproductor:", error);
-    alert("Ocurrió un error al abrir el reproductor.");
-  }
-};
-
-window.cerrarModal = () => {
-  document.getElementById("modal").style.display = "none";
-  cerrarRadiovidente();
-};
-
-// ---------------- ESTADÍSTICAS EN MODO ADMIN ---------------- //
-if (window.location.search.includes("admin=si")) {
-  document.getElementById("admin-tools").style.display = "block";
-
-  const visitasAdminRef = ref(db, "visitas");
-  onValue(visitasAdminRef, (snap) => {
-    let resumen = "📅 Visitas diarias:\n";
-    snap.forEach(dia => {
-      const fecha = dia.key;
-      const cantidad = dia.size;
-      resumen += `📌 ${fecha}: ${cantidad} visita(s)\n`;
-    });
-    const div = document.createElement("pre");
-    div.style.marginTop = "20px";
-    div.style.textAlign = "left";
-    div.style.background = "#1e1e1e";
-    div.style.padding = "10px";
-    div.style.borderRadius = "5px";
-    div.textContent = resumen;
-    document.querySelector("main").appendChild(div);
-  });
-}
-</script>
 </body>
 </html>
