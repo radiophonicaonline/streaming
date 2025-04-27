@@ -96,6 +96,13 @@
 
   const params = new URLSearchParams(window.location.search);
   const esAdmin = params.get("admin") === "si";
+  // Cargar URL del player desde Firebase
+get(ref(db, "urlReproductor")).then((snap) => {
+  if (snap.exists()) {
+    document.getElementById("playerEmbed").src = snap.val();
+  }
+});
+
 
   if (!esAdmin) {
     document.getElementById("accesoDenegado").style.display = "block";
@@ -199,15 +206,15 @@
         chatbox.scrollTop = chatbox.scrollHeight;
       });
     }
-       window.enviarAdmin = () => {
-      const nombre = document.getElementById("adminNombre").value.trim();
-      const mensaje = document.getElementById("adminMensaje").value.trim();
-      const color = document.getElementById("adminColor").value;
-      if (!nombre || !mensaje) return alert("Completa el mensaje.");
-      const nuevo = push(chatRef);
-      set(nuevo, { nombre, mensaje, color });
-      document.getElementById("adminMensaje").value = "";
-    };
+  window.enviarAdmin = () => {
+  const nombre = document.getElementById("adminNombre").value.trim();
+  const mensaje = document.getElementById("adminMensaje").value.trim();
+  const color = document.getElementById("adminColor").value;
+  if (!nombre || !mensaje) return alert("Completa el nombre y el mensaje.");
+  const nuevo = push(chatRef);
+  set(nuevo, { nombre, mensaje, color });
+  document.getElementById("adminMensaje").value = "";
+};
 
     window.borrarChat = () => {
       if (confirm("¿Estás seguro de borrar todo el chat?")) {
