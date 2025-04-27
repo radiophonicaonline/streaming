@@ -96,12 +96,6 @@
 
   const params = new URLSearchParams(window.location.search);
   const esAdmin = params.get("admin") === "si";
-  // Cargar URL del player desde Firebase
-get(ref(db, "urlReproductor")).then((snap) => {
-  if (snap.exists()) {
-    document.getElementById("playerEmbed").src = snap.val();
-  }
-});
 
 
   if (!esAdmin) {
