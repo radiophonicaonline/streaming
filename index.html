@@ -20,9 +20,13 @@
 }
 
     header img {
-      width: 200px;
-      margin-top: 20px;
-    }
+  width: 200px;
+  margin-top: 20px;
+  box-shadow: 0 0 15px #000000aa; /* sombra negra suave */
+  background-color: rgba(0,0,0,0.5); /* fondo translúcido */
+  padding: 10px;
+  border-radius: 10px;
+}
     main {
       max-width: 800px;
       margin: auto;
@@ -157,6 +161,13 @@
     .mensaje strong {
       font-weight: bold;
     }
+    .chat p {
+  font-family: 'Courier New', sans-serif; /* o la que queráis */
+  font-size: 16px;
+  text-align: left;
+  margin-left: 10px;
+  margin-right: 10px;
+}
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
@@ -200,6 +211,12 @@
     <button class="like-btn" id="btnLike">👍 <span id="likeCount">0</span></button>
     <button class="share-btn" onclick="compartirPagina()" title="Compartir">➡️</button>
   </div>
+<div>
+  <h3>📣 Síguenos y te avisaremos cuando estemos en vivo</h3>
+  <button onclick="window.open('https://whatsapp.com/channel/0029VbAMucgAO7RCFwSZxx10', '_blank')">💬 Unirse al canal de WhatsApp</button>
+  <br><br>
+  <button onclick="window.open('https://t.me/boost/radiophonicaonline', '_blank')">📢 Unirse al canal de Telegram</button>
+</div>
 
   <div class="contador" id="contador">Cargando visitas...</div>
 </main>
