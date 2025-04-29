@@ -62,7 +62,11 @@ onValue(chatRef, (snap) => {
     const div = document.createElement("div");
     div.className = "mensaje";
     const color = datos.color || "#ccc";
-    div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${datos.mensaje}`;
+    const mensajeConEnlaces = datos.mensaje.replace(
+  /(https?:\/\/[^\s]+)/g,
+  '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
+);
+div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
     chatbox.appendChild(div);
   });
   chatbox.scrollTop = chatbox.scrollHeight;
