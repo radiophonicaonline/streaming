@@ -177,6 +177,21 @@
   color: #ffffff;
   text-shadow: 1px 1px 1px #000000;
 }
+    .live-badge {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff4d4d;
+  letter-spacing: 1px;
+}
+
+.punto {
+  animation: parpadeo 1s infinite;
+}
+
+@keyframes parpadeo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
   </style>
 </head>
 <body>
@@ -186,7 +201,7 @@
 </header>
 
 <main>
-  <h3>🎙️ Livestream</h3>
+  <h3><span class="live-badge">📹 <span class="punto">🔴</span> 🎙️ Livestream</span></h3>
   <button onclick="abrirModal()">Abrir player</button>
   <div class="modal" id="modal">
     <span class="close-btn" onclick="cerrarModal()">×</span>
