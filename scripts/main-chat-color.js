@@ -81,20 +81,6 @@ window.enviarChat = () => {
   set(nuevo, { nombre, mensaje, color });
   document.getElementById("mensaje").value = "";
 };
-onValue(fijadoRef, (snap) => {
-    const msgId = snap.val();
-    if (!msgId) return;
-    const mensajeRef = ref(db, "chat/" + msgId);
-    onValue(mensajeRef, (msgSnap) => {
-      const datos = msgSnap.val();
-      if (!datos) return;
-      const div = document.createElement("div");
-      div.className = "mensaje fijado";
-      div.innerHTML = `<strong style="color:${datos.color || '#ffcc00'}">${datos.nombre}:</strong> ${datos.mensaje}`;
-      chatbox.prepend(div);
-    });
-  });
-
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
 window.enviarComentario = () => {
   const texto = document.getElementById("comentario").value.trim();
