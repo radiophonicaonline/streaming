@@ -92,7 +92,8 @@
   <textarea id="adminMensaje" placeholder="Mensaje del moderador"></textarea><br>
   <button onclick="enviarAdmin()">Enviar mensaje</button>
 </div>
-
+<button onclick="enviarMensajeFijado()">📌 Fijar mensaje</button>
+  
 <div id="accesoDenegado" class="negado" style="display: none;">
   ❌ Acceso denegado. Parámetro de admin no detectado.
 </div>
@@ -213,6 +214,17 @@
       set(nuevo, { nombre, mensaje, color });
       document.getElementById("adminMensaje").value = "";
     };
+const mensajeFijadoRef = ref(db, "mensajeFijado");
+
+window.enviarMensajeFijado = () => {
+  const mensaje = prompt("Escribí el mensaje que querés fijar:");
+  if (mensaje) {
+    set(mensajeFijadoRef, {
+      nombre: "📌 Anuncio",
+      mensaje: mensaje
+    });
+  }
+};
 
     window.borrarTodoChat = () => {
       if (confirm("¿Borrar todo el chat?")) {
