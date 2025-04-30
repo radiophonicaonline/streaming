@@ -167,43 +167,60 @@
       renderChat();
     });
 
-    function renderChat() {
-      onValue(chatRef, (snap) => {
-        const chatbox = document.getElementById("chatbox");
-        chatbox.innerHTML = "";
-        snap.forEach((msg) => {
-          const datos = msg.val();
-          const msgId = msg.key;
-          const div = document.createElement("div");
-          div.className = "mensaje";
-          if (msgId === idDestacado) div.classList.add("destacado");
-          div.innerHTML = `<strong style="color:${datos.color || "#fff"}">${datos.nombre}:</strong> ${datos.mensaje}`;
+function renderChat() {
+  onValue(chatRef, (snap) => {
+    const chatbox = document.getElementById("chatbox");
+    chatbox.innerHTML = "";
+    snap.forEach((msg) => {
+      const datos = msg.val();
+      const msgId = msg.key;
+      const div = document.createElement("div");
+      div.className = "mensaje";
+      if (msgId === idDestacado) div.classList.add("destacado");
+      div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
 
-          const btnDestacar = document.createElement("button");
-          btnDestacar.textContent = "⭐";
-          btnDestacar.onclick = () => {
-            if (idDestacado === msgId) {
-              set(destacadoRef, null);
-            } else {
-              set(destacadoRef, msgId);
-            }
-          };
-
-          const btnBorrar = document.createElement("button");
-          btnBorrar.textContent = "🗑️";
-          btnBorrar.onclick = () => {
-            if (confirm("¿Eliminar este mensaje?")) {
-              remove(ref(db, `chat/${msgId}`));
-            }
-          };
-
-          div.appendChild(btnDestacar);
-          div.appendChild(btnBorrar);
-          chatbox.appendChild(div);
+      const btnDestacar = document.createElement("button");
+      btnDestacar.textContent = "⭐";
+      btnDestacar.onclick = () => {
+        get(destacadoRef).then((actual) => {
+          if (actual.exists() && actual.val() === msgId) {
+            set(destacadoRef, null);
+          } else {
+            set(destacadoRef, msgId);
+          }
         });
-        chatbox.scrollTop = chatbox.scrollHeight;
-      });
-    }
+      };
+
+      const btnFijar = document.createElement("button");
+      btnFijar.textContent = "📌";
+      btnFijar.onclick = () => {
+        get(fijadoRef).then((snap) => {
+          if (snap.exists() && snap.val() === msgId) {
+            set(fijadoRef, null); // Quitar fijado
+          } else {
+            set(fijadoRef, msgId); // Fijar este
+          }
+        });
+      };
+
+      const btnBorrar = document.createElement("button");
+      btnBorrar.textContent = "🗑️";
+      btnBorrar.onclick = () => {
+        if (confirm("¿Eliminar este mensaje?")) {
+          remove(ref(db, `chat/${msgId}`));
+        }
+      };
+
+      div.appendChild(btnDestacar);
+      div.appendChild(btnFijar);
+      div.appendChild(btnBorrar);
+      chatbox.appendChild(div);
+    });
+
+    chatbox.scrollTop = chatbox.scrollHeight;
+  });
+}
+
 
     window.enviarAdmin = () => {
       const nombre = document.getElementById("adminNombre").value.trim();
