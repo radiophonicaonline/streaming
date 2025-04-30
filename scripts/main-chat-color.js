@@ -81,6 +81,18 @@ window.enviarChat = () => {
   set(nuevo, { nombre, mensaje, color });
   document.getElementById("mensaje").value = "";
 };
+const mensajeFijadoRef = ref(db, "mensajeFijado");
+
+onValue(mensajeFijadoRef, (snap) => {
+  const datos = snap.val();
+  if (datos) {
+    const div = document.createElement("div");
+    div.className = "mensaje fijado";
+    div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
+    const chatbox = document.getElementById("chatbox");
+    chatbox.prepend(div);
+  }
+});
 
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
 window.enviarComentario = () => {
