@@ -81,18 +81,19 @@ window.enviarChat = () => {
   set(nuevo, { nombre, mensaje, color });
   document.getElementById("mensaje").value = "";
 };
-const mensajeFijadoRef = ref(db, "mensajeFijado");
-
-onValue(mensajeFijadoRef, (snap) => {
-  const datos = snap.val();
-  if (datos) {
-    const div = document.createElement("div");
-    div.className = "mensaje fijado";
-    div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
-    const chatbox = document.getElementById("chatbox");
-    chatbox.prepend(div);
-  }
-});
+onValue(fijadoRef, (snap) => {
+    const msgId = snap.val();
+    if (!msgId) return;
+    const mensajeRef = ref(db, "chat/" + msgId);
+    onValue(mensajeRef, (msgSnap) => {
+      const datos = msgSnap.val();
+      if (!datos) return;
+      const div = document.createElement("div");
+      div.className = "mensaje fijado";
+      div.innerHTML = `<strong style="color:${datos.color || '#ffcc00'}">${datos.nombre}:</strong> ${datos.mensaje}`;
+      chatbox.prepend(div);
+    });
+  });
 
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
 window.enviarComentario = () => {
