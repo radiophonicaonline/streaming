@@ -128,7 +128,7 @@ window.compartirPagina = function () {
   if (navigator.share) {
     navigator.share({
       title: 'Radiophonica Online',
-      text: '¡Escucha Radiophonica Online en vivo!',
+      text: '¡Escucha 🎧 Radiophonica Online en vivo!',
       url: window.location.href
     });
   } else {
