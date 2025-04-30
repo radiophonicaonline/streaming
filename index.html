@@ -193,9 +193,25 @@
     <iframe class="modal-content" id="iframePlayer" src="" allowfullscreen></iframe>
   </div>
 <div style="text-align: center; margin-top: 20px;">
-  <iframe src="https://zeno.fm/player/radiophonica-online" width="300" height="250" frameborder="0" scrolling="no"></iframe>
-  <a href="https://zeno.fm/" target="_blank" style="display: block; font-size: 0.9em; line-height: 10px;">A Zeno.FM Station</a>
+  <h3>🎵 Escúchanos en vivo</h3>
+  <div style="
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    padding: 20px;
+    display: inline-block;
+    box-shadow: 0 0 15px #000000aa;">
+    
+    <audio id="reproductor" controls style="width: 100%; max-width: 300px;">
+      <source src="https://stream.zeno.fm/9k972tnmc78uv" type="audio/mpeg">
+      Tu navegador no soporta audio HTML5.
+    </audio>
+    
+    <p style="font-size: 14px; margin-top: 10px; color: #ccc;">
+      Transmitido desde <a href="https://zeno.fm/radiophonica-online" target="_blank" style="color:#1e90ff;">Zeno.fm</a>
+    </p>
+  </div>
 </div>
+
   <h3>Pídenos tu tema al WhatsApp</h3>
   <textarea id="comentario" placeholder="Escribe tu comentario..."></textarea><br>
   <button onclick="enviarComentario()">Enviar comentario</button>
