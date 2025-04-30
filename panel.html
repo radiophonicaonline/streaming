@@ -214,22 +214,6 @@
       set(nuevo, { nombre, mensaje, color });
       document.getElementById("adminMensaje").value = "";
     };
-const mensajeFijadoRef = ref(db, "mensajeFijado");
-
-window.enviarMensajeFijado = () => {
-  const mensaje = prompt("Escribí el mensaje que querés fijar:");
-  if (mensaje) {
-    set(mensajeFijadoRef, {
-      nombre: "📌 Anuncio",
-      mensaje: mensaje
-    });
-  }
-};
-window.borrarMensajeFijado = () => {
-  if (confirm("¿Borrar el mensaje fijado?")) {
-    remove(mensajeFijadoRef);
-  }
-};
 
     window.borrarTodoChat = () => {
       if (confirm("¿Borrar todo el chat?")) {
