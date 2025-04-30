@@ -225,6 +225,11 @@ window.enviarMensajeFijado = () => {
     });
   }
 };
+window.borrarMensajeFijado = () => {
+  if (confirm("¿Borrar el mensaje fijado?")) {
+    remove(mensajeFijadoRef);
+  }
+};
 
     window.borrarTodoChat = () => {
       if (confirm("¿Borrar todo el chat?")) {
