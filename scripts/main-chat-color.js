@@ -136,28 +136,15 @@ window.compartirPagina = function () {
   }
 };
 
-// --- ABRIR MODAL DEL PLAYER ---
-window.abrirModal = async () => {
-  const iframe = document.getElementById("iframePlayer");
-  const modal = document.getElementById("modal");
+// --- Cargar el reproductor automáticamente al abrir la página ---
+const iframe = document.getElementById("iframePlayer");
 
-  try {
-    const urlSnap = await get(ref(db, "urlReproductor"));
-    const url = urlSnap.exists() ? urlSnap.val() : null;
-    if (url) {
-      iframe.src = url;
-      modal.style.display = "flex";
-      registrarRadiovidente();
-    } else {
-      alert("No se pudo cargar el reproductor. URL no disponible.");
-    }
-  } catch (error) {
-    console.error("Error al obtener la URL del reproductor:", error);
-    alert("Ocurrió un error al abrir el reproductor.");
+get(ref(db, "urlReproductor")).then((snap) => {
+  if (snap.exists()) {
+    iframe.src = snap.val();
+    registrarRadiovidente();
+  } else {
+    console.warn("No se encontró la URL del reproductor en Firebase.");
   }
-};
+});
 
-window.cerrarModal = () => {
-  document.getElementById("modal").style.display = "none";
-  cerrarRadiovidente();
-};
