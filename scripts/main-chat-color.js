@@ -150,7 +150,7 @@ get(ref(db, "urlReproductor")).then((snap) => {
 // --- Mostrar canción actual desde Zeno.fm usando proxy ---
 async function obtenerCancion() {
   try {
-    const response = await fetch("https://api.allorigins.win/raw?url=https://zeno.fm/radio/radiophonica-online/nowplaying");
+    const response = await fetch("https://api.codetabs.com/v1/proxy?quest=https://zeno.fm/radio/radiophonica-online/nowplaying");
     const data = await response.json();
 
     if (data && data.now_playing && data.now_playing.song) {
