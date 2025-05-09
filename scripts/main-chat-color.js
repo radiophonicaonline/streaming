@@ -148,24 +148,4 @@ get(ref(db, "urlReproductor")).then((snap) => {
   }
 });
 
-async function obtenerCancion() {
-  try {
-    const response = await fetch("https://api.allorigins.win/raw?url=https://zeno.fm/radio/radiophonica-online/nowplaying");
-    const data = await response.json();
-
-    if (data && data.now_playing && data.now_playing.song) {
-      document.getElementById("nowPlaying").innerText = `🎶 Sonando: ${data.now_playing.song}`;
-    } else {
-      document.getElementById("nowPlaying").innerText = "🎶 No se pudo obtener la canción.";
-    }
-  } catch (error) {
-    console.error("Error al obtener la canción:", error);
-    document.getElementById("nowPlaying").innerText = "🎶 Error de conexión.";
-  }
-}
-
-obtenerCancion();
-setInterval(obtenerCancion, 30000);
-  }
-});
 
