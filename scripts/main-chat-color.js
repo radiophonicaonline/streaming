@@ -150,7 +150,7 @@ get(ref(db, "urlReproductor")).then((snap) => {
 
 async function obtenerCancion() {
   try {
-    const response = await fetch("https://zeno.fm/radio/radiophonica-online/nowplaying");
+    const response = await fetch("https://api.allorigins.win/raw?url=https://zeno.fm/radio/radiophonica-online/nowplaying");
     const data = await response.json();
 
     if (data && data.now_playing && data.now_playing.song) {
@@ -164,7 +164,6 @@ async function obtenerCancion() {
   }
 }
 
-// Consultar al cargar y luego actualizar cada 30 segundos
 obtenerCancion();
 setInterval(obtenerCancion, 30000);
   }
