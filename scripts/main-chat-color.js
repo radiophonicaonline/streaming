@@ -161,5 +161,5 @@ function iniciarTransmision() {
     alert("Este navegador no soporta transmisión a dispositivos.");
   }
 }
-
+});
 
