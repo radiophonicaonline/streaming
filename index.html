@@ -270,7 +270,7 @@ button:hover {
     allow="picture-in-picture"
   ></iframe>
 </div>
-<button onclick="iniciarTransmision()">📺 Enviar a Smart TV</button>
+
   <h3>🎧 Audio en vivo 🎧</h3>
   <div style="
     background: rgba(0, 0, 0, 0.6);
@@ -344,22 +344,7 @@ button:hover {
   colorInput.addEventListener("input", () => {
     nombreInput.style.color = colorInput.value;
   });
-<button onclick="iniciarTransmision()">📺 Enviar a Smart TV</button>
 
-
-function iniciarTransmision() {
-  if ('cast' in window || 'chrome' in window) {
-    // Esto abre el menú nativo de "Transmitir..." en Chrome
-    const evt = new MouseEvent("contextmenu", {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    });
-    document.dispatchEvent(evt);
-  } else {
-    alert("Este navegador no soporta transmisión a dispositivos.");
-  }
-}
 
 
 </script>
