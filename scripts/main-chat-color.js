@@ -148,5 +148,18 @@ get(ref(db, "urlReproductor")).then((snap) => {
   }
 });
 
+function iniciarTransmision() {
+  if ('cast' in window || 'chrome' in window) {
+    // Esto abre el menú nativo de "Transmitir..." en Chrome
+    const evt = new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    });
+    document.dispatchEvent(evt);
+  } else {
+    alert("Este navegador no soporta transmisión a dispositivos.");
+  }
+}
 
 
