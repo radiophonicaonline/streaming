@@ -147,18 +147,6 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
-document.addEventListener('DOMContentLoaded', function () {
-    var player = videojs('videoPlayer', {
-      techOrder: ['chromecast', 'html5'],
-      plugins: {
-        chromecast: {}
-      }
-    });
 
-    // Opcional: mensaje cuando inicia el cast
-    player.on('chromecastConnected', function () {
-      console.log('✅ Enviando a Smart TV vía Chromecast');
-    });
-  });
 
 
