@@ -147,26 +147,18 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
-// --- Mostrar canción actual desde Zeno.fm usando proxy ---
-async function obtenerCancion() {
-  try {
-    const response = await fetch("https://api.codetabs.com/v1/proxy?quest=https://zeno.fm/radio/radiophonica-online/nowplaying");
-    const data = await response.json();
+document.addEventListener('DOMContentLoaded', function () {
+    var player = videojs('videoPlayer', {
+      techOrder: ['chromecast', 'html5'],
+      plugins: {
+        chromecast: {}
+      }
+    });
 
-    if (data && data.now_playing && data.now_playing.song) {
-      const texto = `🎶 Sonando: ${data.now_playing.song}`;
-      const target = document.getElementById("nowPlaying");
-      if (target) target.innerText = texto;
-    } else {
-      document.getElementById("nowPlaying").innerText = "🎶 No se pudo obtener la canción.";
-    }
-  } catch (error) {
-    console.error("Error al obtener la canción:", error);
-    document.getElementById("nowPlaying").innerText = "🎶 Error de conexión.";
-  }
-}
-
-obtenerCancion();
-setInterval(obtenerCancion, 30000);
+    // Opcional: mensaje cuando inicia el cast
+    player.on('chromecastConnected', function () {
+      console.log('✅ Enviando a Smart TV vía Chromecast');
+    });
+  });
 
 
