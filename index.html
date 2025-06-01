@@ -267,12 +267,18 @@ button:hover {
   <h3><span class="live-badge">📹 <span class="punto">🔴</span> Livestream 🎙️</span></h3>
  <style>
   .player-wrapper {
-    position: relative;
-    width: 100%;
-    padding-top: 58%; /* 16:9 aspect ratio */
-    max-width: 800px;
-    margin: 20px auto;
-  }
+      position: relative;
+      width: 95%;           /* más ancho en móviles */
+      padding-top: 56.25%;  /* mantiene relación 16:9 */
+      max-width: 1000px;    /* más grande en pantallas grandes */
+      margin: 20px auto;
+    }
+
+    @media (max-width: 600px) {
+      .player-wrapper {
+        padding-top: 60%;   /* un poquito más alto en celulares */
+      }
+    }
 
   .player-wrapper iframe {
     position: absolute;
