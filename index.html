@@ -315,6 +315,35 @@ button:hover {
       Transmitido desde <a href="https://zeno.fm/radiophonica-online" target="_blank" style="color:#1e90ff;">Zeno.fm</a>
     </p>
 </div>
+<!-- Mostrar el nombre de la canción con iframe -->
+<iframe 
+  id="iframeCancion"
+  src="https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt" 
+  style="border: none; width: 100%; height: 40px; font-size: 18px;" 
+  title="Nombre de la canción">
+</iframe>
+
+<!-- Mostrar la carátula de la canción -->
+<img 
+  id="portadaCancion"
+  src="https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png" 
+  alt="Portada de la canción" 
+  style="width: 200px; border-radius: 10px; margin-top: 10px;">
+
+<!-- Script para actualizar el iframe e imagen cada 10 segundos -->
+<script>
+  function actualizarContenido() {
+    // Evita caché del iframe (nombre de la canción)
+    const iframe = document.getElementById("iframeCancion");
+    iframe.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt?t=" + new Date().getTime();
+
+    // Evita caché de la imagen (portada)
+    const portada = document.getElementById("portadaCancion");
+    portada.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png?t=" + new Date().getTime();
+  }
+
+  setInterval(actualizarContenido, 10000); // cada 10 segundos
+</script>
 
   <h3> Chat en vivo</h3>
   <div class="chat-container">
