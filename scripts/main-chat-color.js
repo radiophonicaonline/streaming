@@ -148,5 +148,17 @@ get(ref(db, "urlReproductor")).then((snap) => {
   }
 });
 
+function actualizarContenido() {
+    // Evita caché del iframe (nombre de la canción)
+    const iframe = document.getElementById("iframeCancion");
+    iframe.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt?t=" + new Date().getTime();
 
+    // Evita caché de la imagen (portada)
+    const portada = document.getElementById("portadaCancion");
+    portada.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png?t=" + new Date().getTime();
+  }
+
+  setInterval(actualizarContenido, 10000);
+  }
+});
 
