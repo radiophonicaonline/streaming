@@ -392,6 +392,25 @@ button:hover {
   });
 
 </script>
+<script>
+  function actualizarContenido() {
+    // Solo toca el iframe de la canción (no el reproductor)
+    const iframe = document.getElementById("iframeCancion");
+    if (iframe) {
+      iframe.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt?t=" + new Date().getTime();
+    }
+
+    const portada = document.getElementById("portadaCancion");
+    if (portada) {
+      portada.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png?t=" + new Date().getTime();
+    }
+  }
+
+  // Esperar que cargue el DOM
+  window.addEventListener("DOMContentLoaded", () => {
+    setInterval(actualizarContenido, 10000);
+  });
+</script>
 
 
 
