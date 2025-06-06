@@ -147,6 +147,43 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
+// --- NOMBRE DE CANCIÓN Y PORTADA DESDE FIREBASE ---
+get(ref(db, "urlReproductor")).then((snap) => {
+  if (snap.exists()) {
+    const urlBase = snap.val().replace(/\/[^/]*$/, ""); // Quita el archivo del reproductor
+    const divNombre = document.createElement("div");
+    divNombre.id = "nombreCancion";
+    divNombre.style.marginTop = "10px";
+    divNombre.textContent = "🎵 Cargando canción...";
+    document.querySelector("main").appendChild(divNombre);
+
+    const imgPortada = document.createElement("img");
+    imgPortada.id = "portadaCancion";
+    imgPortada.style.width = "200px";
+    imgPortada.style.marginTop = "10px";
+    imgPortada.alt = "Portada de la canción";
+    document.querySelector("main").appendChild(imgPortada);
+
+    function actualizarCancionYPortada() {
+      // Obtener nombre de la canción
+      fetch(`${urlBase}/nowplaying.txt`)
+        .then(res => res.text())
+        .then(txt => {
+          divNombre.textContent = `🎵 ${txt}`;
+        })
+        .catch(err => {
+          console.warn("No se pudo cargar el nombre de la canción", err);
+          divNombre.textContent = "🎵 (No disponible)";
+        });
+
+      // Forzar recarga de la portada con timestamp para evitar caché
+      imgPortada.src = `${urlBase}/artwork.png?t=${Date.now()}`;
+    }
+
+    actualizarCancionYPortada();
+    setInterval(actualizarCancionYPortada, 10000);
+  }
+});
 
 
 
