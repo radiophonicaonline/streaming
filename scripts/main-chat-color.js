@@ -145,40 +145,4 @@ get(ref(db, "urlReproductor")).then((snap) => {
     iframe.src = urlCompleta;
     registrarRadiovidente();
 
-    // --- NOMBRE DE CANCIÓN Y PORTADA ---
-    const urlBase = urlCompleta.substring(0, urlCompleta.lastIndexOf("/"));
-
-    const divNombre = document.createElement("div");
-    divNombre.id = "nombreCancion";
-    divNombre.style.marginTop = "10px";
-    divNombre.textContent = "🎵 Cargando canción...";
-    document.querySelector("main").appendChild(divNombre);
-
-    const imgPortada = document.createElement("img");
-    imgPortada.id = "portadaCancion";
-    imgPortada.style.width = "200px";
-    imgPortada.style.marginTop = "10px";
-    imgPortada.style.borderRadius = "10px";
-    imgPortada.alt = "Portada de la canción";
-    document.querySelector("main").appendChild(imgPortada);
-
-    function actualizarCancionYPortada() {
-      fetch(`${urlBase}/nowplaying.txt`)
-        .then(res => res.text())
-        .then(txt => {
-          divNombre.textContent = `🎵 ${txt}`;
-        })
-        .catch(err => {
-          console.warn("No se pudo cargar el nombre de la canción", err);
-          divNombre.textContent = "🎵 (No disponible)";
-        });
-
-      imgPortada.src = `${urlBase}/artwork.png?t=${Date.now()}`;
-    }
-
-    actualizarCancionYPortada();
-    setInterval(actualizarCancionYPortada, 10000);
-  } else {
-    console.warn("No se encontró la URL del reproductor en Firebase.");
-  }
-});
+  
