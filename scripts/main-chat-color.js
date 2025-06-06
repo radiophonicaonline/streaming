@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
@@ -42,7 +43,7 @@ function registrarRadiovidente() {
   document.querySelector("main").appendChild(contadorDiv);
 
   onValue(radiovidentesRef, (snap) => {
-    document.getElementById("contadorRadiovidentes").innerText = `🎷 Radiovidentes activos: ${snap.size}`;
+    document.getElementById("contadorRadiovidentes").innerText = `🎧 Radiovidentes activos: ${snap.size}`;
   });
 }
 
@@ -62,10 +63,10 @@ onValue(chatRef, (snap) => {
     div.className = "mensaje";
     const color = datos.color || "#ccc";
     const mensajeConEnlaces = datos.mensaje.replace(
-      /(https?:\/\/[^\s]+)/g,
-      '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
-    );
-    div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
+  /(https?:\/\/[^\s]+)/g,
+  '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
+);
+div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
     chatbox.appendChild(div);
   });
   chatbox.scrollTop = chatbox.scrollHeight;
@@ -80,7 +81,6 @@ window.enviarChat = () => {
   set(nuevo, { nombre, mensaje, color });
   document.getElementById("mensaje").value = "";
 };
-
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
 window.enviarComentario = () => {
   const texto = document.getElementById("comentario").value.trim();
@@ -128,7 +128,7 @@ window.compartirPagina = function () {
   if (navigator.share) {
     navigator.share({
       title: 'Radiophonica Online',
-      text: '¡Escucha 🎷 Radiophonica Online en vivo!',
+      text: '¡Escucha 🎧 Radiophonica Online en vivo!',
       url: window.location.href
     });
   } else {
@@ -136,13 +136,17 @@ window.compartirPagina = function () {
   }
 };
 
-// --- Cargar el reproductor y otros elementos automáticamente desde Firebase ---
+// --- Cargar el reproductor automáticamente al abrir la página ---
 const iframe = document.getElementById("iframePlayer");
 
 get(ref(db, "urlReproductor")).then((snap) => {
   if (snap.exists()) {
-    const urlCompleta = snap.val();
-    iframe.src = urlCompleta;
+    iframe.src = snap.val();
     registrarRadiovidente();
+  } else {
+    console.warn("No se encontró la URL del reproductor en Firebase.");
+  }
+});
 
-  
+
+
