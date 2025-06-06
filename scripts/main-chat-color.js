@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
@@ -43,7 +42,7 @@ function registrarRadiovidente() {
   document.querySelector("main").appendChild(contadorDiv);
 
   onValue(radiovidentesRef, (snap) => {
-    document.getElementById("contadorRadiovidentes").innerText = `🎧 Radiovidentes activos: ${snap.size}`;
+    document.getElementById("contadorRadiovidentes").innerText = `🎷 Radiovidentes activos: ${snap.size}`;
   });
 }
 
@@ -63,10 +62,10 @@ onValue(chatRef, (snap) => {
     div.className = "mensaje";
     const color = datos.color || "#ccc";
     const mensajeConEnlaces = datos.mensaje.replace(
-  /(https?:\/\/[^\s]+)/g,
-  '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
-);
-div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
+      /(https?:\/\/[^\s]+)/g,
+      '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
+    );
+    div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
     chatbox.appendChild(div);
   });
   chatbox.scrollTop = chatbox.scrollHeight;
@@ -81,6 +80,7 @@ window.enviarChat = () => {
   set(nuevo, { nombre, mensaje, color });
   document.getElementById("mensaje").value = "";
 };
+
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
 window.enviarComentario = () => {
   const texto = document.getElementById("comentario").value.trim();
@@ -128,7 +128,7 @@ window.compartirPagina = function () {
   if (navigator.share) {
     navigator.share({
       title: 'Radiophonica Online',
-      text: '¡Escucha 🎧 Radiophonica Online en vivo!',
+      text: '¡Escucha 🎷 Radiophonica Online en vivo!',
       url: window.location.href
     });
   } else {
@@ -136,21 +136,18 @@ window.compartirPagina = function () {
   }
 };
 
-// --- Cargar el reproductor automáticamente al abrir la página ---
+// --- Cargar el reproductor y otros elementos automáticamente desde Firebase ---
 const iframe = document.getElementById("iframePlayer");
 
 get(ref(db, "urlReproductor")).then((snap) => {
   if (snap.exists()) {
-    iframe.src = snap.val();
+    const urlCompleta = snap.val();
+    iframe.src = urlCompleta;
     registrarRadiovidente();
-  } else {
-    console.warn("No se encontró la URL del reproductor en Firebase.");
-  }
-});
-// --- NOMBRE DE CANCIÓN Y PORTADA DESDE FIREBASE ---
-get(ref(db, "urlReproductor")).then((snap) => {
-  if (snap.exists()) {
-    const urlBase = snap.val().replace(/\/[^/]*$/, ""); // Quita el archivo del reproductor
+
+    // --- NOMBRE DE CANCIÓN Y PORTADA ---
+    const urlBase = urlCompleta.replace(/\/[^/]*$/, "");
+
     const divNombre = document.createElement("div");
     divNombre.id = "nombreCancion";
     divNombre.style.marginTop = "10px";
@@ -161,11 +158,11 @@ get(ref(db, "urlReproductor")).then((snap) => {
     imgPortada.id = "portadaCancion";
     imgPortada.style.width = "200px";
     imgPortada.style.marginTop = "10px";
+    imgPortada.style.borderRadius = "10px";
     imgPortada.alt = "Portada de la canción";
     document.querySelector("main").appendChild(imgPortada);
 
     function actualizarCancionYPortada() {
-      // Obtener nombre de la canción
       fetch(`${urlBase}/nowplaying.txt`)
         .then(res => res.text())
         .then(txt => {
@@ -176,14 +173,12 @@ get(ref(db, "urlReproductor")).then((snap) => {
           divNombre.textContent = "🎵 (No disponible)";
         });
 
-      // Forzar recarga de la portada con timestamp para evitar caché
       imgPortada.src = `${urlBase}/artwork.png?t=${Date.now()}`;
     }
 
     actualizarCancionYPortada();
     setInterval(actualizarCancionYPortada, 10000);
+  } else {
+    console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
-
-
-
