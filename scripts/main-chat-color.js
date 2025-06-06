@@ -146,7 +146,7 @@ get(ref(db, "urlReproductor")).then((snap) => {
     registrarRadiovidente();
 
     // --- NOMBRE DE CANCIÓN Y PORTADA ---
-    const urlBase = urlCompleta.replace(/\/[^/]*$/, "");
+    const urlBase = urlCompleta.substring(0, urlCompleta.lastIndexOf("/"));
 
     const divNombre = document.createElement("div");
     divNombre.id = "nombreCancion";
