@@ -394,23 +394,27 @@ button:hover {
 </script>
 <script>
   function actualizarContenido() {
-    // Solo toca el iframe de la canción (no el reproductor)
+    const timestamp = Date.now();
+
     const iframe = document.getElementById("iframeCancion");
     if (iframe) {
-      iframe.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt?t=" + new Date().getTime();
+      iframe.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt?t=" + timestamp;
     }
 
     const portada = document.getElementById("portadaCancion");
     if (portada) {
-      portada.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png?t=" + new Date().getTime();
+      portada.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png?t=" + timestamp;
     }
   }
 
-  // Esperar que cargue el DOM
   window.addEventListener("DOMContentLoaded", () => {
+    // Ejecutar inmediatamente al cargar
+    actualizarContenido();
+    // Repetir cada 10 segundos
     setInterval(actualizarContenido, 10000);
   });
 </script>
+
 
 
 
