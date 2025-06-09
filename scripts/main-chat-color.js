@@ -147,6 +147,25 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
+// --- ACTUALIZAR CANCIÓN Y PORTADA AUTOMÁTICAMENTE ---
+function actualizarContenido() {
+  const timestamp = Date.now();
+
+  const iframe = document.getElementById("iframeCancion");
+  if (iframe) {
+    iframe.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+  }
+
+  const portada = document.getElementById("portadaCancion");
+  if (portada) {
+    portada.src = "https://friendly-subscribe-discussing-namely.trycloudflare.com/artwork.png?t=" + timestamp;
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  actualizarContenido(); // ejecuta una vez al cargar
+  setInterval(actualizarContenido, 10000); // repite cada 10 seg
+});
 
 
 
