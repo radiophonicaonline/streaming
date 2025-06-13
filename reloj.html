@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reloj en Vivo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: 'Arial', sans-serif;
+      color: white;
+      font-size: 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #hora {
+      text-shadow: 2px 2px 5px #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="hora">Cargando...</div>
+
+  <script>
+    function actualizarHora() {
+      const ahora = new Date();
+
+      const opcionesFecha = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      };
+
+      const fecha = ahora.toLocaleDateString('es-CL', opcionesFecha);
+      const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      document.getElementById('hora').innerText = `${fecha} - ${hora}`;
+    }
+
+    setInterval(actualizarHora, 1000);
+    actualizarHora(); // llamada inicial
+  </script>
+</body>
+</html>
