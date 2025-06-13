@@ -6,27 +6,46 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <style>
-    body {
-      margin: 0;
-      background: transparent;
-      overflow: hidden;
-    }
-    #gcBox {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100%);
-      padding: 12px 24px;
-      border-radius: 12px;
+  body {
+    margin: 0;
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Arial Black', sans-serif;
+  }
+
+  #gc-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;   /* Centra vertical */
+    justify-content: center; /* Centra horizontal */
+  }
+
+  #gc-text {
+    font-size: 60px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    white-space: nowrap; /* 👉 Mantiene todo en una línea */
+    overflow: hidden;     /* Esconde lo que se sale */
+    text-overflow: ellipsis; /* Agrega "..." si se pasa */
+    animation: fadeIn 1s ease-in-out;
+    max-width: 90vw;      /* Para que no se salga de la pantalla */
+    text-align: center;
+  }
+
+  @keyframes fadeIn {
+    from {
       opacity: 0;
-      white-space: pre-wrap;
-      transition: all 0.6s ease-in-out;
+      transform: scale(1.2);
     }
-    #gcBox.animar {
-      transform: translateX(-50%) translateY(0);
+    to {
       opacity: 1;
+      transform: scale(1);
     }
-  </style>
+  }
+</style>
+
 </head>
 <body>
   <div id="gcBox"></div>
