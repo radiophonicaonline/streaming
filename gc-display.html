@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>GC Visual</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    #gcBox {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      padding: 12px 24px;
+      border-radius: 12px;
+      opacity: 0;
+      white-space: pre-wrap;
+      transition: all 0.6s ease-in-out;
+    }
+    #gcBox.animar {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="gcBox"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAR-9tvbi6NSaU3bl_SuYfAO7KoUgAVu1k",
+      authDomain: "radiophonica.firebaseapp.com",
+      databaseURL: "https://radiophonica-default-rtdb.firebaseio.com",
+      projectId: "radiophonica",
+      storageBucket: "radiophonica.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:e9b40a98fe7e3dbbb97e1b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const gcBox = document.getElementById('gcBox');
+
+    db.ref('gc_avanzado').on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data || !data.texto || data.texto.trim() === '') {
+        gcBox.classList.remove('animar');
+        gcBox.style.opacity = '0';
+        return;
+      }
+
+      gcBox.innerText = data.texto;
+      gcBox.style.color = data.color || '#ffffff';
+      gcBox.style.fontSize = data.tamano + 'px' || '28px';
+      gcBox.style.fontFamily = data.fuente || 'Arial';
+      gcBox.style.background = data.fondo || 'rgba(0,0,0,0.75)';
+      gcBox.style.textShadow = data.sombra ? '1px 1px 4px #000' : 'none';
+
+      if (data.animacion) {
+        gcBox.classList.remove('animar');
+        void gcBox.offsetWidth; // reinicia animación
+        gcBox.classList.add('animar');
+      } else {
+        gcBox.classList.remove('animar');
+        gcBox.style.transform = 'translateX(-50%) translateY(0)';
+        gcBox.style.opacity = '1';
+      }
+    });
+  </script>
+</body>
+</html>

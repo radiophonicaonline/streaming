@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel GC</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    textarea, select, input {
+      width: 100%;
+      font-size: 16px;
+      margin: 8px 0;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎬 GC Personalizado - Radiophonica</h2>
+  
+  <label>Texto:</label>
+  <textarea id="gcText" placeholder="Escribe tu GC aquí..."></textarea>
+
+  <label>Color de texto:</label>
+  <input type="color" id="textColor" value="#ffffff" />
+
+  <label>Tamaño de letra (px):</label>
+  <input type="number" id="fontSize" value="28" />
+
+  <label>Fuente:</label>
+  <select id="fontFamily">
+    <option value="Arial">Arial</option>
+    <option value="Courier New">Courier New</option>
+    <option value="Impact">Impact</option>
+    <option value="Verdana">Verdana</option>
+  </select>
+
+  <label>Color de fondo:</label>
+  <input type="color" id="bgColor" value="#000000" />
+
+  <label>
+    <input type="checkbox" id="textShadow" checked />
+    Sombra en el texto
+  </label>
+
+  <label>
+    <input type="checkbox" id="animacion" checked />
+    Animar entrada/salida
+  </label>
+
+  <button onclick="enviarGC()">Mostrar GC</button>
+  <button onclick="borrarGC()">Borrar GC</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAR-9tvbi6NSaU3bl_SuYfAO7KoUgAVu1k",
+      authDomain: "radiophonica.firebaseapp.com",
+      databaseURL: "https://radiophonica-default-rtdb.firebaseio.com",
+      projectId: "radiophonica",
+      storageBucket: "radiophonica.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:e9b40a98fe7e3dbbb97e1b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function enviarGC() {
+      const data = {
+        texto: document.getElementById('gcText').value.trim(),
+        color: document.getElementById('textColor').value,
+        tamano: parseInt(document.getElementById('fontSize').value),
+        fuente: document.getElementById('fontFamily').value,
+        fondo: document.getElementById('bgColor').value,
+        sombra: document.getElementById('textShadow').checked,
+        animacion: document.getElementById('animacion').checked
+      };
+      db.ref('gc_avanzado').set(data);
+    }
+
+    function borrarGC() {
+      db.ref('gc_avanzado').set({
+        texto: ''
+      });
+    }
+  </script>
+</body>
+</html>
