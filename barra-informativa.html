@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Barra Informativa</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0 20px;
+      background: transparent;
+      font-family: 'Arial', sans-serif;
+      color: white;
+      font-size: 28px;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 30px;
+    }
+
+    .info-box {
+      text-shadow: 2px 2px 4px #000;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="info-box" id="fecha">Cargando fecha...</div>
+  <div class="info-box" id="hora">Cargando hora...</div>
+  <div class="info-box" id="clima">Cargando clima...</div>
+
+  <script>
+    // HORA Y FECHA
+    function actualizarFechaHora() {
+      const ahora = new Date();
+      const opcionesFecha = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      };
+      const fecha = ahora.toLocaleDateString('es-CL', opcionesFecha);
+      const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      document.getElementById('fecha').innerText = fecha;
+      document.getElementById('hora').innerText = hora;
+    }
+
+    setInterval(actualizarFechaHora, 1000);
+    actualizarFechaHora();
+
+    // CLIMA
+    const apiKey = 'bc4f5eacdd704beb01543595e8a25c3a'; // <-- REEMPLAZA por tu clave API sin espacios
+    const ciudad = 'Santiago';
+
+    async function obtenerClima() {
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&lang=es&units=metric`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("No se pudo obtener clima");
+        const data = await response.json();
+        const temp = data.main.temp.toFixed(1);
+        const descripcion = data.weather[0].description;
+        document.getElementById('clima').innerText = `${ciudad}: ${temp}°C - ${descripcion}`;
+      } catch (e) {
+        document.getElementById('clima').innerText = 'Clima no disponible';
+        console.error(e);
+      }
+    }
+
+    obtenerClima();
+    setInterval(obtenerClima, 10 * 60 * 1000);
+  </script>
+</body>
+</html>

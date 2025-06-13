@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reloj y Clima</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 10px 20px;
+      background: transparent;
+      font-family: Arial, sans-serif;
+      color: white;
+      font-size: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100px;
+      box-sizing: border-box;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    #hora, #clima {
+      white-space: nowrap;
+    }
+
+    .contenedor {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div id="hora">Cargando hora...</div>
+    <div id="clima">Cargando clima...</div>
+  </div>
+
+  <script>
+    // API CONFIG
+    const apiKey = 'bc4f5eacdd704beb01543595e8a25c3a'; // tu API key de OpenWeatherMap
+    const ciudad = 'Santiago'; // ciudad a mostrar
+
+    // Función para actualizar hora y fecha
+    function actualizarHora() {
+      const ahora = new Date();
+
+      const opcionesFecha = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      };
+
+      const fecha = ahora.toLocaleDateString('es-CL', opcionesFecha);
+      const hora = ahora.toLocaleTimeString('es-CL', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      document.getElementById('hora').innerText = `🕒 ${fecha} - ${hora}`;
+    }
+
+    // Función para obtener clima
+    async function obtenerClima() {
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&lang=es&units=metric`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("No se pudo obtener clima");
+        const data = await response.json();
+        const temp = data.main.temp.toFixed(1);
+        const descripcion = data.weather[0].description;
+        document.getElementById('clima').innerText = `🌤 ${ciudad}: ${temp}°C - ${descripcion}`;
+      } catch (error) {
+        console.error(error);
+        document.getElementById('clima').innerText = '🌤 Error al cargar clima';
+      }
+    }
+
+    // Iniciar
+    actualizarHora();
+    setInterval(actualizarHora, 1000);
+
+    obtenerClima();
+    setInterval(obtenerClima, 10 * 60 * 1000); // cada 10 minutos
+  </script>
+</body>
+</html>
