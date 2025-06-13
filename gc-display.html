@@ -2,92 +2,90 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>GC Visual</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <title>GC Display</title>
   <style>
-  body {
-    margin: 0;
-    background: transparent;
-    overflow: hidden;
-    font-family: 'Arial Black', sans-serif;
-  }
-
-  #gc-container {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    align-items: center;   /* Centra vertical */
-    justify-content: center; /* Centra horizontal */
-  }
-
-  #gc-text {
-    font-size: 60px;
-    font-weight: bold;
-    color: #ffffff;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    white-space: nowrap; /* 👉 Mantiene todo en una línea */
-    overflow: hidden;     /* Esconde lo que se sale */
-    text-overflow: ellipsis; /* Agrega "..." si se pasa */
-    animation: fadeIn 1s ease-in-out;
-    max-width: 90vw;      /* Para que no se salga de la pantalla */
-    text-align: center;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(1.2);
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Arial Black', sans-serif;
     }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-</style>
 
+    #gc-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center; /* Centra horizontalmente */
+      align-items: center;     /* Centra verticalmente */
+    }
+
+    #gc-text {
+      font-size: 60px;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
+      text-align: center;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(1.2);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
 </head>
 <body>
-  <div id="gcBox"></div>
+  <div id="gc-container">
+    <div id="gc-text"></div>
+  </div>
 
-  <script>
-   const firebaseConfig = {
-  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-  databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
-  projectId: "contador-de-personas-5f8aa",
-  storageBucket: "contador-de-personas-5f8aa.appspot.com",
-  messagingSenderId: "1063230344919",
-  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-};
+  <script type="module">
+    // Tu config de Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const gcBox = document.getElementById('gcBox');
+    const firebaseConfig = {
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+    };
 
-    db.ref('gc_avanzado').on('value', (snapshot) => {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const gcRef = ref(db, 'gc_avanzado');
+
+    onValue(gcRef, (snapshot) => {
       const data = snapshot.val();
-      if (!data || !data.texto || data.texto.trim() === '') {
-        gcBox.classList.remove('animar');
-        gcBox.style.opacity = '0';
-        return;
-      }
+      const gcText = document.getElementById('gc-text');
 
-      gcBox.innerText = data.texto;
-      gcBox.style.color = data.color || '#ffffff';
-      gcBox.style.fontSize = data.tamano + 'px' || '28px';
-      gcBox.style.fontFamily = data.fuente || 'Arial';
-      gcBox.style.background = data.fondo || 'rgba(0,0,0,0.75)';
-      gcBox.style.textShadow = data.sombra ? '1px 1px 4px #000' : 'none';
+      if (data && data.texto) {
+        gcText.textContent = data.texto;
 
-      if (data.animacion) {
-        gcBox.classList.remove('animar');
-        void gcBox.offsetWidth; // reinicia animación
-        gcBox.classList.add('animar');
+        // Aplica estilos desde Firebase si vienen
+        gcText.style.color = data.color || '#ffffff';
+        gcText.style.fontSize = data.tamano || '60px';
+        gcText.style.fontFamily = data.fuente || 'Arial Black, sans-serif';
+        gcText.style.textShadow = '3px 3px 8px rgba(0,0,0,0.8)';
       } else {
-        gcBox.classList.remove('animar');
-        gcBox.style.transform = 'translateX(-50%) translateY(0)';
-        gcBox.style.opacity = '1';
+        gcText.textContent = '';
       }
     });
   </script>
