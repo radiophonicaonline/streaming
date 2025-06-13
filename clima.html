@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Temperatura en Vivo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: 'Arial', sans-serif;
+      color: white;
+      font-size: 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #clima {
+      text-shadow: 2px 2px 5px #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="clima">Cargando clima...</div>
+
+  <script>
+    const apiKey = 'bc4f5eacdd704beb01543595e8a25c3a'; // <-- Reemplázala con tu clave
+    const ciudad = 'Santiago';   // <-- Puedes cambiarlo por tu ciudad
+
+    async function obtenerClima() {
+      try {
+        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&lang=es&units=metric`);
+        const data = await response.json();
+        const temp = data.main.temp.toFixed(1);
+        const descripcion = data.weather[0].description;
+        document.getElementById('clima').innerText = `${ciudad}: ${temp}°C - ${descripcion}`;
+      } catch (error) {
+        document.getElementById('clima').innerText = 'Error al cargar el clima';
+        console.error(error);
+      }
+    }
+
+    obtenerClima();
+    setInterval(obtenerClima, 10 * 60 * 1000); // Actualiza cada 10 minutos
+  </script>
+</body>
+</html>
