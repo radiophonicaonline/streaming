@@ -298,7 +298,9 @@ button:hover {
   ></iframe>
 </div>
 <div class="social-bar">
-    <button class="like-btn" id="btnLike">👍 <span id="likeCount">0</span></button>
+  <button onclick="react('like')" id="btn-like">👍 <span id="count-like">0</span></button>
+  <button onclick="react('love')" id="btn-love">❤️ <span id="count-love">0</span></button>
+  <button onclick="react('funny')" id="btn-funny">😂 <span id="count-funny">0</span></button>
     <button class="share-btn" onclick="compartirPagina()" title="Compartir">➡️</button>
   </div>
 <div>
