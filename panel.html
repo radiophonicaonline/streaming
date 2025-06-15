@@ -76,7 +76,13 @@
   <div class="dato" id="visitasHoy">Visitas hoy: cargando...</div>
    <div class="dato" id="enLinea">Personas en la página ahora: cargando...</div>
   <div class="dato" id="radiovidentes">Radiovidentes activos: cargando...</div>
-  <div class="dato" id="likeCount">👍 Likes totales: cargando...</div>
+<div class="dato">
+  Reacciones:
+  👍 <span id="count-like">0</span> &nbsp;
+  ❤️ <span id="count-love">0</span> &nbsp;
+  😂 <span id="count-funny">0</span>
+</div>
+
 
 
   <div class="chat-box">
@@ -154,8 +160,25 @@
     });
     onValue(likesRef, (snap) => {
       document.getElementById("likeCount").innerText = `👍 Likes totales: ${snap.exists() ? snap.val() : 0}`;
+      // --- MOSTRAR CONTADOR DE REACCIONES (like, love, funny) ---
+const reaccionesRef = ref(db, "reacciones/usuarios");
+
+onValue(reaccionesRef, (snapshot) => {
+  const data = snapshot.val() || {};
+  const counts = { like: 0, love: 0, funny: 0 };
+
+  for (const value of Object.values(data)) {
+    if (counts.hasOwnProperty(value)) {
+      counts[value]++;
+    }
+  }
+
+  document.getElementById("count-like").textContent = counts.like;
+  document.getElementById("count-love").textContent = counts.love;
+  document.getElementById("count-funny").textContent = counts.funny;
     });
-    onValue(sharesRef, (snap) => {
+    
+      onValue(sharesRef, (snap) => {
       document.getElementById("shareCount").innerText = `📤 Compartidos: ${snap.exists() ? snap.val() : 0}`;
     });
 
