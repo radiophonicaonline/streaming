@@ -155,12 +155,11 @@
     onValue(conexionesRef, (snap) => {
       document.getElementById("enLinea").innerText = `Personas en la página ahora: ${snap.size}`;
     });
-    onValue(radiovidentesRef, (snap) => {
-      document.getElementById("radiovidentes").innerText = `Radiovidentes activos: ${snap.size}`;
-    });
-    onValue(likesRef, (snap) => {
-      document.getElementById("likeCount").innerText = `👍 Likes totales: ${snap.exists() ? snap.val() : 0}`;
-      // --- MOSTRAR CONTADOR DE REACCIONES (like, love, funny) ---
+  onValue(likesRef, (snap) => {
+  document.getElementById("likeCount").innerText = `👍 Likes totales: ${snap.exists() ? snap.val() : 0}`;
+});
+
+// --- MOSTRAR CONTADOR DE REACCIONES (like, love, funny) ---
 const reaccionesRef = ref(db, "reacciones/usuarios");
 
 onValue(reaccionesRef, (snapshot) => {
@@ -176,7 +175,12 @@ onValue(reaccionesRef, (snapshot) => {
   document.getElementById("count-like").textContent = counts.like;
   document.getElementById("count-love").textContent = counts.love;
   document.getElementById("count-funny").textContent = counts.funny;
-    });
+});
+
+onValue(sharesRef, (snap) => {
+  document.getElementById("shareCount").innerText = `📤 Compartidos: ${snap.exists() ? snap.val() : 0}`;
+});
+
     
       onValue(sharesRef, (snap) => {
       document.getElementById("shareCount").innerText = `📤 Compartidos: ${snap.exists() ? snap.val() : 0}`;
