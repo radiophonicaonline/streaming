@@ -92,7 +92,7 @@ window.enviarComentario = () => {
 };
 
 // --- BOTÓN DE LIKES ---
-const db = getDatabase();
+
 const reactionPath = "reacciones";
 const deviceId = localStorage.getItem("reaction_device_id") || crypto.randomUUID();
 localStorage.setItem("reaction_device_id", deviceId);
@@ -105,14 +105,14 @@ window.react = function(type) {
   get(userRef).then((snapshot) => {
     const previous = snapshot.val();
     if (previous === type) {
-      set(userRef, null); // Si hace clic en la misma, se quita
+      set(userRef, null); // Quitar si hace clic en la misma
     } else {
-      set(userRef, type); // Si hace clic en otra, se reemplaza
+      set(userRef, type); // Cambiar o agregar
     }
   });
 };
 
-// Función para actualizar los contadores y colores
+// Función para actualizar los contadores y el estilo
 function updateReactionCounters() {
   const usersRef = ref(db, `${reactionPath}/usuarios`);
   onValue(usersRef, (snapshot) => {
@@ -139,6 +139,7 @@ function updateReactionCounters() {
 }
 
 updateReactionCounters();
+
 
 // --- BOTÓN DE COMPARTIR ---
 window.compartirPagina = function () {
