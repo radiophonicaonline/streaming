@@ -1,6 +1,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -92,36 +93,53 @@ window.enviarComentario = () => {
 };
 
 // --- BOTÓN DE LIKES ---
-const likesRef = ref(db, "likes/total");
-const usuariosRef = ref(db, "likes/usuarios");
-const likeBtn = document.getElementById("btnLike");
-const userId = localStorage.getItem("usuarioLike") || crypto.randomUUID();
-localStorage.setItem("usuarioLike", userId);
+const db = getDatabase();
+const reactionPath = "reacciones";
+const deviceId = localStorage.getItem("reaction_device_id") || crypto.randomUUID();
+localStorage.setItem("reaction_device_id", deviceId);
 
-onValue(likesRef, (snap) => {
-  document.getElementById("likeCount").innerText = snap.exists() ? snap.val() : 0;
-});
+const reactions = ["like", "love", "funny"];
 
-get(child(ref(db), "likes/usuarios/" + userId)).then((snap) => {
-  if (snap.exists()) {
-    likeBtn.disabled = true;
-    likeBtn.style.opacity = 0.6;
-  }
-});
+// Función para enviar reacción
+window.react = function(type) {
+  const userRef = ref(db, `${reactionPath}/usuarios/${deviceId}`);
+  get(userRef).then((snapshot) => {
+    const previous = snapshot.val();
+    if (previous === type) {
+      set(userRef, null); // Si hace clic en la misma, se quita
+    } else {
+      set(userRef, type); // Si hace clic en otra, se reemplaza
+    }
+  });
+};
 
-likeBtn.addEventListener("click", async () => {
-  const usuarioYaLikeo = await get(child(ref(db), "likes/usuarios/" + userId));
-  if (!usuarioYaLikeo.exists()) {
-    const totalSnap = await get(likesRef);
-    const nuevoTotal = totalSnap.exists() ? totalSnap.val() + 1 : 1;
-    set(likesRef, nuevoTotal);
-    set(ref(db, "likes/usuarios/" + userId), true);
-    likeBtn.disabled = true;
-    likeBtn.style.opacity = 0.6;
-  } else {
-    alert("Ya diste like desde este dispositivo 👍");
-  }
-});
+// Función para actualizar los contadores y colores
+function updateReactionCounters() {
+  const usersRef = ref(db, `${reactionPath}/usuarios`);
+  onValue(usersRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    const counts = { like: 0, love: 0, funny: 0 };
+    let userReaction = null;
+
+    for (const [key, value] of Object.entries(data)) {
+      if (reactions.includes(value)) {
+        counts[value]++;
+        if (key === deviceId) userReaction = value;
+      }
+    }
+
+    reactions.forEach((type) => {
+      const countEl = document.getElementById(`count-${type}`);
+      const btnEl = document.getElementById(`btn-${type}`);
+      if (countEl) countEl.textContent = counts[type];
+      if (btnEl) {
+        btnEl.style.backgroundColor = userReaction === type ? "#d1ffd6" : "";
+      }
+    });
+  });
+}
+
+updateReactionCounters();
 
 // --- BOTÓN DE COMPARTIR ---
 window.compartirPagina = function () {
