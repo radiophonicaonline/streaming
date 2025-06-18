@@ -1,5 +1,13 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInAnonymously,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 const firebaseConfig = {
@@ -13,6 +21,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
 // --- CONTADOR DE VISITAS ---
 const hoy = new Date().toISOString().split("T")[0];
@@ -66,19 +76,35 @@ onValue(chatRef, (snap) => {
   /(https?:\/\/[^\s]+)/g,
   '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
 );
-div.innerHTML = `<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
+const fotoHTML = datos.foto ? `<img src="${datos.foto}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;">` : "";
+div.innerHTML = `${fotoHTML}<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
     chatbox.appendChild(div);
   });
   chatbox.scrollTop = chatbox.scrollHeight;
 });
 
 window.enviarChat = () => {
-  const nombre = document.getElementById("nombre").value.trim();
   const mensaje = document.getElementById("mensaje").value.trim();
   const color = document.getElementById("colorNombre").value;
-  if (!nombre || !mensaje) return alert("Completa tu nombre y tu mensaje.");
+  const user = window.chatUser || {
+    name: document.getElementById("nombre").value.trim() || "Anónimo",
+    isAnon: true,
+    photo: null
+  };
+
+  if (!mensaje || !user.name) return alert("Completa tu nombre y tu mensaje.");
+
   const nuevo = push(chatRef);
-  set(nuevo, { nombre, mensaje, color });
+  set(nuevo, {
+    nombre: user.name,
+    mensaje,
+    color,
+    email: user.email || null,
+    foto: user.photo || null,
+    esAnonimo: user.isAnon,
+    timestamp: Date.now()
+  });
+
   document.getElementById("mensaje").value = "";
 };
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
@@ -185,47 +211,47 @@ window.addEventListener("DOMContentLoaded", () => {
   setInterval(actualizarContenido, 10000); // repite cada 10 seg
 });
 
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("login-google").addEventListener("click", () => {
-    signInWithPopup(auth, provider).catch((error) => {
-      console.error("Error al iniciar sesión:", error);
-    });
-  });
 
-  document.getElementById("login-anonimo").addEventListener("click", () => {
-    signInAnonymously(auth).catch((error) => {
-      console.error("Error al iniciar como anónimo:", error);
-    });
-  });
 
-  document.getElementById("logout").addEventListener("click", () => {
-    signOut(auth);
-  });
 
-  onAuthStateChanged(auth, (user) => {
-    const info = document.getElementById("user-info");
-
-    if (user) {
-      const name = user.displayName || "Anónimo";
-      const photo = user.photoURL || null;
-
-      info.innerHTML = user.isAnonymous
-        ? `👤 Estás chateando como invitado`
-        : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
-
-      window.chatUser = {
-        name: name,
-        uid: user.uid,
-        email: user.email || "",
-        photo: photo,
-        isAnon: user.isAnonymous
-      };
-
-    } else {
-      info.textContent = "No has iniciado sesión";
-      window.chatUser = null;
-    }
+// --- LOGIN CON GOOGLE Y ANÓNIMO ---
+document.getElementById("login-google").addEventListener("click", () => {
+  signInWithPopup(auth, provider).catch((error) => {
+    console.error("Error al iniciar sesión:", error);
   });
 });
 
+document.getElementById("login-anonimo").addEventListener("click", () => {
+  signInAnonymously(auth).catch((error) => {
+    console.error("Error al iniciar como anónimo:", error);
+  });
+});
 
+document.getElementById("logout").addEventListener("click", () => {
+  signOut(auth);
+});
+
+onAuthStateChanged(auth, (user) => {
+  const info = document.getElementById("user-info");
+
+  if (user) {
+    const name = user.displayName || "Anónimo";
+    const photo = user.photoURL || null;
+
+    info.innerHTML = user.isAnonymous
+      ? `👤 Estás chateando como invitado`
+      : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
+
+    window.chatUser = {
+      name: name,
+      uid: user.uid,
+      email: user.email || "",
+      photo: photo,
+      isAnon: user.isAnonymous
+    };
+
+  } else {
+    info.textContent = "No has iniciado sesión";
+    window.chatUser = null;
+  }
+});
