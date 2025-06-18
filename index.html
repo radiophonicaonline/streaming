@@ -303,6 +303,9 @@ button:hover {
   <button onclick="react('funny')" id="btn-funny">😂 <span id="count-funny">0</span></button>
     <button class="share-btn" onclick="compartirPagina()" title="Compartir">➡️</button>
   </div>
+ 
+ <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+
 <div>
   <h3>🎧 Audio en vivo 🎧</h3>
   <div style="
@@ -321,6 +324,9 @@ button:hover {
       Transmitido desde <a href="https://zeno.fm/radiophonica-online" target="_blank" style="color:#1e90ff;">Zeno.fm</a>
     </p>
 </div>
+
+ <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+
  <h3>Sonando ahora</h3>
 <!-- Mostrar el nombre de la canción con iframe -->
 <iframe 
@@ -337,57 +343,14 @@ button:hover {
   alt="Portada de la canción" 
   style="width: 200px; border-radius: 10px; margin-top: 10px;">
 
+ <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+
 <!-- 🔐 LOGIN DE USUARIO -->
-<section id="login-section" style="margin: 20px auto; max-width: 400px; text-align: center; font-family: sans-serif;">
-  <h3 style="margin-bottom: 10px;">👤 Identifícate para tener más funciones</h3>
+<div id="user-info">Cargando estado de usuario...</div>
+<button id="login-google">Iniciar sesión con Google</button>
+<button id="login-anonimo">Entrar como invitado</button>
+<button id="logout">Cerrar sesión</button>
 
-  <div id="user-info" style="margin-bottom: 10px; font-weight: bold;">Cargando estado de usuario...</div>
-
-  <button id="login-google" style="
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 6px 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    margin-bottom: 6px;
-    cursor: pointer;
-    width: 100%;
-    justify-content: center;
-  ">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px; height:20px;">
-    Iniciar sesión con Google
-  </button>
-
-  <button id="login-anonimo" style="
-    background: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    width: 100%;
-    margin-bottom: 6px;
-  ">
-    🎭 Entrar como invitado
-  </button>
-
-  <button id="logout" style="
-    background: #ffdddd;
-    border: 1px solid #ffaaaa;
-    border-radius: 5px;
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    width: 100%;
-  ">
-    ❌ Cerrar sesión
-  </button>
-</section>
-
- 
   <h3> Chat en vivo</h3>
   <div class="chat-container">
    <div class="chat-form">
@@ -403,6 +366,7 @@ button:hover {
     <div id="chatbox" class="chatbox"></div>
   </div>
 
+<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
   
  <h3> 📣 Síguenos en redes</h3>
@@ -417,14 +381,19 @@ button:hover {
   <a href="https://www.youtube.com/@radiophonica4551" target="_blank" class="icon youtube"><i class="fab fa-youtube"></i></a>
 </div>
  <h3>  y te avisaremos cuando estemos en vivo</h3>
+<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
  
  <h3>Pídenos tu tema al WhatsApp</h3>
   <textarea id="comentario" placeholder="Escribe tu comentario..."></textarea><br>
   <button onclick="enviarComentario()">Enviar comentario</button>
-<div>
+
+ <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+
+ <div>
   <h3>Escucha aquí nuestros podcast</h3>
   <button onclick="window.open('https://drive.google.com/drive/folders/13rGesktAqkLVT3XdZlbj0h3uLy4oxLJE?usp=drive_link')">ir a podcast</button>
   </div>
+<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
  
  <h3> Descarga 👇 el apk </h3>
  <a href="https://www.appcreator24.com/app1328574-m0lhb4" target="_blank">
@@ -432,6 +401,7 @@ button:hover {
        alt="Botón de imagen" 
        style="width: 150px; height: auto; cursor: pointer; border: none;" />
 </a>
+<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
   <div class="contador" id="contador">Cargando visitas...</div>
 </main>
