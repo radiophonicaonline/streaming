@@ -350,7 +350,24 @@ button:hover {
   <h3> Chat en vivo</h3>
  <!-- 🔐 LOGIN DE USUARIO -->
 <div id="user-info">Cargando estado de usuario...</div>
-<button id="login-google">Iniciar sesión con Google</button>
+<!-- BOTÓN REDONDO LOGIN GOOGLE -->
+<button id="login-google" style="
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+">
+  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+       alt="Login con Google"
+       style="width: 20px; height: 20px;">
+</button>
  <button id="login-anonimo">Entrar como invitado</button>
 <button id="logout">Cerrar sesión</button>
   <div class="chat-container">
