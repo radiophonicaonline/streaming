@@ -242,6 +242,7 @@ document.getElementById("login-facebook").addEventListener("click", () => {
 
   onAuthStateChanged(auth, (user) => {
     const info = document.getElementById("user-info");
+      console.log("USUARIO:", user);
 
     if (user) {
       const name = user.displayName || "Anónimo";
