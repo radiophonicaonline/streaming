@@ -3,6 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 import {
   getAuth,
   GoogleAuthProvider,
+  FacebookAuthProvider,
   signInWithPopup,
   signInAnonymously,
   onAuthStateChanged,
@@ -23,6 +24,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+const providerFacebook = new FacebookAuthProvider();
+
 
 // --- CONTADOR DE VISITAS ---
 const hoy = new Date().toISOString().split("T")[0];
@@ -221,6 +224,11 @@ window.addEventListener("DOMContentLoaded", () => {
       console.error("Error al iniciar sesión:", error);
     });
   });
+document.getElementById("login-facebook").addEventListener("click", () => {
+  signInWithPopup(auth, providerFacebook).catch((error) => {
+    console.error("Error al iniciar sesión con Facebook:", error);
+  });
+});
 
   document.getElementById("login-anonimo").addEventListener("click", () => {
     signInAnonymously(auth).catch((error) => {
