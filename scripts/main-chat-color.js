@@ -225,10 +225,14 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   });
 document.getElementById("login-facebook").addEventListener("click", () => {
-  signInWithPopup(auth, providerFacebook).catch((error) => {
+signInWithPopup(auth, providerFacebook).catch((error) => {
+  if (error.code === 'auth/account-exists-with-different-credential') {
+    alert("⚠️ Ya existe una cuenta con este correo, pero fue creada con otro método (como Google). Iniciá sesión con ese método.");
+  } else {
     console.error("Error al iniciar sesión con Facebook:", error);
-  });
+  }
 });
+
 
   document.getElementById("login-anonimo").addEventListener("click", () => {
     signInAnonymously(auth).catch((error) => {
