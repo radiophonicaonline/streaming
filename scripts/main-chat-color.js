@@ -185,5 +185,47 @@ window.addEventListener("DOMContentLoaded", () => {
   setInterval(actualizarContenido, 10000); // repite cada 10 seg
 });
 
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("login-google").addEventListener("click", () => {
+    signInWithPopup(auth, provider).catch((error) => {
+      console.error("Error al iniciar sesión:", error);
+    });
+  });
+
+  document.getElementById("login-anonimo").addEventListener("click", () => {
+    signInAnonymously(auth).catch((error) => {
+      console.error("Error al iniciar como anónimo:", error);
+    });
+  });
+
+  document.getElementById("logout").addEventListener("click", () => {
+    signOut(auth);
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    const info = document.getElementById("user-info");
+
+    if (user) {
+      const name = user.displayName || "Anónimo";
+      const photo = user.photoURL || null;
+
+      info.innerHTML = user.isAnonymous
+        ? `👤 Estás chateando como invitado`
+        : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
+
+      window.chatUser = {
+        name: name,
+        uid: user.uid,
+        email: user.email || "",
+        photo: photo,
+        isAnon: user.isAnonymous
+      };
+
+    } else {
+      info.textContent = "No has iniciado sesión";
+      window.chatUser = null;
+    }
+  });
+});
 
 
