@@ -337,23 +337,56 @@ button:hover {
   alt="Portada de la canción" 
   style="width: 200px; border-radius: 10px; margin-top: 10px;">
 
- <div id="user-info">Cargando estado de usuario...</div>
-<button id="login-google" style="
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: sans-serif;
-  cursor: pointer;
-">
-  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px; height:20px;">
-  Iniciar sesión con Google
-</button>
-<button id="login-anonimo">Entrar como invitado</button>
-<button id="logout">Cerrar sesión</button>
+<!-- 🔐 LOGIN DE USUARIO -->
+<section id="login-section" style="margin: 20px auto; max-width: 400px; text-align: center; font-family: sans-serif;">
+  <h3 style="margin-bottom: 10px;">👤 Identifícate para tener más funciones</h3>
+
+  <div id="user-info" style="margin-bottom: 10px; font-weight: bold;">Cargando estado de usuario...</div>
+
+  <button id="login-google" style="
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+  ">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px; height:20px;">
+    Iniciar sesión con Google
+  </button>
+
+  <button id="login-anonimo" style="
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 6px;
+  ">
+    🎭 Entrar como invitado
+  </button>
+
+  <button id="logout" style="
+    background: #ffdddd;
+    border: 1px solid #ffaaaa;
+    border-radius: 5px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+  ">
+    ❌ Cerrar sesión
+  </button>
+</section>
+
  
   <h3> Chat en vivo</h3>
   <div class="chat-container">
