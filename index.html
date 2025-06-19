@@ -349,44 +349,45 @@ button:hover {
 
   <h3> Chat en vivo</h3>
  <!-- 🔐 LOGIN DE USUARIO -->
-<div id="user-info">Cargando estado de usuario...</div>
-<!-- BOTÓN REDONDO LOGIN GOOGLE -->
-<button id="login-google" style="
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  vertical-align: middle;
+<h3 style="text-align:center;">🔐 Inicia sesión con:</h3>
 
-">
-  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-       alt="Login con Google"
-       style="width: 20px; height: 20px;">
-</button>
-<!-- Botón redondo para Facebook -->
-<button id="login-facebook" style="
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #3b5998;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  cursor: pointer;
-">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg"
-       alt="Login con Facebook"
-       style="width: 20px; height: 20px;">
-</button>
+<div class="social-icons">
+  <!-- Login con Google -->
+  <button id="login-google" class="icon google" style="
+    background: white;
+    padding: 8px;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  ">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+         alt="Google"
+         style="width: 24px; height: 24px;">
+  </button>
+
+  <!-- Login con Facebook -->
+  <button id="login-facebook" class="icon facebook" style="
+    padding: 8px;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  ">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg"
+         alt="Facebook"
+         style="width: 24px; height: 24px;">
+  </button>
+</div>
+
 
 
  <button id="login-anonimo">Entrar como invitado</button>
