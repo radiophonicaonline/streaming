@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://radiophonicaonline.github.io/streaming/sitemap.xml
