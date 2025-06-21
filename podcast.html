@@ -238,6 +238,13 @@ window.editarComentario = function (key, episodioId, btn) {
     mensajeSpan.textContent = nuevoMensaje.trim();
   }
 };
+  import { onChildRemoved } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+onChildRemoved(comentariosRef, (data) => {
+  const div = document.getElementById(`comentario-${episodioId}-${data.key}`);
+  if (div) div.remove();
+});
+
 </script>
 
 </body>
