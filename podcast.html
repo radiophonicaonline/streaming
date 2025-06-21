@@ -126,11 +126,12 @@ import {
   ref,
   push,
   onChildAdded,
+  onChildRemoved,
   remove,
   update
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-// 🔥 CONFIGURA TU FIREBASE ACÁ 👇
+// ✅ CONFIGURA TU FIREBASE AQUÍ
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
@@ -143,11 +144,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
-
 let currentUser = null;
-const userInfo = document.getElementById("user-info");
 
-// ✅ Estado de sesión
+// Mostrar estado de usuario
+const userInfo = document.getElementById("user-info");
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = user;
@@ -158,7 +158,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// 🔐 Login
+// Login con proveedores
 document.getElementById("login-google").onclick = () => {
   signInWithPopup(auth, new GoogleAuthProvider());
 };
@@ -175,10 +175,9 @@ document.getElementById("logout").onclick = () => {
   signOut(auth);
 };
 
-// 📝 Manejo de comentarios por episodio
+// Manejo de comentarios por episodio
 document.querySelectorAll('.episodio').forEach((episodioDiv) => {
   const episodioId = episodioDiv.getAttribute('data-episodio');
-  const nombreInput = episodioDiv.querySelector('.nombre');
   const mensajeInput = episodioDiv.querySelector('.mensaje');
   const chatbox = episodioDiv.querySelector('.chatbox');
   const boton = episodioDiv.querySelector('.btn-enviar');
@@ -201,24 +200,33 @@ document.querySelectorAll('.episodio').forEach((episodioDiv) => {
 
   // Mostrar comentarios
   onChildAdded(comentariosRef, (data) => {
+    if (document.getElementById(`comentario-${episodioId}-${data.key}`)) return;
+
     const dato = data.val();
     const div = document.createElement('div');
+    div.id = `comentario-${episodioId}-${data.key}`;
     div.className = "comentario";
     div.innerHTML = `<strong>${dato.nombre}</strong>: <span class="msg">${dato.mensaje}</span>`;
 
-    // Si el mensaje es del usuario actual, mostrar botones
+    // Mostrar botones solo si el comentario es del usuario logueado
     if (currentUser && dato.uid === currentUser.uid) {
       div.innerHTML += `
-        <button onclick="editarComentario('${data.key}', '${episodioId}', this)">✏️</button>
+        <button onclick="editarComentario('${data.key}', '${episodioId}')">✏️</button>
         <button onclick="borrarComentario('${data.key}', '${episodioId}')">🗑️</button>
       `;
     }
 
     chatbox.appendChild(div);
   });
+
+  // Borrar comentario automáticamente del DOM
+  onChildRemoved(comentariosRef, (data) => {
+    const div = document.getElementById(`comentario-${episodioId}-${data.key}`);
+    if (div) div.remove();
+  });
 });
 
-// 🧽 Función borrar comentario
+// Función global para borrar comentario
 window.borrarComentario = function (key, episodioId) {
   const ok = confirm("¿Seguro que quieres borrar este comentario?");
   if (ok) {
@@ -226,9 +234,9 @@ window.borrarComentario = function (key, episodioId) {
   }
 };
 
-// 🖊️ Función editar comentario
-window.editarComentario = function (key, episodioId, btn) {
-  const div = btn.closest(".comentario");
+// Función global para editar comentario
+window.editarComentario = function (key, episodioId) {
+  const div = document.getElementById(`comentario-${episodioId}-${key}`);
   const mensajeSpan = div.querySelector(".msg");
   const nuevoMensaje = prompt("Edita tu comentario:", mensajeSpan.textContent);
   if (nuevoMensaje && nuevoMensaje.trim() !== "") {
@@ -238,14 +246,8 @@ window.editarComentario = function (key, episodioId, btn) {
     mensajeSpan.textContent = nuevoMensaje.trim();
   }
 };
-  import { onChildRemoved } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-
-onChildRemoved(comentariosRef, (data) => {
-  const div = document.getElementById(`comentario-${episodioId}-${data.key}`);
-  if (div) div.remove();
-});
-
 </script>
+
 
 </body>
 </html>
