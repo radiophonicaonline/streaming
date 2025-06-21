@@ -4,57 +4,148 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Podcast - Radiophonica</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
+  <link rel="icon" href="logo_favicon.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
-      font-family: 'Montserrat', sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      padding: 2rem;
+      background: url('https://radiophonicaonline.github.io/streaming/fondo.png') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      font-family: 'Arial Black', sans-serif;
+      padding: 30px;
+      text-shadow: 2px 2px 5px #000;
+    }
+    header img {
+      width: 200px;
+      margin: auto;
+      display: block;
+      background-color: rgba(0,0,0,0.6);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #000000aa;
     }
     h1 {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-top: 30px;
     }
     .episodio {
-      background: #222;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      background-color: rgba(0,0,0,0.6);
+      margin: 40px auto;
+      padding: 20px;
+      border-radius: 15px;
+      max-width: 900px;
+      box-shadow: 0 0 10px #000000aa;
     }
     iframe {
       width: 100%;
-      height: 360px;
+      height: 400px;
       border: none;
-      border-radius: 8px;
+      margin-top: 10px;
     }
     .comentarios {
-      margin-top: 1rem;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 20px;
+    }
+    .comentarios textarea, .comentarios input {
+      width: 90%;
+      background: #2a2a2a;
+      color: white;
+      border: 1px solid #444;
+      border-radius: 5px;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    .comentarios button {
+      padding: 8px 14px;
+      background-color: #00bcd4;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+    }
+    .comentario {
+      background: #2a2a2a;
+      margin: 5px 0;
+      padding: 6px 10px;
+      border-radius: 5px;
+      color: white;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
+<header>
+  <img src="https://radiophonicaonline.github.io/streaming/logo.png" alt="Radiophonica Logo" />
+</header>
 
-  <h1>🎙️ Episodios del Podcast</h1>
+<h1>🎧 Podcast Radiophonica</h1>
 
-  <div class="episodio">
-    <h2>Episodio 1: El comienzo de todo</h2>
-    <iframe src="https://drive.google.com/file/d/14KfmXhL8_GQyxoLM86WxemOpOqjPmNGe/preview" width="640" height="480" allow="autoplay"></iframe>
-<iframe 
-    <div class="comentarios">
-      <iframe src="https://radiophonicaonline.github.io/streaming/comentarios.html?ep=1" width="100%" height="200" style="border:none;"></iframe>
-    </div>
+<div class="episodio" data-episodio="ep1">
+  <h2>🎙️ Episodio 1: El Comienzo</h2>
+  <iframe src="https://drive.google.com/file/d/14KfmXhL8_GQyxoLM86WxemOpOqjPmNGe/preview" allow="autoplay"></iframe>
+  
+  <div class="comentarios">
+    <h3>💬 Comentarios</h3>
+    <input type="text" class="nombre" placeholder="Tu nombre">
+    <textarea class="mensaje" placeholder="Escribe tu comentario..."></textarea>
+    <button class="btn-enviar">Enviar</button>
+    <div class="chatbox"></div>
   </div>
+</div>
 
-  <div class="episodio">
-    <h2>Episodio 2: Invitado misterioso</h2>
-    <iframe src="https://drive.google.com/file/d/ID_DEL_VIDEO2/preview" allow="autoplay"></iframe>
-    <div class="comentarios">
-      <iframe src="https://radiophonicaonline.github.io/streaming/comentarios.html?ep=2" width="100%" height="200" style="border:none;"></iframe>
-    </div>
-  </div>
+<!-- Agrega más episodios copiando el bloque de arriba -->
+
+<!-- Firebase y lógica de comentarios -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+ const firebaseConfig = {
+  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+  projectId: "contador-de-personas-5f8aa",
+  storageBucket: "contador-de-personas-5f8aa.appspot.com",
+  messagingSenderId: "1063230344919",
+  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  document.querySelectorAll('.episodio').forEach((episodioDiv) => {
+    const episodioId = episodioDiv.getAttribute('data-episodio');
+    const nombreInput = episodioDiv.querySelector('.nombre');
+    const mensajeInput = episodioDiv.querySelector('.mensaje');
+    const boton = episodioDiv.querySelector('.btn-enviar');
+    const chatbox = episodioDiv.querySelector('.chatbox');
+
+    const comentariosRef = ref(db, 'comentarios_podcast/' + episodioId);
+
+    boton.addEventListener('click', () => {
+      const nombre = nombreInput.value.trim() || "Anónimo";
+      const mensaje = mensajeInput.value.trim();
+      if (mensaje) {
+        push(comentariosRef, {
+          nombre,
+          mensaje,
+          fecha: new Date().toISOString()
+        });
+        mensajeInput.value = '';
+      }
+    });
+
+    onChildAdded(comentariosRef, (data) => {
+      const dato = data.val();
+      const div = document.createElement('div');
+      div.classList.add('comentario');
+      div.innerHTML = `<strong>${dato.nombre}</strong>: ${dato.mensaje}`;
+      chatbox.appendChild(div);
+    });
+  });
+</script>
 
 </body>
 </html>
