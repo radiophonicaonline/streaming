@@ -267,3 +267,15 @@ document.getElementById("login-facebook").addEventListener("click", () => {
     }
   });
 });
+ window.addEventListener('load', function() {
+    const player = document.getElementById('reproductor');
+    const playPromise = player.play();
+
+    if (playPromise !== undefined) {
+      playPromise.then(_ => {
+        // Autoplay OK
+      }).catch(error => {
+        console.warn("Autoplay bloqueado por el navegador 😓");
+      });
+    }
+  });
