@@ -103,7 +103,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
   import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
- const firebaseConfig = {
+  const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
   projectId: "contador-de-personas-5f8aa",
@@ -115,15 +115,20 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  document.querySelectorAll('.episodio').forEach((episodioDiv) => {
+  document.querySelectorAll('.episodio').forEach((episodioDiv, index) => {
     const episodioId = episodioDiv.getAttribute('data-episodio');
     const nombreInput = episodioDiv.querySelector('.nombre');
     const mensajeInput = episodioDiv.querySelector('.mensaje');
     const boton = episodioDiv.querySelector('.btn-enviar');
-    const chatbox = episodioDiv.querySelector('.chatbox');
 
-    const comentariosRef = ref(db, 'comentarios_podcast/' + episodioId);
+    // Identificador único para la caja de comentarios
+    const chatboxId = `chatbox-${episodioId}`;
+    let chatbox = episodioDiv.querySelector('.chatbox');
+    chatbox.setAttribute("id", chatboxId);
 
+    const comentariosRef = ref(db, `comentarios_podcast/${episodioId}`);
+
+    // Evento para enviar mensaje
     boton.addEventListener('click', () => {
       const nombre = nombreInput.value.trim() || "Anónimo";
       const mensaje = mensajeInput.value.trim();
@@ -132,20 +137,27 @@
           nombre,
           mensaje,
           fecha: new Date().toISOString()
+        }).then(() => {
+          mensajeInput.value = '';
+        }).catch((error) => {
+          console.error("Error al enviar comentario:", error);
         });
-        mensajeInput.value = '';
       }
     });
 
+    // Cargar comentarios existentes
     onChildAdded(comentariosRef, (data) => {
       const dato = data.val();
-      const div = document.createElement('div');
-      div.classList.add('comentario');
-      div.innerHTML = `<strong>${dato.nombre}</strong>: ${dato.mensaje}`;
-      chatbox.appendChild(div);
+      const comentarioDiv = document.createElement('div');
+      comentarioDiv.classList.add('comentario');
+      comentarioDiv.innerHTML = `<strong>${dato.nombre}</strong>: ${dato.mensaje}`;
+      chatbox.appendChild(comentarioDiv);
+    }, (error) => {
+      console.error("Error al leer comentarios:", error);
     });
   });
 </script>
+
 
 </body>
 </html>
