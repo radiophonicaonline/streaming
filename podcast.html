@@ -91,16 +91,75 @@
 
   </style>
 </head>
-    <div id="user-info">Cargando estado de usuario...</div>
-<h3>🔐 Inicia sesión con:</h3>
-<div class="social-icons">
-  <!-- Google -->
-  <button id="login-google">Login con Google</button>
-  <!-- Facebook -->
-  <button id="login-facebook">Login con Facebook</button>
+  <div id="user-info" style="margin: 15px 0; font-size: 16px; color: #ccc;">
+  Cargando estado de usuario...
 </div>
-<button id="login-anonimo">Entrar como invitado</button>
-<button id="logout">Cerrar sesión</button>
+
+<h3 style="margin-bottom: 10px;">🔐 Inicia sesión con:</h3>
+
+<div class="social-icons" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px;">
+  <!-- Google -->
+  <button id="login-google" title="Iniciar con Google" style="
+    display: flex;
+    align-items: center;
+    background: white;
+    color: black;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+  ">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 20px; margin-right: 8px;">
+    Google
+  </button>
+
+  <!-- Facebook -->
+  <button id="login-facebook" title="Iniciar con Facebook" style="
+    display: flex;
+    align-items: center;
+    background: #3b5998;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+  ">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" style="width: 20px; margin-right: 8px;">
+    Facebook
+  </button>
+</div>
+
+<!-- Botón de invitado -->
+<button id="login-anonimo" style="
+  background: #444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 10px;
+">
+  👤 Entrar como invitado
+</button>
+
+<!-- Cerrar sesión -->
+<br>
+<button id="logout" style="
+  background: #222;
+  color: #bbb;
+  border: 1px solid #444;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-top: 5px;
+  cursor: pointer;
+">
+  🔒 Cerrar sesión
+</button>
+
 <body>
 <header>
   <img src="https://radiophonicaonline.github.io/streaming/logo.png" alt="Radiophonica Logo" />
