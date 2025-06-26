@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aporte Voluntario - Radiophonica</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <style>
+    body {
+      background: url('fondo.png') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+      font-family: 'Arial Black', sans-serif;
+      font-size: 22px;
+      text-align: center;
+      padding: 30px;
+      text-shadow: 2px 2px 5px #000000;
+    }
+
+    header img {
+      width: 200px;
+      margin-top: 20px;
+      box-shadow: 0 0 15px #000000aa;
+      background-color: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .bloque {
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
+      padding: 30px;
+      margin-top: 30px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 0 20px #000000aa;
+    }
+
+    .botones a button {
+      padding: 15px 30px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px;
+      transition: background 0.3s ease, transform 0.2s;
+      font-weight: bold;
+    }
+
+    .botones a button:hover {
+      transform: scale(1.05);
+    }
+
+    .mp-button {
+      background-color: #009EE3;
+      color: white;
+    }
+
+    .paypal-button {
+      background-color: #003087;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="Radiophonica Logo" />
+  </header>
+
+  <div class="bloque">
+    <h2>💖 Aporte Voluntario</h2>
+    <p>
+      Como sabes, somos una estación de transmisión independiente. Para nosotros, siempre ha sido difícil mantener nuestra transmisión sin su apoyo.
+    </p>
+    <p>
+      Para apoyarnos, haga clic en el botón donar y luego elija la aplicación con la que donará. ¡Muchas gracias!
+    </p>
+
+    <div class="botones">
+      <!-- Mercado Pago -->
+      <a href="https://link.mercadopago.cl/radiophonica" target="_blank">
+        <button class="mp-button">💳 Donar con Mercado Pago</button>
+      </a>
+
+      <!-- PayPal -->
+      <a href="https://www.paypal.com/donate?hosted_button_id=TU_ID_PAYPAL" target="_blank">
+        <button class="paypal-button">💰 Donar con PayPal</button>
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>
