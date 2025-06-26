@@ -200,12 +200,12 @@ function actualizarContenido() {
 
   const iframe = document.getElementById("iframeCancion");
   if (iframe) {
-    iframe.src = "https://sense-humor-yeah-omissions.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+    iframe.src = "https://operates-deutschland-requested-ships.trycloudflare.com/nowplaying.txt?t=" + timestamp;
   }
 
   const portada = document.getElementById("portadaCancion");
   if (portada) {
-    portada.src = "https://sense-humor-yeah-omissions.trycloudflare.com/artwork.png?t=" + timestamp;
+    portada.src = "https://operates-deutschland-requested-ships.trycloudflare.com/artwork.png?t=" + timestamp;
   }
 }
 
