@@ -20,6 +20,9 @@
       border-radius: 12px;
       opacity: 0;
       white-space: pre-wrap;
+      max-width: 90vw;
+      word-wrap: break-word;
+      text-align: center;
       transition: all 0.6s ease-in-out;
     }
     #gcBox.animar {
@@ -33,14 +36,14 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-  databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
-  projectId: "contador-de-personas-5f8aa",
-  storageBucket: "contador-de-personas-5f8aa.appspot.com",
-  messagingSenderId: "1063230344919",
-  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-};
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
