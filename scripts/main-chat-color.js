@@ -194,24 +194,22 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
-// --- ACTUALIZAR CANCIÓN Y PORTADA AUTOMÁTICAMENTE ---
-function actualizarContenido() {
-  const timestamp = Date.now();
-
-  const iframe = document.getElementById("iframeCancion");
-  if (iframe) {
-    iframe.src = "https://clinton-recorded-copies-logs.trycloudflare.com/nowplaying.txt?t=" + timestamp;
-  }
-
-  const portada = document.getElementById("portadaCancion");
-  if (portada) {
-    portada.src = "https://clinton-recorded-copies-logs.trycloudflare.com/artwork.png?t=" + timestamp;
-  }
-}
-
+/ Cargar URLs desde Firebase antes de empezar actualizaciones
 window.addEventListener("DOMContentLoaded", () => {
-  actualizarContenido(); // ejecuta una vez al cargar
-  setInterval(actualizarContenido, 10000); // repite cada 10 seg
+  Promise.all([
+    get(ref(db, "urlNowPlaying")),
+    get(ref(db, "urlArtwork"))
+  ]).then(([snapCancion, snapPortada]) => {
+    if (snapCancion.exists()) {
+      urlCancion = snapCancion.val();
+    }
+    if (snapPortada.exists()) {
+      urlPortada = snapPortada.val();
+    }
+
+    actualizarContenido(); // primera carga
+    setInterval(actualizarContenido, 10000); // cada 10 seg
+  });
 });
 
 
