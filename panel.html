@@ -83,6 +83,13 @@
   😂 <span id="count-funny">0</span>
 </div>
 
+<h3>🎚️ Cambiar URL del Reproductor (Cloudflared)</h3>
+
+<label>URL completa del reproductor (ej: https://tunel.trycloudflare.com/stream.html):</label><br>
+<input type="text" id="inputReproductor" style="width:100%"><br><br>
+
+<button onclick="guardarURLReproductor()">💾 Guardar URL</button>
+<div id="estadoReproductor" style="margin-top:10px;color:green;"></div>
 
 
   <div class="chat-box">
@@ -265,6 +272,35 @@ function renderChat() {
       }
     };
   }
+  function guardarURLReproductor() {
+  const nuevaUrl = document.getElementById("inputReproductor").value.trim();
+
+  if (!nuevaUrl.startsWith("https://")) {
+    alert("La URL debe comenzar con https://");
+    return;
+  }
+
+  set(ref(db, "urlReproductor"), nuevaUrl)
+    .then(() => {
+      document.getElementById("estadoReproductor").textContent = "✅ URL del reproductor actualizada.";
+    })
+    .catch((error) => {
+      console.error("Error al guardar la URL:", error);
+      alert("❌ Hubo un error al guardar la URL.");
+    });
+}
+
+// Cargar la URL actual para mostrarla en el input
+function cargarURLReproductor() {
+  get(ref(db, "urlReproductor")).then((snap) => {
+    if (snap.exists()) {
+      document.getElementById("inputReproductor").value = snap.val();
+    }
+  });
+}
+
+window.addEventListener("DOMContentLoaded", cargarURLReproductor);
+
 </script>
 
 </body>
