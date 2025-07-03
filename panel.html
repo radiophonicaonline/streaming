@@ -272,7 +272,8 @@ function renderChat() {
       }
     };
   }
-  function guardarURLReproductor() {
+  // 🔁 FUNCIONES PARA GUARDAR Y CARGAR URL DEL REPRODUCTOR
+function guardarURLReproductor() {
   const nuevaUrl = document.getElementById("inputReproductor").value.trim();
 
   if (!nuevaUrl.startsWith("https://")) {
@@ -280,9 +281,11 @@ function renderChat() {
     return;
   }
 
+  // Importante: esta línea usa `db` ya inicializado arriba
   set(ref(db, "urlReproductor"), nuevaUrl)
     .then(() => {
       document.getElementById("estadoReproductor").textContent = "✅ URL del reproductor actualizada.";
+      document.getElementById("playerEmbed").src = nuevaUrl; // actualizar vista previa
     })
     .catch((error) => {
       console.error("Error al guardar la URL:", error);
@@ -290,7 +293,6 @@ function renderChat() {
     });
 }
 
-// Cargar la URL actual para mostrarla en el input
 function cargarURLReproductor() {
   get(ref(db, "urlReproductor")).then((snap) => {
     if (snap.exists()) {
@@ -299,7 +301,11 @@ function cargarURLReproductor() {
   });
 }
 
-   window.addEventListener("DOMContentLoaded", cargarURLReproductor);
+// ⏳ Ejecutar solo si es admin
+if (esAdmin) {
+  window.addEventListener("DOMContentLoaded", cargarURLReproductor);
+}
+
   
 </script>
 
