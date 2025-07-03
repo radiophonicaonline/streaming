@@ -194,8 +194,8 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
-/ Cargar URLs desde Firebase antes de empezar actualizaciones
-window.addEventListener("DOMContentLoaded", () => {
+
+// Cargar las URLs de la canción y portada
   Promise.all([
     get(ref(db, "urlNowPlaying")),
     get(ref(db, "urlArtwork"))
@@ -211,7 +211,6 @@ window.addEventListener("DOMContentLoaded", () => {
     setInterval(actualizarContenido, 10000); // cada 10 seg
   });
 });
-
 
 
 
