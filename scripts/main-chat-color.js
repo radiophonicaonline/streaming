@@ -201,12 +201,12 @@ function actualizarContenido() {
 
   const iframe = document.getElementById("iframeCancion");
   if (iframe) {
-    iframe.src = "https://jail-sandy-emails-ottawa.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+    iframe.src = "https://photography-forecast-kitty-animation.trycloudflare.com/nowplaying.txt?t=" + timestamp;
   }
 
   const portada = document.getElementById("portadaCancion");
   if (portada) {
-    portada.src = "https://jail-sandy-emails-ottawa.trycloudflare.com/artwork.png?t=" + timestamp;
+    portada.src = "https://photography-forecast-kitty-animation.trycloudflare.com/artwork.png?t=" + timestamp;
   }
 }
 
