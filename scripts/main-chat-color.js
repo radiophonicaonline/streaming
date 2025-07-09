@@ -3,7 +3,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 import {
   getAuth,
   GoogleAuthProvider,
-  FacebookAuthProvider,
   signInWithPopup,
   signInAnonymously,
   onAuthStateChanged,
@@ -24,8 +23,6 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-const providerFacebook = new FacebookAuthProvider();
-
 
 // --- CONTADOR DE VISITAS ---
 const hoy = new Date().toISOString().split("T")[0];
@@ -39,10 +36,30 @@ set(miConexion, true);
 onDisconnect(miConexion).remove();
 
 onValue(conexionesRef, (snap) => {
-  document.getElementById("contador").innerText = `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
+  document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
 });
 
+// --- RADIOVIDENTES ---
+let miRadiovidenteRef = null;
 
+function registrarRadiovidente() {
+  const radiovidentesRef = ref(db, "radiovidentes");
+  miRadiovidenteRef = push(radiovidentesRef);
+  set(miRadiovidenteRef, true);
+  onDisconnect(miRadiovidenteRef).remove();
+  const contadorDiv = document.createElement("div");
+  contadorDiv.id = "contadorRadiovidentes";
+  contadorDiv.style.marginTop = "10px";
+  document.querySelector("main").appendChild(contadorDiv);
+
+  onValue(radiovidentesRef, (snap) => {
+    document.getElementById("contadorRadiovidentes").innerText = `🎧 Radiovidentes activos: ${snap.size}`;
+  });
+}
+
+function cerrarRadiovidente() {
+  if (miRadiovidenteRef) remove(miRadiovidenteRef);
+}
 
 // --- CHAT EN VIVO CON COLORES ---
 const chatRef = ref(db, "chat");
@@ -174,23 +191,18 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
-
-// --- ACTUALIZAR CANCIÓN Y PORTADA AUTOMÁTICAMENTE ---
-function actualizarContenido() {
-  const timestamp = Date.now();
-
 // --- ACTUALIZAR CANCIÓN Y PORTADA AUTOMÁTICAMENTE ---
 function actualizarContenido() {
   const timestamp = Date.now();
 
   const iframe = document.getElementById("iframeCancion");
   if (iframe) {
-    iframe.src = "https://photography-forecast-kitty-animation.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+    iframe.src = "https://relatives-medicine-wallace-rider.trycloudflare.com/nowplaying.txt?t=" + timestamp;
   }
 
   const portada = document.getElementById("portadaCancion");
   if (portada) {
-    portada.src = "https://photography-forecast-kitty-animation.trycloudflare.com/artwork.png?t=" + timestamp;
+    portada.src = "https://relatives-medicine-wallace-rider.trycloudflare.com/artwork.png?t=" + timestamp;
   }
 }
 
@@ -201,65 +213,45 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 
+
 // --- LOGIN CON GOOGLE Y ANÓNIMO ---
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("login-google").addEventListener("click", () => {
-    signInWithPopup(auth, provider).catch((error) => {
-      console.error("Error al iniciar sesión:", error);
-    });
-  });
-document.getElementById("login-facebook").addEventListener("click", () => {
-  signInWithPopup(auth, providerFacebook).catch((error) => {
-    console.error("Error al iniciar sesión con Facebook:", error);
+document.getElementById("login-google").addEventListener("click", () => {
+  signInWithPopup(auth, provider).catch((error) => {
+    console.error("Error al iniciar sesión:", error);
   });
 });
 
-
-  document.getElementById("login-anonimo").addEventListener("click", () => {
-    signInAnonymously(auth).catch((error) => {
-      console.error("Error al iniciar como anónimo:", error);
-    });
-  });
-
-  document.getElementById("logout").addEventListener("click", () => {
-    signOut(auth);
-  });
-
-  onAuthStateChanged(auth, (user) => {
-    const info = document.getElementById("user-info");
-      console.log("USUARIO:", user);
-
-    if (user) {
-      const name = user.displayName || "Anónimo";
-      const photo = user.photoURL || null;
-
-      info.innerHTML = user.isAnonymous
-        ? `👤 Estás chateando como invitado`
-        : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
-
-      window.chatUser = {
-        name: name,
-        uid: user.uid,
-        email: user.email || "",
-        photo: photo,
-        isAnon: user.isAnonymous
-      };
-
-    } else {
-      info.textContent = "No has iniciado sesión";
-      window.chatUser = null;
-    }
+document.getElementById("login-anonimo").addEventListener("click", () => {
+  signInAnonymously(auth).catch((error) => {
+    console.error("Error al iniciar como anónimo:", error);
   });
 });
- window.addEventListener('load', function() {
-    const player = document.getElementById('reproductor');
-    const playPromise = player.play();
 
-    if (playPromise !== undefined) {
-      playPromise.then(_ => {
-        // Autoplay OK
-      }).catch(error => {
-        console.warn("Autoplay bloqueado por el navegador 😓");
-      });
-    }
-  });
+document.getElementById("logout").addEventListener("click", () => {
+  signOut(auth);
+});
+
+onAuthStateChanged(auth, (user) => {
+  const info = document.getElementById("user-info");
+
+  if (user) {
+    const name = user.displayName || "Anónimo";
+    const photo = user.photoURL || null;
+
+    info.innerHTML = user.isAnonymous
+      ? `👤 Estás chateando como invitado`
+      : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
+
+    window.chatUser = {
+      name: name,
+      uid: user.uid,
+      email: user.email || "",
+      photo: photo,
+      isAnon: user.isAnonymous
+    };
+
+  } else {
+    info.textContent = "No has iniciado sesión";
+    window.chatUser = null;
+  }
+});
