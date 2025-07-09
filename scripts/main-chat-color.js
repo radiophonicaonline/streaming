@@ -36,30 +36,9 @@ set(miConexion, true);
 onDisconnect(miConexion).remove();
 
 onValue(conexionesRef, (snap) => {
-  document.getElementById("contador").innerText = `👀 Hay ${snap.size} persona(s) viendo esta página.`;
+  document.getElementById("contador").innerText = `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
 });
 
-// --- RADIOVIDENTES ---
-let miRadiovidenteRef = null;
-
-function registrarRadiovidente() {
-  const radiovidentesRef = ref(db, "radiovidentes");
-  miRadiovidenteRef = push(radiovidentesRef);
-  set(miRadiovidenteRef, true);
-  onDisconnect(miRadiovidenteRef).remove();
-  const contadorDiv = document.createElement("div");
-  contadorDiv.id = "contadorRadiovidentes";
-  contadorDiv.style.marginTop = "10px";
-  document.querySelector("main").appendChild(contadorDiv);
-
-  onValue(radiovidentesRef, (snap) => {
-    document.getElementById("contadorRadiovidentes").innerText = `🎧 Radiovidentes activos: ${snap.size}`;
-  });
-}
-
-function cerrarRadiovidente() {
-  if (miRadiovidenteRef) remove(miRadiovidenteRef);
-}
 
 // --- CHAT EN VIVO CON COLORES ---
 const chatRef = ref(db, "chat");
