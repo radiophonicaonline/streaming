@@ -179,24 +179,15 @@ get(ref(db, "urlReproductor")).then((snap) => {
 function actualizarContenido() {
   const timestamp = Date.now();
 
-  // Actualizar nombre de la canción (desde .txt con fetch)
-  fetch("https://photography-forecast-kitty-animation.trycloudflare.com/nowplaying.txt?t=" + timestamp)
-    .then(response => response.text())
-    .then(texto => {
-      const divCancion = document.getElementById("nombreCancion");
-      if (divCancion) {
-        divCancion.textContent = texto.trim();
-      }
-    })
-    .catch(error => {
-      console.error("❌ Error al cargar nombre de canción:", error);
-      const divCancion = document.getElementById("nombreCancion");
-      if (divCancion) {
-        divCancion.textContent = "🎶 Sin información";
-      }
-    });
+// --- ACTUALIZAR CANCIÓN Y PORTADA AUTOMÁTICAMENTE ---
+function actualizarContenido() {
+  const timestamp = Date.now();
 
-  // Actualizar portada
+  const iframe = document.getElementById("iframeCancion");
+  if (iframe) {
+    iframe.src = "https://photography-forecast-kitty-animation.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+  }
+
   const portada = document.getElementById("portadaCancion");
   if (portada) {
     portada.src = "https://photography-forecast-kitty-animation.trycloudflare.com/artwork.png?t=" + timestamp;
@@ -204,8 +195,8 @@ function actualizarContenido() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  actualizarContenido(); // primera carga
-  setInterval(actualizarContenido, 10000); // cada 10 seg
+  actualizarContenido(); // ejecuta una vez al cargar
+  setInterval(actualizarContenido, 10000); // repite cada 10 seg
 });
 
 
