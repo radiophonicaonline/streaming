@@ -234,12 +234,16 @@ onAuthStateChanged(auth, (user) => {
     window.chatUser = null;
   }
 });
-const btn = document.getElementById("btnVolverArriba");
-
-  window.onscroll = function () {
-    btn.style.display = window.scrollY > 200 ? "block" : "none";
-  };
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+function toggleMenu() {
+    const menu = document.getElementById("menuItems");
+    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
   }
+
+  // Cierra el menú si se hace clic fuera
+  document.addEventListener("click", function (e) {
+    const menu = document.getElementById("menuItems");
+    const toggle = document.querySelector(".menu-toggle");
+    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+      menu.style.display = "none";
+    }
+  });
