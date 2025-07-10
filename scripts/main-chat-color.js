@@ -234,16 +234,22 @@ onAuthStateChanged(auth, (user) => {
     window.chatUser = null;
   }
 });
-function toggleMenu() {
+  function toggleMenu() {
     const menu = document.getElementById("menuItems");
-    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+    if (menu.style.display === "flex") {
+      menu.style.display = "none";
+    } else {
+      menu.style.display = "flex";
+    }
   }
 
-  // Cierra el menú si se hace clic fuera
+  // Cierra el menú al hacer clic fuera (en celular)
   document.addEventListener("click", function (e) {
     const menu = document.getElementById("menuItems");
     const toggle = document.querySelector(".menu-toggle");
     if (!toggle.contains(e.target) && !menu.contains(e.target)) {
-      menu.style.display = "none";
+      if (window.innerWidth < 768) {
+        menu.style.display = "none";
+      }
     }
   });
