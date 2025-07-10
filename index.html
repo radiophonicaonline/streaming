@@ -257,6 +257,39 @@ button:hover {
   </style>
 </head>
 <body>
+<nav id="menuNavegacion">
+  <a href="#inicio">Inicio</a>
+  <a href="#chat">Chat</a>
+  <a href="#podcast">Podcast</a>
+  <a href="#aportes">Aportes</a>
+</nav>
+
+<style>
+  #menuNavegacion {
+    position: sticky;
+    top: 0;
+    background: #000000cc;
+    backdrop-filter: blur(5px);
+    padding: 10px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  #menuNavegacion a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.3s;
+  }
+
+  #menuNavegacion a:hover {
+    background: #ffffff22;
+  }
+</style>
 
 <header>
   <img src="https://radiophonicaonline.github.io/streaming/logo.png" alt="Logo Radiophonica" />
@@ -268,7 +301,8 @@ button:hover {
     display: inline-block;
     box-shadow: 0 0 10px #000000aa;">
  <div>
-<main>
+<section id="inicio">
+  <main>
   <h3><span class="live-badge">📹 <span class="punto">🔴</span> Livestream 🎙️</span></h3>
  <style>
   .player-wrapper {
@@ -308,6 +342,8 @@ button:hover {
   <button class="share-btn" onclick="compartirPagina()" title="Compartir">➡️</button>
   </div>
  
+  <!-- contenido de la sección inicio -->
+</section>
  <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
 <div>
@@ -352,6 +388,8 @@ button:hover {
 
  <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
+<section id="chat">
+  <!-- contenido del chat -->
 
 
   <h3> Chat en vivo</h3>
@@ -378,7 +416,7 @@ button:hover {
   <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea>
   <button onclick="enviarChat()">Enviar mensaje</button>
 </div>
-
+</section>
    
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
@@ -402,6 +440,8 @@ button:hover {
   <button onclick="enviarComentario()">Enviar comentario</button>
 
  <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+<section id="podcast">
+  <!-- contenido de la sección inicio -->
 
 <div>
  <h3>🎙️ Escucha aquí nuestros podcast</h3>
@@ -415,6 +455,11 @@ button:hover {
        alt="Botón de imagen" 
        style="width: 150px; height: auto; cursor: pointer; border: none;" />
 </a>
+ </section>
+
+   <section id="aporte">
+  <!-- contenido de la sección inicio -->
+
   <h3>Haz tu aporte voluntario </h3>
  <a href="aporta.html">
   <button style="
@@ -432,7 +477,7 @@ button:hover {
   </button>
 </a>
 </div>
-
+</section>
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
   <div class="contador" id="contador">Cargando visitas...</div>
 </main>
