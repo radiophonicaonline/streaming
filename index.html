@@ -566,7 +566,27 @@ button:hover {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 </script>
+<script>
+  function toggleMenu() {
+    const menu = document.getElementById("menuItems");
+    if (menu.style.display === "flex") {
+      menu.style.display = "none";
+    } else {
+      menu.style.display = "flex";
+    }
+  }
 
+  // Cierra el menú al hacer clic fuera (en celular)
+  document.addEventListener("click", function (e) {
+    const menu = document.getElementById("menuItems");
+    const toggle = document.querySelector(".menu-toggle");
+    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+      if (window.innerWidth < 768) {
+        menu.style.display = "none";
+      }
+    }
+  });
+</script>
 
 
 </body>
