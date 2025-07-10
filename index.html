@@ -287,6 +287,7 @@ button:hover {
     border: none;
     cursor: pointer;
     padding: 8px 12px;
+    display: block;
   }
 
   .menu-items {
@@ -294,10 +295,12 @@ button:hover {
     flex-direction: column;
     background: #000000dd;
     position: absolute;
-    top: 55px;
+    top: 60px;
     right: 10px;
     border-radius: 10px;
     overflow: hidden;
+    min-width: 150px;
+    transition: all 0.3s ease;
   }
 
   .menu-items a {
@@ -306,12 +309,14 @@ button:hover {
     padding: 10px 15px;
     font-weight: bold;
     border-bottom: 1px solid #ffffff22;
+    display: block;
   }
 
   .menu-items a:hover {
     background: #ffffff22;
   }
 
+  /* En pantallas grandes mostrar como barra normal */
   @media (min-width: 768px) {
     .menu-toggle {
       display: none;
@@ -322,6 +327,7 @@ button:hover {
       position: static;
       flex-direction: row;
       background: transparent;
+      min-width: unset;
     }
 
     .menu-items a {
