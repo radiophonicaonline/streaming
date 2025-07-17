@@ -176,12 +176,12 @@ function actualizarContenido() {
 
   const iframe = document.getElementById("iframeCancion");
   if (iframe) {
-    iframe.src = "https://breakfast-disturbed-sister-tune.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+    iframe.src = "https://strictly-drew-earnings-acquired.trycloudflare.com/nowplaying.txt?t=" + timestamp;
   }
 
   const portada = document.getElementById("portadaCancion");
   if (portada) {
-    portada.src = "https://breakfast-disturbed-sister-tune.trycloudflare.com/artwork.png?t=" + timestamp;
+    portada.src = "https://strictly-drew-earnings-acquired.trycloudflare.com/artwork.png?t=" + timestamp;
   }
 }
 
