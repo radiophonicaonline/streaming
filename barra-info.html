@@ -65,24 +65,19 @@
 
     // Función para obtener clima
    async function obtenerClima() {
-  try {
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&lang=es&units=metric`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error("No se pudo obtener clima");
-
-    const proxyData = await response.json();
-    const data = JSON.parse(proxyData.contents);
-
-    const temp = data.main.temp.toFixed(1);
-    const descripcion = data.weather[0].description;
-    document.getElementById('clima').innerText = `🌤 ${ciudad}: ${temp}°C - ${descripcion}`;
-  } catch (error) {
-    console.error(error);
-    document.getElementById('clima').innerText = '🌤 Error al cargar clima';
-  }
-}
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&lang=es&units=metric`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("No se pudo obtener clima");
+        const data = await response.json();
+        const temp = data.main.temp.toFixed(1);
+        const descripcion = data.weather[0].description;
+        document.getElementById('clima').innerText = `🌤 ${ciudad}: ${temp}°C - ${descripcion}`;
+      } catch (error) {
+        console.error(error);
+        document.getElementById('clima').innerText = '🌤 Error al cargar clima';
+      }
+    }
 
 
     // Iniciar
