@@ -176,12 +176,12 @@ function actualizarContenido() {
 
   const iframe = document.getElementById("iframeCancion");
   if (iframe) {
-    iframe.src = "https://attempts-reveals-stocks-boulder.trycloudflare.com/nowplaying.txt?t=" + timestamp;
+    iframe.src = "https://ev-surprising-writers-geek.trycloudflare.com/nowplaying.txt?t=" + timestamp;
   }
 
   const portada = document.getElementById("portadaCancion");
   if (portada) {
-    portada.src = "https://attempts-reveals-stocks-boulder.trycloudflare.com/artwork.png?t=" + timestamp;
+    portada.src = "https://ev-surprising-writers-geek.trycloudflare.com/artwork.png?t=" + timestamp;
   }
 }
 
