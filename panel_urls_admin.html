@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="icon" type="image/png" href="faviconpanel.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Admin - Radiophonica</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Arial', sans-serif;
+      padding: 30px;
+    }
+    h1 {
+      font-size: 24px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+    }
+    .dato {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+    .negado {
+      color: red;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 100px;
+      font-size: 24px;
+    }
+    .chat-box {
+      margin-top: 30px;
+      border-top: 1px solid #333;
+      padding-top: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .mensaje {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #1e1e1e;
+      border-radius: 6px;
+    }
+    .mensaje.destacado {
+      background: #0056b3;
+      font-weight: bold;
+    }
+    button {
+      margin-left: 10px;
+      padding: 4px 8px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #555;
+    }
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      background: #1e1e1e;
+      color: white;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🛠️ URLs desde Firebase</h1>
+
+<div>
+  <label>🎧 URL Reproductor principal:</label>
+  <input type="text" id="inputReproductor">
+  <button onclick="guardarURL('urlReproductor', 'inputReproductor', 'estadoReproductor')">Guardar</button>
+  <div id="estadoReproductor"></div>
+</div><br>
+
+<div>
+  <label>📱 URL Reproductor Vertical:</label>
+  <input type="text" id="inputVertical">
+  <button onclick="guardarURL('urlvertical', 'inputVertical', 'estadoVertical')">Guardar</button>
+  <div id="estadoVertical"></div>
+</div><br>
+
+<div>
+  <label>🎵 URL Nombre de Canción (nowplaying.txt):</label>
+  <input type="text" id="inputCancion">
+  <button onclick="guardarURL('urlNowPlaying', 'inputCancion', 'estadoCancion')">Guardar</button>
+  <div id="estadoCancion"></div>
+</div><br>
+
+<div>
+  <label>🖼️ URL Carátula de Canción (artwork.png):</label>
+  <input type="text" id="inputPortada">
+  <button onclick="guardarURL('urlArtwork', 'inputPortada', 'estadoPortada')">Guardar</button>
+  <div id="estadoPortada"></div>
+</div><br>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+    authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+    projectId: "contador-de-personas-5f8aa",
+    storageBucket: "contador-de-personas-5f8aa.appspot.com",
+    messagingSenderId: "1063230344919",
+    appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const campos = {
+    urlReproductor: "inputReproductor",
+    urlvertical: "inputVertical",
+    urlNowPlaying: "inputCancion",
+    urlArtwork: "inputPortada"
+  };
+
+  function cargarURLs() {
+    for (const ruta in campos) {
+      const inputId = campos[ruta];
+      get(ref(db, ruta)).then(snap => {
+        if (snap.exists()) {
+          document.getElementById(inputId).value = snap.val();
+        }
+      });
+    }
+  }
+
+  window.guardarURL = (ruta, inputId, estadoId) => {
+    const valor = document.getElementById(inputId).value.trim();
+    if (!valor.startsWith("https://")) {
+      alert("La URL debe comenzar con https://");
+      return;
+    }
+    set(ref(db, ruta), valor).then(() => {
+      document.getElementById(estadoId).textContent = "✅ Guardado correctamente.";
+    }).catch(err => {
+      console.error(err);
+      alert("❌ Error al guardar.");
+    });
+  };
+
+  window.addEventListener("DOMContentLoaded", cargarURLs);
+</script>
+</body>
+</html>
