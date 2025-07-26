@@ -171,9 +171,6 @@ get(ref(db, "urlReproductor")).then((snap) => {
   }
 });
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
 let urlCancion = "";
 let urlPortada = "";
 
