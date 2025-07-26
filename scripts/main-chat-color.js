@@ -170,6 +170,26 @@ get(ref(db, "urlReproductor")).then((snap) => {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
 });
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let urlCancion = "";
+let urlPortada = "";
+
+function actualizarContenido() {
+  const timestamp = Date.now();
+
+  const iframe = document.getElementById("iframeCancion");
+  if (iframe && urlCancion) {
+    iframe.src = urlCancion + "?t=" + timestamp;
+  }
+
+  const portada = document.getElementById("portadaCancion");
+  if (portada && urlPortada) {
+    portada.src = urlPortada + "?t=" + timestamp;
+  }
+}
 // Cargar URLs desde Firebase antes de empezar actualizaciones
 window.addEventListener("DOMContentLoaded", () => {
   Promise.all([
