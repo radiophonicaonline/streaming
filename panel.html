@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -65,97 +64,244 @@
       border-radius: 8px;
       margin-bottom: 20px;
     }
-    input[type="text"] {
-      width: 100%;
-      padding: 6px;
-      background: #1e1e1e;
-      color: white;
-      border: 1px solid #444;
-      border-radius: 4px;
-    }
   </style>
 </head>
 <body>
 
-<h1>🛠️ URLs desde Firebase</h1>
+<div id="contenido" style="display: none;">
+  <h1>📊 Panel de estadísticas</h1>
 
-<div>
-  <label>🎧 URL Reproductor principal:</label>
-  <input type="text" id="inputReproductor">
-  <button onclick="guardarURL('urlReproductor', 'inputReproductor', 'estadoReproductor')">Guardar</button>
-  <div id="estadoReproductor"></div>
-</div><br>
+  <h2>🎧 Player en vivo</h2>
+  <iframe id="playerEmbed" src="" allow="autoplay"></iframe>
+  <div class="dato" id="visitasHoy">Visitas hoy: cargando...</div>
+   <div class="dato" id="enLinea">Personas en la página ahora: cargando...</div>
+  <div class="dato" id="radiovidentes">Radiovidentes activos: cargando...</div>
+<div class="dato">
+  Reacciones:
+  👍 <span id="count-like">0</span> &nbsp;
+  ❤️ <span id="count-love">0</span> &nbsp;
+  😂 <span id="count-funny">0</span>
+</div>
 
-<div>
-  <label>📱 URL Reproductor Vertical:</label>
-  <input type="text" id="inputVertical">
-  <button onclick="guardarURL('urlvertical', 'inputVertical', 'estadoVertical')">Guardar</button>
-  <div id="estadoVertical"></div>
-</div><br>
+<h3>🎚️ Cambiar URL del Reproductor (Cloudflared)</h3>
 
-<div>
-  <label>🎵 URL Nombre de Canción (nowplaying.txt):</label>
-  <input type="text" id="inputCancion">
-  <button onclick="guardarURL('urlNowPlaying', 'inputCancion', 'estadoCancion')">Guardar</button>
-  <div id="estadoCancion"></div>
-</div><br>
+<label>URL completa del reproductor (ej: https://tunel.trycloudflare.com/stream.html):</label><br>
+<input type="text" id="inputReproductor" style="width:100%"><br><br>
 
-<div>
-  <label>🖼️ URL Carátula de Canción (artwork.png):</label>
-  <input type="text" id="inputPortada">
-  <button onclick="guardarURL('urlArtwork', 'inputPortada', 'estadoPortada')">Guardar</button>
-  <div id="estadoPortada"></div>
-</div><br>
+<button onclick="guardarURLReproductor()">💾 Guardar URL</button>
+<div id="estadoReproductor" style="margin-top:10px;color:green;"></div>
+
+
+  <div class="chat-box">
+    <h2>💬 Chat en vivo</h2>
+    <button onclick="borrarTodoChat()" style="background: red;">🗑️ Borrar todo el chat</button>
+    <div id="chatbox"></div>
+  </div>
+
+  <h2>✍️ Enviar mensaje como admin</h2>
+  <input type="text" id="adminNombre" value="Radiophonica" />
+  <input type="color" id="adminColor" value="#ffcc00" />
+  <textarea id="adminMensaje" placeholder="Mensaje del moderador"></textarea><br>
+  <button onclick="enviarAdmin()">Enviar mensaje</button>
+</div>
+
+  
+<div id="accesoDenegado" class="negado" style="display: none;">
+  ❌ Acceso denegado. Parámetro de admin no detectado.
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  import { getDatabase, ref, onValue, set, remove, push, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-    authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-    projectId: "contador-de-personas-5f8aa",
-    storageBucket: "contador-de-personas-5f8aa.appspot.com",
-    messagingSenderId: "1063230344919",
-    appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-  };
+  const params = new URLSearchParams(window.location.search);
+  const esAdmin = params.get("admin") === "si";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  if (!esAdmin) {
+    document.getElementById("accesoDenegado").style.display = "block";
+  } else {
+    document.getElementById("contenido").style.display = "block";
 
-  const campos = {
-    urlReproductor: "inputReproductor",
-    urlvertical: "inputVertical",
-    urlNowPlaying: "inputCancion",
-    urlArtwork: "inputPortada"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+      authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+      projectId: "contador-de-personas-5f8aa",
+      storageBucket: "contador-de-personas-5f8aa.appspot.com",
+      messagingSenderId: "1063230344919",
+      appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+    };
 
-  function cargarURLs() {
-    for (const ruta in campos) {
-      const inputId = campos[ruta];
-      get(ref(db, ruta)).then(snap => {
-        if (snap.exists()) {
-          document.getElementById(inputId).value = snap.val();
-        }
-      });
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const hoy = new Date().toISOString().split("T")[0];
+    const visitasHoyRef = ref(db, "visitas/" + hoy);
+    const visitasTotalesRef = ref(db, "visitas");
+    const conexionesRef = ref(db, "conexiones");
+    const radiovidentesRef = ref(db, "radiovidentes");
+    const likesRef = ref(db, "likes/total");
+    const sharesRef = ref(db, "compartidos");
+    const chatRef = ref(db, "chat");
+    const destacadoRef = ref(db, "chatDestacado");
+    const urlReproductorRef = ref(db, "urlReproductor");
+
+    get(urlReproductorRef).then((snap) => {
+      if (snap.exists()) {
+        document.getElementById("playerEmbed").src = snap.val();
+      }
+    });
+
+    onValue(visitasHoyRef, (snap) => {
+      document.getElementById("visitasHoy").innerText = `Visitas hoy: ${snap.size}`;
+    });
+    onValue(visitasTotalesRef, (snap) => {
+      let total = 0;
+      snap.forEach(d => total += d.size);
+      document.getElementById("visitasTotales").innerText = `Total de visitas: ${total}`;
+    });
+    onValue(conexionesRef, (snap) => {
+      document.getElementById("enLinea").innerText = `Personas en la página ahora: ${snap.size}`;
+    });
+  onValue(likesRef, (snap) => {
+  document.getElementById("likeCount").innerText = `👍 Likes totales: ${snap.exists() ? snap.val() : 0}`;
+});
+
+// --- MOSTRAR CONTADOR DE REACCIONES (like, love, funny) ---
+const reaccionesRef = ref(db, "reacciones/usuarios");
+
+onValue(reaccionesRef, (snapshot) => {
+  const data = snapshot.val() || {};
+  const counts = { like: 0, love: 0, funny: 0 };
+
+  for (const value of Object.values(data)) {
+    if (counts.hasOwnProperty(value)) {
+      counts[value]++;
     }
   }
 
-  window.guardarURL = (ruta, inputId, estadoId) => {
-    const valor = document.getElementById(inputId).value.trim();
-    if (!valor.startsWith("https://")) {
-      alert("La URL debe comenzar con https://");
-      return;
-    }
-    set(ref(db, ruta), valor).then(() => {
-      document.getElementById(estadoId).textContent = "✅ Guardado correctamente.";
-    }).catch(err => {
-      console.error(err);
-      alert("❌ Error al guardar.");
-    });
-  };
+  document.getElementById("count-like").textContent = counts.like;
+  document.getElementById("count-love").textContent = counts.love;
+  document.getElementById("count-funny").textContent = counts.funny;
+});
 
-  window.addEventListener("DOMContentLoaded", cargarURLs);
+onValue(sharesRef, (snap) => {
+  document.getElementById("shareCount").innerText = `📤 Compartidos: ${snap.exists() ? snap.val() : 0}`;
+});
+
+    
+      onValue(sharesRef, (snap) => {
+      document.getElementById("shareCount").innerText = `📤 Compartidos: ${snap.exists() ? snap.val() : 0}`;
+    });
+
+    let idDestacado = null;
+
+    onValue(destacadoRef, (snap) => {
+      idDestacado = snap.exists() ? snap.val() : null;
+      renderChat();
+    });
+
+function renderChat() {
+  onValue(chatRef, (snap) => {
+    const chatbox = document.getElementById("chatbox");
+    chatbox.innerHTML = "";
+    snap.forEach((msg) => {
+      const datos = msg.val();
+      const msgId = msg.key;
+      const div = document.createElement("div");
+      div.className = "mensaje";
+      if (msgId === idDestacado) div.classList.add("destacado");
+      div.innerHTML = `<strong>${datos.nombre}:</strong> ${datos.mensaje}`;
+
+      const btnDestacar = document.createElement("button");
+      btnDestacar.textContent = "⭐";
+      btnDestacar.onclick = () => {
+        get(destacadoRef).then((actual) => {
+          if (actual.exists() && actual.val() === msgId) {
+            set(destacadoRef, null);
+          } else {
+            set(destacadoRef, msgId);
+          }
+        });
+      };
+
+      const btnFijar = document.createElement("button");
+      btnFijar.textContent = "📌";
+      btnFijar.onclick = () => {
+        get(fijadoRef).then((snap) => {
+          if (snap.exists() && snap.val() === msgId) {
+            set(fijadoRef, null); // Quitar fijado
+          } else {
+            set(fijadoRef, msgId); // Fijar este
+          }
+        });
+      };
+
+      const btnBorrar = document.createElement("button");
+      btnBorrar.textContent = "🗑️";
+      btnBorrar.onclick = () => {
+        if (confirm("¿Eliminar este mensaje?")) {
+          remove(ref(db, `chat/${msgId}`));
+        }
+      };
+
+      div.appendChild(btnDestacar);
+      div.appendChild(btnFijar);
+      div.appendChild(btnBorrar);
+      chatbox.appendChild(div);
+    });
+
+    chatbox.scrollTop = chatbox.scrollHeight;
+  });
+}
+
+
+    window.enviarAdmin = () => {
+      const nombre = document.getElementById("adminNombre").value.trim();
+      const mensaje = document.getElementById("adminMensaje").value.trim();
+      const color = document.getElementById("adminColor").value;
+      if (!nombre || !mensaje) return alert("Completa el nombre y el mensaje.");
+      const nuevo = push(chatRef);
+      set(nuevo, { nombre, mensaje, color });
+      document.getElementById("adminMensaje").value = "";
+    };
+
+    window.borrarTodoChat = () => {
+      if (confirm("¿Borrar todo el chat?")) {
+        set(chatRef, {});
+        set(destacadoRef, null);
+      }
+    };
+  }
+  function guardarURLReproductor() {
+  const nuevaUrl = document.getElementById("inputReproductor").value.trim();
+
+  if (!nuevaUrl.startsWith("https://")) {
+    alert("La URL debe comenzar con https://");
+    return;
+  }
+
+  set(ref(db, "urlReproductor"), nuevaUrl)
+    .then(() => {
+      document.getElementById("estadoReproductor").textContent = "✅ URL del reproductor actualizada.";
+    })
+    .catch((error) => {
+      console.error("Error al guardar la URL:", error);
+      alert("❌ Hubo un error al guardar la URL.");
+    });
+}
+
+// Cargar la URL actual para mostrarla en el input
+function cargarURLReproductor() {
+  get(ref(db, "urlReproductor")).then((snap) => {
+    if (snap.exists()) {
+      document.getElementById("inputReproductor").value = snap.val();
+    }
+  });
+}
+
+window.addEventListener("DOMContentLoaded", cargarURLReproductor);
+
 </script>
+
 </body>
 </html>
