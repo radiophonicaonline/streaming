@@ -2,57 +2,104 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Noticias Virales | Radiophonica</title>
+  <meta name="description" content="Las noticias más virales de Chile y el mundo, seleccionadas por Radiophonica Online. Actualizadas al instante y listas para compartir.">
+  <link rel="icon" href="logo.png" />
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #111;
-      color: #fff;
+      margin: 0;
+      background: #000;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    header {
+      background: #000;
       padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #00ffe1;
     }
+
+    header img {
+      height: 60px;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
     h1 {
+      font-size: 28px;
       color: #00ffe1;
+      margin-bottom: 20px;
+      text-align: center;
     }
+
     .noticia {
-      border-bottom: 1px solid #444;
-      padding: 10px 0;
+      border-bottom: 1px solid #333;
+      padding: 15px 0;
     }
-    .viral {
-      color: #ff6a00;
-      font-weight: bold;
-    }
-    a {
+
+    .noticia a {
+      font-size: 18px;
       color: #00ffe1;
       text-decoration: none;
     }
-    a:hover {
+
+    .noticia a:hover {
       text-decoration: underline;
     }
+
+    .viral {
+      color: #ff6a00;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+
     .botones {
       margin-top: 6px;
     }
+
     .boton {
       display: inline-block;
-      background-color: #222;
+      background-color: #111;
       border: 1px solid #00ffe1;
       border-radius: 4px;
       color: #00ffe1;
-      padding: 4px 8px;
-      margin-right: 5px;
+      padding: 5px 10px;
+      margin-right: 6px;
       font-size: 12px;
       cursor: pointer;
       text-decoration: none;
     }
+
     .boton:hover {
       background-color: #00ffe1;
       color: #000;
     }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 40px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <h1>📰 Noticias Virales - Radiophonica</h1>
-  <div id="noticias">Cargando noticias...</div>
+  <header>
+    <img src="logo.png" alt="Radiophonica Online" />
+  </header>
+  <main>
+    <h1>📰 Noticias Virales de Chile y el Mundo</h1>
+    <div id="noticias">Cargando noticias...</div>
+  </main>
+  <footer>
+    © 2025 Radiophonica Online - Noticias desde fuentes abiertas (RSS)
+  </footer>
 
   <script>
     const fuentes = [
@@ -80,7 +127,6 @@
           items.forEach(item => {
             const titulo = item.querySelector("title")?.textContent ?? '';
             const link = item.querySelector("link")?.textContent ?? '';
-            const descripcion = item.querySelector("description")?.textContent ?? '';
             const lower = titulo.toLowerCase();
             const esViral = palabrasVirales.some(palabra => lower.includes(palabra));
 
@@ -121,7 +167,7 @@
         div.className = "noticia";
         div.innerHTML = `
           <a href="${noticia.link}" target="_blank">${noticia.titulo}</a>
-          ${noticia.esViral ? ' <span class="viral">🔥 Viral</span>' : ''}
+          ${noticia.esViral ? '<span class="viral">🔥 Viral</span>' : ''}
           <div class="botones">
             <a class="boton" target="_blank" href="https://api.whatsapp.com/send?text=${encodeURIComponent(noticia.titulo + ' ' + noticia.link)}">WhatsApp</a>
             <a class="boton" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(noticia.link)}">Facebook</a>
