@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Noticias Virales | Radiophonica</title>
-  <meta name="description" content="Las noticias más virales de Chile y el mundo, seleccionadas por Radiophonica Online.">
+  <meta name="description" content="Noticias virales de Chile y el mundo por Radiophonica Online">
   <link rel="icon" href="logo.png" />
   <style>
     body {
@@ -123,7 +123,8 @@
 
       for (const url of fuentes) {
         try {
-          const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+          const proxyUrl = 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url);
+          const res = await fetch(proxyUrl);
           const texto = await res.text();
           const xml = parser.parseFromString(texto, "text/xml");
           const items = xml.querySelectorAll("item");
@@ -148,7 +149,7 @@
       }
 
       if (exitos === 0) {
-        contenedor.innerHTML = `<div class="error">⚠️ No se pudieron cargar noticias. Intenta más tarde.</div>`;
+        contenedor.innerHTML = `<div class="error">⚠️ No se pudieron cargar noticias (bloqueadas por CORS o error del proxy).</div>`;
         return;
       }
 
