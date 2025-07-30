@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noticias Virales | Radiophonica</title>
+  <meta name="description" content="Las noticias más virales de Chile y el mundo, seleccionadas por Radiophonica Online. Actualizadas al instante y listas para compartir.">
+  <link rel="icon" href="logo.png" />
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    header {
+      background: #000;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #00ffe1;
+    }
+
+    header img {
+      height: 60px;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #00ffe1;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .noticia {
+      border-bottom: 1px solid #333;
+      padding: 15px 0;
+    }
+
+    .noticia a {
+      font-size: 18px;
+      color: #00ffe1;
+      text-decoration: none;
+    }
+
+    .noticia a:hover {
+      text-decoration: underline;
+    }
+
+    .viral {
+      color: #ff6a00;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+
+    .botones {
+      margin-top: 6px;
+    }
+
+    .boton {
+      display: inline-block;
+      background-color: #111;
+      border: 1px solid #00ffe1;
+      border-radius: 4px;
+      color: #00ffe1;
+      padding: 5px 10px;
+      margin-right: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .boton:hover {
+      background-color: #00ffe1;
+      color: #000;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 40px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="Radiophonica Online" />
+  </header>
+  <main>
+    <h1>📰 Noticias Virales de Chile y el Mundo</h1>
+    <div id="noticias">Cargando noticias...</div>
+  </main>
+  <footer>
+    © 2025 Radiophonica Online - Noticias desde fuentes abiertas (RSS)
+  </footer>
+
+  <script>
+    const fuentes = [
+      'https://www.biobiochile.cl/noticias/rss/nacional.xml',
+      'https://www.emol.com/rss/emol.xml',
+      'https://www.latercera.com/feed/',
+      'https://www.cnnchile.com/feed/'
+    ];
+
+    const palabrasVirales = ['último minuto', 'viral', 'tendencia', 'impactante', 'increíble', 'famoso', 'revuelo'];
+    const parser = new DOMParser();
+    const noticias = [];
+
+    async function cargarNoticias() {
+      const contenedor = document.getElementById('noticias');
+      contenedor.innerHTML = '';
+
+      for (const url of fuentes) {
+        try {
+          const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+          const texto = await res.text();
+          const xml = parser.parseFromString(texto, "text/xml");
+          const items = xml.querySelectorAll("item");
+
+          items.forEach(item => {
+            const titulo = item.querySelector("title")?.textContent ?? '';
+            const link = item.querySelector("link")?.textContent ?? '';
+            const lower = titulo.toLowerCase();
+            const esViral = palabrasVirales.some(palabra => lower.includes(palabra));
+
+            noticias.push({
+              titulo,
+              link,
+              esViral,
+              fuente: url
+            });
+          });
+        } catch (error) {
+          console.error("Error cargando", url, error);
+        }
+      }
+
+      mostrarNoticias();
+    }
+
+    function mostrarNoticias() {
+      const contenedor = document.getElementById('noticias');
+      const titulosUnicos = new Set();
+      const listaFiltrada = [];
+
+      for (const noticia of noticias) {
+        const tituloKey = noticia.titulo.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 30);
+        if (!titulosUnicos.has(tituloKey)) {
+          titulosUnicos.add(tituloKey);
+          listaFiltrada.push(noticia);
+        } else {
+          noticia.esViral = true;
+        }
+      }
+
+      listaFiltrada.sort((a, b) => (b.esViral ? 1 : 0) - (a.esViral ? 1 : 0));
+
+      for (const noticia of listaFiltrada) {
+        const div = document.createElement("div");
+        div.className = "noticia";
+        div.innerHTML = `
+          <a href="${noticia.link}" target="_blank">${noticia.titulo}</a>
+          ${noticia.esViral ? '<span class="viral">🔥 Viral</span>' : ''}
+          <div class="botones">
+            <a class="boton" target="_blank" href="https://api.whatsapp.com/send?text=${encodeURIComponent(noticia.titulo + ' ' + noticia.link)}">WhatsApp</a>
+            <a class="boton" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(noticia.link)}">Facebook</a>
+            <a class="boton" target="_blank" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(noticia.titulo)}&url=${encodeURIComponent(noticia.link)}">X</a>
+          </div>
+        `;
+        contenedor.appendChild(div);
+      }
+    }
+
+    cargarNoticias();
+  </script>
+</body>
+</html>
