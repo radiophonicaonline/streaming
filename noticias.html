@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Noticias Virales | Radiophonica</title>
-  <meta name="description" content="Noticias virales de Chile y el mundo por Radiophonica Online">
   <link rel="icon" href="logo.png" />
   <style>
     body {
@@ -104,6 +103,7 @@
   <div id="noticias">Cargando noticias...</div>
 
   <script>
+    const proxyBase = "https://rssproxy-radiophonica.rjespinosa.repl.co/rss?url=";
     const fuentes = [
       'https://www.biobiochile.cl/noticias/rss/nacional.xml',
       'https://www.emol.com/rss/emol.xml',
@@ -112,45 +112,29 @@
     ];
 
     const palabrasVirales = ['último minuto', 'viral', 'tendencia', 'impactante', 'increíble', 'famoso', 'revuelo'];
-    const parser = new DOMParser();
     const noticias = [];
 
     async function cargarNoticias() {
       const contenedor = document.getElementById('noticias');
       contenedor.innerHTML = '';
 
-      let exitos = 0;
-
       for (const url of fuentes) {
         try {
-          const proxyUrl = 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url);
-          const res = await fetch(proxyUrl);
-          const texto = await res.text();
-          const xml = parser.parseFromString(texto, "text/xml");
-          const items = xml.querySelectorAll("item");
+          const res = await fetch(proxyBase + encodeURIComponent(url));
+          const data = await res.json();
 
-          items.forEach(item => {
-            const titulo = item.querySelector("title")?.textContent ?? '';
-            const link = item.querySelector("link")?.textContent ?? '';
-            const lower = titulo.toLowerCase();
+          data.noticias.forEach(n => {
+            const lower = n.titulo.toLowerCase();
             const esViral = palabrasVirales.some(p => lower.includes(p));
-
             noticias.push({
-              titulo,
-              link,
+              titulo: n.titulo,
+              link: n.link,
               esViral
             });
           });
-
-          exitos++;
         } catch (error) {
-          console.warn("Error cargando RSS:", url, error);
+          console.warn('Error con fuente:', url, error);
         }
-      }
-
-      if (exitos === 0) {
-        contenedor.innerHTML = `<div class="error">⚠️ No se pudieron cargar noticias (bloqueadas por CORS o error del proxy).</div>`;
-        return;
       }
 
       mostrarNoticias();
@@ -161,13 +145,13 @@
       const titulosUnicos = new Set();
       const filtradas = [];
 
-      for (const noticia of noticias) {
-        const key = noticia.titulo.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
+      for (const n of noticias) {
+        const key = n.titulo.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
         if (!titulosUnicos.has(key)) {
           titulosUnicos.add(key);
-          filtradas.push(noticia);
+          filtradas.push(n);
         } else {
-          noticia.esViral = true;
+          n.esViral = true;
         }
       }
 
