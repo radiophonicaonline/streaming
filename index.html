@@ -409,18 +409,7 @@ button:hover {
 
   <section id="chat">
   <h3> Chat en vivo</h3>
- <!-- 🔐 LOGIN DE USUARIO -->
-<div id="user-info">Cargando estado de usuario...</div>
-<h3>🔐 Inicia sesión con:</h3>
-<div class="social-icons">
-  <!-- Google -->
-  <button id="login-google" class="icon" style="background:white;">
-    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:24px;">
-  </button>
-</div>
-
-<button id="login-anonimo">Entrar como invitado</button>
-<button id="logout">Cerrar sesión</button>
+ 
   <div class="chat-container">
    <div class="chat-form">
   <input type="text" id="nombre" placeholder="Tu nombre" />
@@ -431,7 +420,19 @@ button:hover {
   </div>
   <textarea id="mensaje" placeholder="Escribe un mensaje..."></textarea>
   <button onclick="enviarChat()">Enviar mensaje</button>
+ </div>
+  <!-- 🔐 LOGIN DE USUARIO -->
+<div id="user-info">Cargando estado de usuario...</div>
+<h3>🔐 Inicia sesión con:</h3>
+<div class="social-icons">
+  <!-- Google -->
+  <button id="login-google" class="icon" style="background:white;">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:24px;">
+  </button>
 </div>
+
+<button id="login-anonimo">Entrar como invitado</button>
+<button id="logout">Cerrar sesión</button> 
 </section>
    
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
