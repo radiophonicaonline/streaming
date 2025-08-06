@@ -208,16 +208,15 @@
 
   const userInfoDiv = document.getElementById("user-info");
 
-  function updateUserUI(user) {
+  let currentUser = null;
+
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
     if (user) {
       userInfoDiv.textContent = `Conectado como: ${user.displayName || "Invitado"}`;
     } else {
       userInfoDiv.textContent = "No has iniciado sesión.";
     }
-  }
-
-  onAuthStateChanged(auth, user => {
-    updateUserUI(user);
   });
 
   document.getElementById("login-google").addEventListener("click", () => {
@@ -245,23 +244,26 @@
     const boton = episodioDiv.querySelector('.btn-enviar');
     const chatbox = episodioDiv.querySelector('.chatbox');
 
-    boton.addEventListener('click', () => {
+    boton.addEventListener('click', async () => {
       const mensaje = mensajeInput.value.trim();
       const user = auth.currentUser;
 
-      if (!mensaje || !user) {
+      if (!mensaje) return;
+
+      // Esperamos confirmación del login antes de enviar
+      if (!user) {
         alert("Debes iniciar sesión o entrar como invitado.");
         return;
       }
 
-      push(comentariosRef, {
+      await push(comentariosRef, {
         nombre: user.displayName || "Invitado",
         uid: user.uid,
         mensaje,
         fecha: new Date().toISOString()
-      }).then(() => {
-        mensajeInput.value = '';
       });
+
+      mensajeInput.value = '';
     });
 
     onChildAdded(comentariosRef, data => {
@@ -271,7 +273,6 @@
       div.innerHTML = `<strong>${dato.nombre}:</strong> <span>${dato.mensaje}</span>`;
 
       const user = auth.currentUser;
-
       if (user && dato.uid === user.uid) {
         const btnBorrar = document.createElement("button");
         btnBorrar.textContent = "🗑️";
@@ -296,10 +297,7 @@
     });
   });
 </script>
-
-
-
-
 </body>
 </html>
+
 
