@@ -83,6 +83,7 @@
   😂 <span id="count-funny">0</span>
 </div>
 
+<button onclick="resetearReaccionesVertical()">🔁 Resetear Reacciones Verticales</button>
 
 
 
@@ -282,6 +283,16 @@ function renderChat() {
       console.error("Error al guardar la URL:", error);
       alert("❌ Hubo un error al guardar la URL.");
     });
+}
+function resetearReaccionesVertical() {
+  const verticalRef = firebase.database().ref("reacciones");
+  verticalRef.set({
+    like: 0,
+    love: 0,
+    funny: 0
+  }).then(() => {
+    alert("Reacciones verticales reseteadas.");
+  });
 }
 
 // Cargar la URL actual para mostrarla en el input
