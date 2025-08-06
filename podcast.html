@@ -188,145 +188,118 @@
   </div>
 <!-- Firebase y lógica de comentarios -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  signInAnonymously,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded, remove, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-import {
-  getDatabase,
-  ref,
-  push,
-  onChildAdded,
-  onChildRemoved,
-  remove,
-  update
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4TTKPm0uOWFekHRdK7c_Fdx4AkGyEV68",
+    authDomain: "radiophonica-online.firebaseapp.com",
+    databaseURL: "https://radiophonica-online-default-rtdb.firebaseio.com",
+    projectId: "radiophonica-online",
+    storageBucket: "radiophonica-online.appspot.com",
+    messagingSenderId: "1063230344919",
+    appId: "1:1063230344919:web:98b6942879a57c30cc7300"
+  };
 
-// ✅ CONFIGURA TU FIREBASE AQUÍ
-const firebaseConfig = {
-  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-  projectId: "contador-de-personas-5f8aa",
-  storageBucket: "contador-de-personas-5f8aa.appspot.com",
-  messagingSenderId: "1063230344919",
-  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
-};
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+  const auth = getAuth();
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-let currentUser = null;
+  const userInfoDiv = document.getElementById("user-info");
 
-// Mostrar estado de usuario
-const userInfo = document.getElementById("user-info");
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    userInfo.textContent = `Sesión activa: ${user.displayName || "Invitado"}`;
-  } else {
-    currentUser = null;
-    userInfo.textContent = "No has iniciado sesión.";
-  }
-});
-
-// Login con proveedores
-document.getElementById("login-google").onclick = () => {
-  signInWithPopup(auth, new GoogleAuthProvider());
-};
-
-document.getElementById("login-facebook").onclick = () => {
-  signInWithPopup(auth, new FacebookAuthProvider());
-};
-
-document.getElementById("login-anonimo").onclick = () => {
-  signInAnonymously(auth);
-};
-
-document.getElementById("logout").onclick = () => {
-  signOut(auth);
-};
-
-// Manejo de comentarios por episodio
-document.querySelectorAll('.episodio').forEach((episodioDiv) => {
-  const episodioId = episodioDiv.getAttribute('data-episodio');
-  const mensajeInput = episodioDiv.querySelector('.mensaje');
-  const chatbox = episodioDiv.querySelector('.chatbox');
-  const boton = episodioDiv.querySelector('.btn-enviar');
-  const comentariosRef = ref(db, `comentarios_podcast/${episodioId}`);
-
-  // Enviar comentario
-  boton.addEventListener('click', () => {
-    const mensaje = mensajeInput.value.trim();
-    if (!mensaje || !currentUser) return;
-
-    push(comentariosRef, {
-      nombre: currentUser.displayName || "Anónimo",
-      uid: currentUser.uid,
-      mensaje,
-      fecha: new Date().toISOString()
-    }).then(() => {
-      mensajeInput.value = '';
-    });
-  });
-
-  // Mostrar comentarios
-  onChildAdded(comentariosRef, (data) => {
-    if (document.getElementById(`comentario-${episodioId}-${data.key}`)) return;
-
-    const dato = data.val();
-    const div = document.createElement('div');
-    div.id = `comentario-${episodioId}-${data.key}`;
-    div.className = "comentario";
-    div.innerHTML = `<strong>${dato.nombre}</strong>: <span class="msg">${dato.mensaje}</span>`;
-
-    // Mostrar botones solo si el comentario es del usuario logueado
-    if (currentUser && dato.uid === currentUser.uid) {
-      div.innerHTML += `
-        <button onclick="editarComentario('${data.key}', '${episodioId}')">✏️</button>
-        <button onclick="borrarComentario('${data.key}', '${episodioId}')">🗑️</button>
-      `;
+  function updateUserUI(user) {
+    if (user) {
+      userInfoDiv.textContent = `Conectado como: ${user.displayName || "Invitado"}`;
+    } else {
+      userInfoDiv.textContent = "No has iniciado sesión.";
     }
-
-    chatbox.appendChild(div);
-  });
-
-  // Borrar comentario automáticamente del DOM
-  onChildRemoved(comentariosRef, (data) => {
-    const div = document.getElementById(`comentario-${episodioId}-${data.key}`);
-    if (div) div.remove();
-  });
-});
-
-// Función global para borrar comentario
-window.borrarComentario = function (key, episodioId) {
-  const ok = confirm("¿Seguro que quieres borrar este comentario?");
-  if (ok) {
-    remove(ref(db, `comentarios_podcast/${episodioId}/${key}`));
   }
-};
 
-// Función global para editar comentario
-window.editarComentario = function (key, episodioId) {
-  const div = document.getElementById(`comentario-${episodioId}-${key}`);
-  const mensajeSpan = div.querySelector(".msg");
-  const nuevoMensaje = prompt("Edita tu comentario:", mensajeSpan.textContent);
-  if (nuevoMensaje && nuevoMensaje.trim() !== "") {
-    update(ref(db, `comentarios_podcast/${episodioId}/${key}`), {
-      mensaje: nuevoMensaje.trim()
+  onAuthStateChanged(auth, user => {
+    updateUserUI(user);
+  });
+
+  document.getElementById("login-google").addEventListener("click", () => {
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
+  });
+
+  document.getElementById("login-facebook").addEventListener("click", () => {
+    signInWithPopup(auth, new FacebookAuthProvider()).catch(console.error);
+  });
+
+  document.getElementById("login-anonimo").addEventListener("click", () => {
+    signInAnonymously(auth).catch(console.error);
+  });
+
+  document.getElementById("logout").addEventListener("click", () => {
+    signOut(auth).catch(console.error);
+  });
+
+  document.querySelectorAll('.episodio').forEach((episodioDiv) => {
+    const episodioId = episodioDiv.dataset.episodio;
+    const comentariosRef = ref(database, `comentariosPodcast/${episodioId}`);
+
+    const nombreInput = episodioDiv.querySelector('.nombre');
+    const mensajeInput = episodioDiv.querySelector('.mensaje');
+    const boton = episodioDiv.querySelector('.btn-enviar');
+    const chatbox = episodioDiv.querySelector('.chatbox');
+
+    boton.addEventListener('click', () => {
+      const mensaje = mensajeInput.value.trim();
+      const user = auth.currentUser;
+
+      if (!mensaje || !user) {
+        alert("Debes iniciar sesión o entrar como invitado.");
+        return;
+      }
+
+      push(comentariosRef, {
+        nombre: user.displayName || "Invitado",
+        uid: user.uid,
+        mensaje,
+        fecha: new Date().toISOString()
+      }).then(() => {
+        mensajeInput.value = '';
+      });
     });
-    mensajeSpan.textContent = nuevoMensaje.trim();
-  }
-};
+
+    onChildAdded(comentariosRef, data => {
+      const dato = data.val();
+      const div = document.createElement("div");
+      div.classList.add("mensaje");
+      div.innerHTML = `<strong>${dato.nombre}:</strong> <span>${dato.mensaje}</span>`;
+
+      const user = auth.currentUser;
+
+      if (user && dato.uid === user.uid) {
+        const btnBorrar = document.createElement("button");
+        btnBorrar.textContent = "🗑️";
+        btnBorrar.style.marginLeft = "10px";
+        btnBorrar.onclick = () => remove(data.ref);
+        div.appendChild(btnBorrar);
+
+        const btnEditar = document.createElement("button");
+        btnEditar.textContent = "✏️";
+        btnEditar.style.marginLeft = "5px";
+        btnEditar.onclick = () => {
+          const nuevoMensaje = prompt("Editar mensaje:", dato.mensaje);
+          if (nuevoMensaje) {
+            update(data.ref, { mensaje: nuevoMensaje });
+          }
+        };
+        div.appendChild(btnEditar);
+      }
+
+      chatbox.appendChild(div);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    });
+  });
 </script>
+
 
 
 
 </body>
 </html>
+
