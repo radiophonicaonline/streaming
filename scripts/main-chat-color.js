@@ -33,7 +33,12 @@ push(visitasRef, true);
 const conexionesRef = ref(db, "conexiones");
 const miConexion = push(conexionesRef);
 set(miConexion, true);
+
+// 🔹 Guardar el ID de conexión para usarlo en el mapa de oyentes
+sessionStorage.setItem("conexionId", miConexion.key);
+
 onDisconnect(miConexion).remove();
+
 
 onValue(conexionesRef, (snap) => {
   document.getElementById("contador").innerText = `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
