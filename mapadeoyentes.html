@@ -28,13 +28,12 @@
   </div>
 </div>
 
-<!-- Firebase y Leaflet -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 import L from "https://cdn.skypack.dev/leaflet";
 
-// 🔹 Configuración de tu Firebase (igual que la principal)
+// 🔹 Configuración Firebase (misma que en la página principal)
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
@@ -50,31 +49,16 @@ const db = getDatabase(app);
 // 🔹 Crear mapa
 const map = L.map('map').setView([0, 0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18,
+  maxZoom: 18
 }).addTo(map);
 
 let markers = {};
 
-// 🔹 Detectar ubicación y guardar (solo si es tu propia conexión)
-async function detectarUbicacionPara(id) {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
-    const lat = data.latitude;
-    const lon = data.longitude;
-    const city = data.city;
-    const region = data.region;
-    const country = data.country_name;
-
-    await set(ref(db, `conexiones/${id}/ubicacion`), { lat, lon, city, region, country });
-  } catch (err) {
-    console.error("Error detectando ubicación:", err);
-  }
-}
-
-// 🔹 Escuchar conexiones en tiempo real
+// 🔹 Escuchar las conexiones y mostrarlas en el mapa
 onValue(ref(db, "conexiones"), (snapshot) => {
   const data = snapshot.val();
+  
+  // Limpiar marcadores anteriores
   Object.values(markers).forEach(m => map.removeLayer(m));
   markers = {};
 
@@ -83,15 +67,10 @@ onValue(ref(db, "conexiones"), (snapshot) => {
 
   for (let id in data) {
     const conn = data[id];
-
-    // Si esta es mi conexión y no tiene ubicación, la guardo
-    if (!conn.ubicacion && id === sessionStorage.getItem("conexionId")) {
-      detectarUbicacionPara(id);
-    }
-
     if (conn.ubicacion) {
       total++;
       const { lat, lon, city, region, country } = conn.ubicacion;
+
       const marker = L.marker([lat, lon])
         .addTo(map)
         .bindPopup(`📍 ${city}, ${region}, ${country}`);
@@ -103,7 +82,7 @@ onValue(ref(db, "conexiones"), (snapshot) => {
     }
   }
 
-  // Lista de regiones ordenada
+  // Ordenar por más oyentes
   const sortedRegions = Object.entries(regionCount).sort((a, b) => b[1] - a[1]);
   const regionList = document.getElementById("regionList");
   regionList.innerHTML = "";
