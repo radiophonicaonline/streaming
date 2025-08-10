@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import {
   getAuth,
@@ -13,6 +12,7 @@ import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child 
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+  databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
   projectId: "contador-de-personas-5f8aa",
   storageBucket: "contador-de-personas-5f8aa.appspot.com",
   messagingSenderId: "1063230344919",
@@ -34,16 +34,29 @@ const conexionesRef = ref(db, "conexiones");
 const miConexion = push(conexionesRef);
 set(miConexion, true);
 
-// 🔹 Guardar el ID de conexión para usarlo en el mapa de oyentes
+// 🔹 Guardar ID en sessionStorage para el mapa
 sessionStorage.setItem("conexionId", miConexion.key);
+
+// 🔹 Detectar ubicación y guardarla en la conexión
+fetch("https://ipapi.co/json/")
+  .then(res => res.json())
+  .then(data => {
+    set(ref(db, `conexiones/${miConexion.key}/ubicacion`), {
+      lat: data.latitude,
+      lon: data.longitude,
+      city: data.city,
+      region: data.region,
+      country: data.country_name
+    });
+  })
+  .catch(err => console.error("Error obteniendo ubicación:", err));
 
 onDisconnect(miConexion).remove();
 
-
 onValue(conexionesRef, (snap) => {
-  document.getElementById("contador").innerText = `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
+  document.getElementById("contador").innerText =
+    `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
 });
-
 
 // --- CHAT EN VIVO CON COLORES ---
 const chatRef = ref(db, "chat");
@@ -57,11 +70,13 @@ onValue(chatRef, (snap) => {
     div.className = "mensaje";
     const color = datos.color || "#ccc";
     const mensajeConEnlaces = datos.mensaje.replace(
-  /(https?:\/\/[^\s]+)/g,
-  '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
-);
-const fotoHTML = datos.foto ? `<img src="${datos.foto}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;">` : "";
-div.innerHTML = `${fotoHTML}<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
+      /(https?:\/\/[^\s]+)/g,
+      '<a href="$1" target="_blank" style="color: #1e90ff;">$1</a>'
+    );
+    const fotoHTML = datos.foto
+      ? `<img src="${datos.foto}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;">`
+      : "";
+    div.innerHTML = `${fotoHTML}<strong style="color:${color}">${datos.nombre}:</strong> ${mensajeConEnlaces}`;
     chatbox.appendChild(div);
   });
   chatbox.scrollTop = chatbox.scrollHeight;
@@ -91,6 +106,7 @@ window.enviarChat = () => {
 
   document.getElementById("mensaje").value = "";
 };
+
 // --- ENVIAR COMENTARIO POR WHATSAPP ---
 window.enviarComentario = () => {
   const texto = document.getElementById("comentario").value.trim();
@@ -102,27 +118,24 @@ window.enviarComentario = () => {
 };
 
 // --- BOTÓN DE LIKES ---
-
 const reactionPath = "reacciones";
 const deviceId = localStorage.getItem("reaction_device_id") || crypto.randomUUID();
 localStorage.setItem("reaction_device_id", deviceId);
 
 const reactions = ["like", "love", "funny"];
 
-// Función para enviar reacción
 window.react = function(type) {
   const userRef = ref(db, `${reactionPath}/usuarios/${deviceId}`);
   get(userRef).then((snapshot) => {
     const previous = snapshot.val();
     if (previous === type) {
-      set(userRef, null); // Quitar si hace clic en la misma
+      set(userRef, null);
     } else {
-      set(userRef, type); // Cambiar o agregar
+      set(userRef, type);
     }
   });
 };
 
-// Función para actualizar los contadores y el estilo
 function updateReactionCounters() {
   const usersRef = ref(db, `${reactionPath}/usuarios`);
   onValue(usersRef, (snapshot) => {
@@ -150,7 +163,6 @@ function updateReactionCounters() {
 
 updateReactionCounters();
 
-
 // --- BOTÓN DE COMPARTIR ---
 window.compartirPagina = function () {
   if (navigator.share) {
@@ -164,7 +176,7 @@ window.compartirPagina = function () {
   }
 };
 
-// --- Cargar el reproductor automáticamente al abrir la página ---
+// --- Cargar el reproductor automáticamente ---
 const iframe = document.getElementById("iframePlayer");
 
 get(ref(db, "urlReproductor")).then((snap) => {
@@ -181,18 +193,16 @@ let urlPortada = "";
 
 function actualizarContenido() {
   const timestamp = Date.now();
-
   const iframe = document.getElementById("iframeCancion");
   if (iframe && urlCancion) {
     iframe.src = urlCancion + "?t=" + timestamp;
   }
-
   const portada = document.getElementById("portadaCancion");
   if (portada && urlPortada) {
     portada.src = urlPortada + "?t=" + timestamp;
   }
 }
-// Cargar URLs desde Firebase antes de empezar actualizaciones
+
 window.addEventListener("DOMContentLoaded", () => {
   Promise.all([
     get(ref(db, "urlNowPlaying")),
@@ -204,14 +214,10 @@ window.addEventListener("DOMContentLoaded", () => {
     if (snapPortada.exists()) {
       urlPortada = snapPortada.val();
     }
-
-    actualizarContenido(); // primera carga
-    setInterval(actualizarContenido, 10000); // cada 10 seg
+    actualizarContenido();
+    setInterval(actualizarContenido, 10000);
   });
 });
-
-
-
 
 // --- LOGIN CON GOOGLE Y ANÓNIMO ---
 document.getElementById("login-google").addEventListener("click", () => {
@@ -232,15 +238,12 @@ document.getElementById("logout").addEventListener("click", () => {
 
 onAuthStateChanged(auth, (user) => {
   const info = document.getElementById("user-info");
-
   if (user) {
     const name = user.displayName || "Anónimo";
     const photo = user.photoURL || null;
-
     info.innerHTML = user.isAnonymous
       ? `👤 Estás chateando como invitado`
       : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
-
     window.chatUser = {
       name: name,
       uid: user.uid,
@@ -248,28 +251,28 @@ onAuthStateChanged(auth, (user) => {
       photo: photo,
       isAnon: user.isAnonymous
     };
-
   } else {
     info.textContent = "No has iniciado sesión";
     window.chatUser = null;
   }
 });
-  function toggleMenu() {
-    const menu = document.getElementById("menuItems");
-    if (menu.style.display === "flex") {
+
+// --- MENÚ RESPONSIVO ---
+function toggleMenu() {
+  const menu = document.getElementById("menuItems");
+  if (menu.style.display === "flex") {
+    menu.style.display = "none";
+  } else {
+    menu.style.display = "flex";
+  }
+}
+
+document.addEventListener("click", function (e) {
+  const menu = document.getElementById("menuItems");
+  const toggle = document.querySelector(".menu-toggle");
+  if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+    if (window.innerWidth < 768) {
       menu.style.display = "none";
-    } else {
-      menu.style.display = "flex";
     }
   }
-
-  // Cierra el menú al hacer clic fuera (en celular)
-  document.addEventListener("click", function (e) {
-    const menu = document.getElementById("menuItems");
-    const toggle = document.querySelector(".menu-toggle");
-    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
-      if (window.innerWidth < 768) {
-        menu.style.display = "none";
-      }
-    }
-  });
+});
