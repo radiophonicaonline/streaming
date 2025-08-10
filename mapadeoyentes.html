@@ -4,21 +4,32 @@
 <meta charset="UTF-8">
 <title>Mapa de Oyentes en Vivo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-  #map { height: 500px; width: 100%; }
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+  #container { display: flex; flex-wrap: wrap; }
+  #map { flex: 2; height: 500px; min-width: 300px; }
+  #stats { flex: 1; padding: 10px; background: #f9f9f9; border-left: 1px solid #ccc; }
+  h2 { text-align: center; margin-top: 10px; }
+  h3 { margin-top: 0; }
+  ul { list-style: none; padding: 0; }
+  li { padding: 5px; border-bottom: 1px solid #ddd; }
 </style>
 </head>
 <body>
 
 <h2>📡 Mapa de Oyentes en Vivo</h2>
-<div id="map"></div>
+<div id="container">
+  <div id="map"></div>
+  <div id="stats">
+    <h3>Oyentes por Región</h3>
+    <ul id="regionList"></ul>
+  </div>
+</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-
 <!-- Leaflet -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -51,16 +62,16 @@ async function detectarUbicacion() {
         const lat = data.latitude;
         const lon = data.longitude;
         const city = data.city;
+        const region = data.region; // Región
         const country = data.country_name;
 
-        // Guardar con un ID único (la IP enmascarada + timestamp)
         const id = Date.now() + "-" + Math.floor(Math.random() * 1000);
         await db.ref("oyentes/" + id).set({
-            lat, lon, city, country,
+            lat, lon, city, region, country,
             timestamp: Date.now()
         });
 
-        // Eliminar después de 2 minutos (para que el mapa sea en vivo)
+        // Eliminar después de 2 minutos
         setTimeout(() => {
             db.ref("oyentes/" + id).remove();
         }, 120000);
@@ -73,18 +84,35 @@ async function detectarUbicacion() {
 // 🔹 Escuchar cambios en tiempo real
 db.ref("oyentes").on("value", (snapshot) => {
     const data = snapshot.val();
-    // Limpiar marcadores
     Object.values(markers).forEach(m => map.removeLayer(m));
     markers = {};
 
-    // Agregar nuevos marcadores
+    let regionCount = {};
+
     for (let id in data) {
         const oyente = data[id];
         const marker = L.marker([oyente.lat, oyente.lon])
             .addTo(map)
-            .bindPopup(`📍 ${oyente.city}, ${oyente.country}`);
+            .bindPopup(`📍 ${oyente.city}, ${oyente.region}, ${oyente.country}`);
         markers[id] = marker;
+
+        if (oyente.region) {
+            regionCount[oyente.region] = (regionCount[oyente.region] || 0) + 1;
+        }
     }
+
+    // Ordenar regiones de mayor a menor cantidad
+    const sortedRegions = Object.entries(regionCount)
+        .sort((a, b) => b[1] - a[1]); // b[1] - a[1] = orden descendente
+
+    // Mostrar lista
+    const regionList = document.getElementById("regionList");
+    regionList.innerHTML = "";
+    sortedRegions.forEach(([region, count]) => {
+        const li = document.createElement("li");
+        li.textContent = `${region}: ${count} oyente(s)`;
+        regionList.appendChild(li);
+    });
 });
 
 detectarUbicacion();
