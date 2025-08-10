@@ -1,192 +1,125 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<title>Mapa de Oyentes en Tiempo Real</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet/dist/leaflet.css"
-/>
+<meta charset="UTF-8">
+<title>Mapa de Oyentes en Vivo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-  }
-  #container {
-    display: flex;
-    flex-wrap: wrap;
-  }
-  #map {
-    flex: 2;
-    height: 500px;
-    min-width: 300px;
-  }
-  #stats {
-    flex: 1;
-    padding: 10px;
-    background: #f9f9f9;
-    border-left: 1px solid #ccc;
-  }
-  h2 {
-    text-align: center;
-    margin-top: 10px;
-  }
-  h3 {
-    margin-top: 0;
-  }
-  ul {
-    list-style: none;
-    padding: 0;
-  }
-  li {
-    padding: 5px;
-    border-bottom: 1px solid #ddd;
-  }
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+  #container { display: flex; flex-wrap: wrap; }
+  #map { flex: 2; height: 500px; min-width: 300px; }
+  #stats { flex: 1; padding: 10px; background: #f9f9f9; border-left: 1px solid #ccc; }
+  h2 { text-align: center; margin-top: 10px; }
+  h3 { margin-top: 0; }
+  ul { list-style: none; padding: 0; }
+  li { padding: 5px; border-bottom: 1px solid #ddd; }
 </style>
 </head>
 <body>
- 
-  <div id="container">
-    <div id="map"></div>
-    <div id="stats">
-      <h3>Oyentes por Región</h3>
-      <ul id="regionList"></ul>
-      <h3>Total conectados: <span id="totalOyentes">0</span></h3>
-    </div>
+
+
+<div id="container">
+  <div id="map"></div>
+  <div id="stats">
+    <h3>Oyentes por Región</h3>
+    <ul id="regionList"></ul>
+    <h3>Total conectados: <span id="totalOyentes">0</span></h3>
   </div>
+</div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
-  <!-- Leaflet -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <script>
-    // 🔹 CONFIGURA TU FIREBASE AQUÍ
- const firebaseConfig = {
+<script>
+// 🔹 Configuración de tu Firebase (la misma que en la página principal)
+const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+  databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
   projectId: "contador-de-personas-5f8aa",
   storageBucket: "contador-de-personas-5f8aa.appspot.com",
   messagingSenderId: "1063230344919",
   appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
 };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.getDatabase(app);
 
-    // 🔹 Crear mapa
-    const map = L.map("map").setView([0, 0], 2);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-    }).addTo(map);
+// 🔹 Crear mapa
+const map = L.map('map').setView([0, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+}).addTo(map);
 
-    let markers = {};
-    let myId = null;
+let markers = {};
 
-    // Generar o recuperar ID único de esta pestaña
-    function getMyId() {
-      let id = sessionStorage.getItem("oyenteId");
-      if (!id) {
-        id = Date.now() + "-" + Math.floor(Math.random() * 10000);
-        sessionStorage.setItem("oyenteId", id);
-      }
-      return id;
+// 🔹 Función para detectar ubicación de un visitante
+async function detectarUbicacionPara(id) {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    const lat = data.latitude;
+    const lon = data.longitude;
+    const city = data.city;
+    const region = data.region;
+    const country = data.country_name;
+
+    const oyenteData = { lat, lon, city, region, country };
+    await firebase.set(firebase.ref(db, `conexiones/${id}/ubicacion`), oyenteData);
+  } catch (err) {
+    console.error("Error detectando ubicación:", err);
+  }
+}
+
+// 🔹 Escuchar cambios en conexiones
+firebase.onValue(firebase.ref(db, "conexiones"), (snapshot) => {
+  const data = snapshot.val();
+  Object.values(markers).forEach(m => map.removeLayer(m));
+  markers = {};
+
+  let regionCount = {};
+  let total = 0;
+
+  for (let id in data) {
+    const conn = data[id];
+
+    // Si no tiene ubicación, intentar obtenerla (solo para este cliente si es su pestaña)
+    if (!conn.ubicacion && id === sessionStorage.getItem("conexionId")) {
+      detectarUbicacionPara(id);
     }
 
-    async function detectarUbicacion() {
-      myId = getMyId();
+    if (conn.ubicacion) {
+      total++;
+      const { lat, lon, city, region, country } = conn.ubicacion;
 
-      try {
-        const res = await fetch("https://ipapi.co/json/");
-        const data = await res.json();
+      const marker = L.marker([lat, lon])
+        .addTo(map)
+        .bindPopup(`📍 ${city}, ${region}, ${country}`);
+      markers[id] = marker;
 
-        const lat = data.latitude;
-        const lon = data.longitude;
-        const city = data.city;
-        const region = data.region;
-        const country = data.country_name;
-
-        // Guardar info inicial
-        await db.ref("oyentes/" + myId).set({
-          lat,
-          lon,
-          city,
-          region,
-          country,
-          timestamp: Date.now(),
-        });
-
-        // Ping cada 10 segundos
-        setInterval(() => {
-          db.ref("oyentes/" + myId).update({
-            timestamp: Date.now(),
-          });
-          console.log("Ping enviado para", myId);
-        }, 10000);
-
-        // Eliminar registro si cierra la pestaña
-        window.addEventListener("beforeunload", () => {
-          db.ref("oyentes/" + myId).remove();
-        });
-      } catch (err) {
-        console.error("Error obteniendo ubicación", err);
+      if (region) {
+        regionCount[region] = (regionCount[region] || 0) + 1;
       }
     }
+  }
 
-    // Escuchar cambios en oyentes
-    db.ref("oyentes").on("value", (snapshot) => {
-      const data = snapshot.val();
-      const ahora = Date.now();
+  // Ordenar por mayor cantidad
+  const sortedRegions = Object.entries(regionCount).sort((a, b) => b[1] - a[1]);
 
-      // Limpia marcadores antiguos
-      Object.values(markers).forEach((m) => map.removeLayer(m));
-      markers = {};
+  const regionList = document.getElementById("regionList");
+  regionList.innerHTML = "";
+  sortedRegions.forEach(([region, count]) => {
+    const li = document.createElement("li");
+    li.textContent = `${region}: ${count} oyente(s)`;
+    regionList.appendChild(li);
+  });
 
-      let regionCount = {};
-      let total = 0;
+  document.getElementById("totalOyentes").textContent = total;
+});
+</script>
 
-      for (let id in data) {
-        const oyente = data[id];
-
-        if (ahora - oyente.timestamp <= 15000) {
-          total++;
-          const marker = L.marker([oyente.lat, oyente.lon])
-            .addTo(map)
-            .bindPopup(
-              `📍 ${oyente.city}, ${oyente.region}, ${oyente.country}`
-            );
-          markers[id] = marker;
-
-          if (oyente.region) {
-            regionCount[oyente.region] = (regionCount[oyente.region] || 0) + 1;
-          }
-        } else {
-          // Eliminar oyentes inactivos
-          db.ref("oyentes/" + id).remove();
-          console.log("Eliminando oyente inactivo:", id);
-        }
-      }
-
-      // Ordenar y mostrar lista regiones
-      const sortedRegions = Object.entries(regionCount).sort(
-        (a, b) => b[1] - a[1]
-      );
-
-      const regionList = document.getElementById("regionList");
-      regionList.innerHTML = "";
-      sortedRegions.forEach(([region, count]) => {
-        const li = document.createElement("li");
-        li.textContent = `${region}: ${count} oyente(s)`;
-        regionList.appendChild(li);
-      });
-
-      // Mostrar total
-      document.getElementById("totalOyentes").textContent = total;
-    });
-
-    detectarUbicacion();
-  </script>
 </body>
 </html>
