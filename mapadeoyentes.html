@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mapa de Oyentes en Vivo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+  #map { height: 500px; width: 100%; }
+</style>
+</head>
+<body>
+
+<h2>📡 Mapa de Oyentes en Vivo</h2>
+<div id="map"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+// 🔹 CONFIGURA TU FIREBASE AQUÍ
+const firebaseConfig = {
+  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+  projectId: "contador-de-personas-5f8aa",
+  storageBucket: "contador-de-personas-5f8aa.appspot.com",
+  messagingSenderId: "1063230344919",
+  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 🔹 Crear mapa
+const map = L.map('map').setView([0, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+}).addTo(map);
+
+let markers = {};
+
+// 🔹 Detectar ubicación y guardar en Firebase
+async function detectarUbicacion() {
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        const lat = data.latitude;
+        const lon = data.longitude;
+        const city = data.city;
+        const country = data.country_name;
+
+        // Guardar con un ID único (la IP enmascarada + timestamp)
+        const id = Date.now() + "-" + Math.floor(Math.random() * 1000);
+        await db.ref("oyentes/" + id).set({
+            lat, lon, city, country,
+            timestamp: Date.now()
+        });
+
+        // Eliminar después de 2 minutos (para que el mapa sea en vivo)
+        setTimeout(() => {
+            db.ref("oyentes/" + id).remove();
+        }, 120000);
+
+    } catch (err) {
+        console.error("Error obteniendo ubicación", err);
+    }
+}
+
+// 🔹 Escuchar cambios en tiempo real
+db.ref("oyentes").on("value", (snapshot) => {
+    const data = snapshot.val();
+    // Limpiar marcadores
+    Object.values(markers).forEach(m => map.removeLayer(m));
+    markers = {};
+
+    // Agregar nuevos marcadores
+    for (let id in data) {
+        const oyente = data[id];
+        const marker = L.marker([oyente.lat, oyente.lon])
+            .addTo(map)
+            .bindPopup(`📍 ${oyente.city}, ${oyente.country}`);
+        markers[id] = marker;
+    }
+});
+
+detectarUbicacion();
+</script>
+
+</body>
+</html>
