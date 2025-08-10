@@ -28,14 +28,13 @@
   </div>
 </div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
-<!-- Leaflet -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Firebase y Leaflet -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import L from "https://cdn.skypack.dev/leaflet";
 
-<script>
-// 🔹 Configuración de tu Firebase (la misma que en la página principal)
+// 🔹 Configuración de tu Firebase (igual que la principal)
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
@@ -45,8 +44,8 @@ const firebaseConfig = {
   messagingSenderId: "1063230344919",
   appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
 };
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 // 🔹 Crear mapa
 const map = L.map('map').setView([0, 0], 2);
@@ -56,7 +55,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let markers = {};
 
-// 🔹 Función para detectar ubicación de un visitante
+// 🔹 Detectar ubicación y guardar (solo si es tu propia conexión)
 async function detectarUbicacionPara(id) {
   try {
     const res = await fetch("https://ipapi.co/json/");
@@ -67,15 +66,14 @@ async function detectarUbicacionPara(id) {
     const region = data.region;
     const country = data.country_name;
 
-    const oyenteData = { lat, lon, city, region, country };
-    await firebase.set(firebase.ref(db, `conexiones/${id}/ubicacion`), oyenteData);
+    await set(ref(db, `conexiones/${id}/ubicacion`), { lat, lon, city, region, country });
   } catch (err) {
     console.error("Error detectando ubicación:", err);
   }
 }
 
-// 🔹 Escuchar cambios en conexiones
-firebase.onValue(firebase.ref(db, "conexiones"), (snapshot) => {
+// 🔹 Escuchar conexiones en tiempo real
+onValue(ref(db, "conexiones"), (snapshot) => {
   const data = snapshot.val();
   Object.values(markers).forEach(m => map.removeLayer(m));
   markers = {};
@@ -86,7 +84,7 @@ firebase.onValue(firebase.ref(db, "conexiones"), (snapshot) => {
   for (let id in data) {
     const conn = data[id];
 
-    // Si no tiene ubicación, intentar obtenerla (solo para este cliente si es su pestaña)
+    // Si esta es mi conexión y no tiene ubicación, la guardo
     if (!conn.ubicacion && id === sessionStorage.getItem("conexionId")) {
       detectarUbicacionPara(id);
     }
@@ -94,7 +92,6 @@ firebase.onValue(firebase.ref(db, "conexiones"), (snapshot) => {
     if (conn.ubicacion) {
       total++;
       const { lat, lon, city, region, country } = conn.ubicacion;
-
       const marker = L.marker([lat, lon])
         .addTo(map)
         .bindPopup(`📍 ${city}, ${region}, ${country}`);
@@ -106,9 +103,8 @@ firebase.onValue(firebase.ref(db, "conexiones"), (snapshot) => {
     }
   }
 
-  // Ordenar por mayor cantidad
+  // Lista de regiones ordenada
   const sortedRegions = Object.entries(regionCount).sort((a, b) => b[1] - a[1]);
-
   const regionList = document.getElementById("regionList");
   regionList.innerHTML = "";
   sortedRegions.forEach(([region, count]) => {
