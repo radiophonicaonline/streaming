@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mapa de Oyentes en Vivo</title>
+<title>Mapa de Oyentes en Tiempo Real</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
@@ -18,12 +18,13 @@
 </head>
 <body>
 
-
+<h2>📡 Mapa de Oyentes en Tiempo Real</h2>
 <div id="container">
   <div id="map"></div>
   <div id="stats">
     <h3>Oyentes por Región</h3>
     <ul id="regionList"></ul>
+    <h3>Total conectados: <span id="totalOyentes">0</span></h3>
   </div>
 </div>
 
@@ -53,8 +54,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 let markers = {};
+let myId = null;
 
-// 🔹 Detectar ubicación y guardar en Firebase
+// 🔹 Detectar ubicación y comenzar ping
 async function detectarUbicacion() {
     try {
         const res = await fetch("https://ipapi.co/json/");
@@ -62,48 +64,68 @@ async function detectarUbicacion() {
         const lat = data.latitude;
         const lon = data.longitude;
         const city = data.city;
-        const region = data.region; // Región
+        const region = data.region;
         const country = data.country_name;
 
-        const id = Date.now() + "-" + Math.floor(Math.random() * 1000);
-        await db.ref("oyentes/" + id).set({
+        myId = Date.now() + "-" + Math.floor(Math.random() * 1000);
+
+        // Guardar por primera vez
+        await db.ref("oyentes/" + myId).set({
             lat, lon, city, region, country,
             timestamp: Date.now()
         });
 
-        // Eliminar después de 2 minutos
-        setTimeout(() => {
-            db.ref("oyentes/" + id).remove();
-        }, 120000);
+        // Actualizar cada 10 segundos (ping)
+        setInterval(() => {
+            db.ref("oyentes/" + myId).update({
+                timestamp: Date.now()
+            });
+        }, 10000);
+
+        // Eliminar registro si el usuario cierra la página
+        window.addEventListener("beforeunload", () => {
+            db.ref("oyentes/" + myId).remove();
+        });
 
     } catch (err) {
         console.error("Error obteniendo ubicación", err);
     }
 }
 
-// 🔹 Escuchar cambios en tiempo real
+// 🔹 Escuchar cambios y limpiar desconectados
 db.ref("oyentes").on("value", (snapshot) => {
     const data = snapshot.val();
+    const ahora = Date.now();
+
     Object.values(markers).forEach(m => map.removeLayer(m));
     markers = {};
 
     let regionCount = {};
+    let total = 0;
 
     for (let id in data) {
         const oyente = data[id];
-        const marker = L.marker([oyente.lat, oyente.lon])
-            .addTo(map)
-            .bindPopup(`📍 ${oyente.city}, ${oyente.region}, ${oyente.country}`);
-        markers[id] = marker;
 
-        if (oyente.region) {
-            regionCount[oyente.region] = (regionCount[oyente.region] || 0) + 1;
+        // Solo mostrar si el ping fue hace menos de 15 segundos
+        if (ahora - oyente.timestamp <= 15000) {
+            total++;
+            const marker = L.marker([oyente.lat, oyente.lon])
+                .addTo(map)
+                .bindPopup(`📍 ${oyente.city}, ${oyente.region}, ${oyente.country}`);
+            markers[id] = marker;
+
+            if (oyente.region) {
+                regionCount[oyente.region] = (regionCount[oyente.region] || 0) + 1;
+            }
+        } else {
+            // Si pasó más tiempo, lo borramos de Firebase
+            db.ref("oyentes/" + id).remove();
         }
     }
 
-    // Ordenar regiones de mayor a menor cantidad
+    // Ordenar regiones de mayor a menor
     const sortedRegions = Object.entries(regionCount)
-        .sort((a, b) => b[1] - a[1]); // b[1] - a[1] = orden descendente
+        .sort((a, b) => b[1] - a[1]);
 
     // Mostrar lista
     const regionList = document.getElementById("regionList");
@@ -113,6 +135,9 @@ db.ref("oyentes").on("value", (snapshot) => {
         li.textContent = `${region}: ${count} oyente(s)`;
         regionList.appendChild(li);
     });
+
+    // Mostrar total
+    document.getElementById("totalOyentes").textContent = total;
 });
 
 detectarUbicacion();
@@ -120,4 +145,3 @@ detectarUbicacion();
 
 </body>
 </html>
-
