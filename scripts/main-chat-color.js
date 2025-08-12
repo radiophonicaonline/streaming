@@ -37,19 +37,31 @@ set(miConexion, true);
 // 🔹 Guardar ID en sessionStorage para el mapa
 sessionStorage.setItem("conexionId", miConexion.key);
 
-// 🔹 Detectar ubicación y guardarla en la conexión
+// 🔹 Guardar ubicación en la conexión + registrar en conteo diario por región
 fetch("https://ipapi.co/json/")
   .then(res => res.json())
   .then(data => {
-    set(ref(db, `conexiones/${miConexion.key}/ubicacion`), {
+    const ubicacion = {
       lat: data.latitude,
       lon: data.longitude,
       city: data.city,
       region: data.region,
       country: data.country_name
+    };
+
+    // Guardar en la conexión actual
+    set(ref(db, `conexiones/${miConexion.key}/ubicacion`), ubicacion);
+
+    // Guardar también en el conteo diario por región
+    const hoy = new Date().toISOString().split("T")[0];
+    const regionRef = ref(db, `conexiones_diarias/${hoy}/${ubicacion.region}`);
+    get(regionRef).then(snap => {
+      const actual = snap.val() || 0;
+      set(regionRef, actual + 1);
     });
   })
   .catch(err => console.error("Error obteniendo ubicación:", err));
+
 
 onDisconnect(miConexion).remove();
 
