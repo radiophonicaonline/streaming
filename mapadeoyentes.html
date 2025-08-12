@@ -22,9 +22,13 @@
 <div id="container">
   <div id="map"></div>
   <div id="stats">
-    <h3>Oyentes por Región</h3>
-    <ul id="regionList"></ul>
-    <h3>Total conectados: <span id="totalOyentes">0</span></h3>
+    <h3>Oyentes en Tiempo Real por Región</h3>
+    <ul id="regionListTiempoReal"></ul>
+    <p>Total conectados ahora: <span id="totalTiempoReal">0</span></p>
+
+    <h3>Oyentes Diarios por Región</h3>
+    <ul id="regionListDiario"></ul>
+    <p>Total diario: <span id="totalDiario">0</span></p>
   </div>
 </div>
 
@@ -33,7 +37,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebas
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 import L from "https://cdn.skypack.dev/leaflet";
 
-// 🔹 Configuración Firebase (misma que en la página principal)
+// 🔹 Configuración Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
   authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
@@ -54,9 +58,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let markers = {};
 
-// 🔹 Escuchar las conexiones y mostrarlas en el mapa
+// --- Oyentes en tiempo real ---
 onValue(ref(db, "conexiones"), (snapshot) => {
-  const data = snapshot.val();
+  const data = snapshot.val() || {};
   
   // Limpiar marcadores anteriores
   Object.values(markers).forEach(m => map.removeLayer(m));
@@ -82,18 +86,31 @@ onValue(ref(db, "conexiones"), (snapshot) => {
     }
   }
 
-  // Ordenar por más oyentes
-  const sortedRegions = Object.entries(regionCount).sort((a, b) => b[1] - a[1]);
-  const regionList = document.getElementById("regionList");
-  regionList.innerHTML = "";
-  sortedRegions.forEach(([region, count]) => {
+  mostrarLista(regionCount, "regionListTiempoReal");
+  document.getElementById("totalTiempoReal").textContent = total;
+});
+
+// --- Oyentes diarios ---
+const hoy = new Date().toISOString().split("T")[0];
+onValue(ref(db, `conexiones_diarias/${hoy}`), (snapshot) => {
+  const data = snapshot.val() || {};
+  let total = 0;
+  for (let region in data) total += data[region];
+  mostrarLista(data, "regionListDiario");
+  document.getElementById("totalDiario").textContent = total;
+});
+
+// --- Función para mostrar listas ordenadas ---
+function mostrarLista(obj, elementoId) {
+  const sorted = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+  const ul = document.getElementById(elementoId);
+  ul.innerHTML = "";
+  sorted.forEach(([region, count]) => {
     const li = document.createElement("li");
     li.textContent = `${region}: ${count} oyente(s)`;
-    regionList.appendChild(li);
+    ul.appendChild(li);
   });
-
-  document.getElementById("totalOyentes").textContent = total;
-});
+}
 </script>
 
 </body>
