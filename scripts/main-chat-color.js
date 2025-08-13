@@ -7,21 +7,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-import {
-  getDatabase,
-  ref,
-  push,
-  set,
-  onValue,
-  onDisconnect,
-  remove,
-  get
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-import {
-  getMessaging,
-  getToken,
-  onMessage
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging.js";
+import { getDatabase, ref, push, set, onValue, onDisconnect, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
@@ -38,48 +24,20 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// --- 🔔 NOTIFICACIONES ---
-const messaging = getMessaging(app);
-document.getElementById("btnNotificaciones").addEventListener("click", async () => {
-  try {
-    const permiso = await Notification.requestPermission();
-    if (permiso === "granted") {
-      const token = await getToken(messaging, {
-        vapidKey: "BLwt9ZJryiJhcwabvu8ZWsG7JZ-2BKk-5jtbOVNj0yy173t6F5wQTBAReshsjhvea5gCJq0ViU06okHHdftzJK0"
-      });
-      if (token) {
-        const tokenKey = token.replace(/\W/g, "_");
-        await set(ref(db, "tokens/" + tokenKey), true);
-        alert("✅ Te avisaremos cuando estemos en vivo.");
-      }
-    } else {
-      alert("❌ No activaste las notificaciones.");
-    }
-  } catch (err) {
-    console.error("Error al registrar notificaciones:", err);
-  }
-});
-
-// Escuchar en primer plano
-onMessage(messaging, (payload) => {
-  new Notification(payload.notification.title, {
-    body: payload.notification.body,
-    icon: payload.notification.icon
-  });
-});
-
 // --- CONTADOR DE VISITAS ---
 const hoy = new Date().toISOString().split("T")[0];
 const visitasRef = ref(db, "visitas/" + hoy);
 push(visitasRef, true);
 
-// --- CONTADOR DE PERSONAS ---
+// --- CONTADOR DE PERSONAS EN LA PÁGINA ---
 const conexionesRef = ref(db, "conexiones");
 const miConexion = push(conexionesRef);
 set(miConexion, true);
+
+// 🔹 Guardar ID en sessionStorage para el mapa
 sessionStorage.setItem("conexionId", miConexion.key);
 
-// Ubicación
+// 🔹 Guardar ubicación en la conexión + registrar en conteo diario por región
 fetch("https://ipapi.co/json/")
   .then(res => res.json())
   .then(data => {
@@ -90,23 +48,31 @@ fetch("https://ipapi.co/json/")
       region: data.region,
       country: data.country_name
     };
+
+    // Guardar en la conexión actual
     set(ref(db, `conexiones/${miConexion.key}/ubicacion`), ubicacion);
+
+    // Guardar también en el conteo diario por región
+    const hoy = new Date().toISOString().split("T")[0];
     const regionRef = ref(db, `conexiones_diarias/${hoy}/${ubicacion.region}`);
     get(regionRef).then(snap => {
       const actual = snap.val() || 0;
       set(regionRef, actual + 1);
     });
   })
-  .catch(err => console.error("Error ubicación:", err));
+  .catch(err => console.error("Error obteniendo ubicación:", err));
+
 
 onDisconnect(miConexion).remove();
+
 onValue(conexionesRef, (snap) => {
   document.getElementById("contador").innerText =
     `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
 });
 
-// --- CHAT ---
+// --- CHAT EN VIVO CON COLORES ---
 const chatRef = ref(db, "chat");
+
 onValue(chatRef, (snap) => {
   const chatbox = document.getElementById("chatbox");
   chatbox.innerHTML = "";
@@ -136,7 +102,9 @@ window.enviarChat = () => {
     isAnon: true,
     photo: null
   };
+
   if (!mensaje || !user.name) return alert("Completa tu nombre y tu mensaje.");
+
   const nuevo = push(chatRef);
   set(nuevo, {
     nombre: user.name,
@@ -147,45 +115,67 @@ window.enviarChat = () => {
     esAnonimo: user.isAnon,
     timestamp: Date.now()
   });
+
   document.getElementById("mensaje").value = "";
 };
 
-// --- LIKES ---
+// --- ENVIAR COMENTARIO POR WHATSAPP ---
+window.enviarComentario = () => {
+  const texto = document.getElementById("comentario").value.trim();
+  if (!texto) return alert("Escribe un comentario.");
+  const numero = "+56944896523";
+  const enlace = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(texto)}`;
+  window.open(enlace, "_blank");
+  document.getElementById("comentario").value = "";
+};
+
+// --- BOTÓN DE LIKES ---
 const reactionPath = "reacciones";
 const deviceId = localStorage.getItem("reaction_device_id") || crypto.randomUUID();
 localStorage.setItem("reaction_device_id", deviceId);
+
 const reactions = ["like", "love", "funny"];
+
 window.react = function(type) {
   const userRef = ref(db, `${reactionPath}/usuarios/${deviceId}`);
   get(userRef).then((snapshot) => {
     const previous = snapshot.val();
-    if (previous === type) set(userRef, null);
-    else set(userRef, type);
+    if (previous === type) {
+      set(userRef, null);
+    } else {
+      set(userRef, type);
+    }
   });
 };
+
 function updateReactionCounters() {
   const usersRef = ref(db, `${reactionPath}/usuarios`);
   onValue(usersRef, (snapshot) => {
     const data = snapshot.val() || {};
     const counts = { like: 0, love: 0, funny: 0 };
     let userReaction = null;
+
     for (const [key, value] of Object.entries(data)) {
       if (reactions.includes(value)) {
         counts[value]++;
         if (key === deviceId) userReaction = value;
       }
     }
+
     reactions.forEach((type) => {
       const countEl = document.getElementById(`count-${type}`);
       const btnEl = document.getElementById(`btn-${type}`);
       if (countEl) countEl.textContent = counts[type];
-      if (btnEl) btnEl.style.backgroundColor = userReaction === type ? "#d1ffd6" : "";
+      if (btnEl) {
+        btnEl.style.backgroundColor = userReaction === type ? "#d1ffd6" : "";
+      }
     });
   });
 }
+
 updateReactionCounters();
 
-// --- COMPARTIR ---
+// --- BOTÓN DE COMPARTIR ---
 window.compartirPagina = function () {
   if (navigator.share) {
     navigator.share({
@@ -198,16 +188,66 @@ window.compartirPagina = function () {
   }
 };
 
-// --- LOGIN ---
+// --- Cargar el reproductor automáticamente ---
+const iframe = document.getElementById("iframePlayer");
+
+get(ref(db, "urlReproductor")).then((snap) => {
+  if (snap.exists()) {
+    iframe.src = snap.val();
+    registrarRadiovidente();
+  } else {
+    console.warn("No se encontró la URL del reproductor en Firebase.");
+  }
+});
+
+let urlCancion = "";
+let urlPortada = "";
+
+function actualizarContenido() {
+  const timestamp = Date.now();
+  const iframe = document.getElementById("iframeCancion");
+  if (iframe && urlCancion) {
+    iframe.src = urlCancion + "?t=" + timestamp;
+  }
+  const portada = document.getElementById("portadaCancion");
+  if (portada && urlPortada) {
+    portada.src = urlPortada + "?t=" + timestamp;
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  Promise.all([
+    get(ref(db, "urlNowPlaying")),
+    get(ref(db, "urlArtwork"))
+  ]).then(([snapCancion, snapPortada]) => {
+    if (snapCancion.exists()) {
+      urlCancion = snapCancion.val();
+    }
+    if (snapPortada.exists()) {
+      urlPortada = snapPortada.val();
+    }
+    actualizarContenido();
+    setInterval(actualizarContenido, 10000);
+  });
+});
+
+// --- LOGIN CON GOOGLE Y ANÓNIMO ---
 document.getElementById("login-google").addEventListener("click", () => {
-  signInWithPopup(auth, provider).catch(console.error);
+  signInWithPopup(auth, provider).catch((error) => {
+    console.error("Error al iniciar sesión:", error);
+  });
 });
+
 document.getElementById("login-anonimo").addEventListener("click", () => {
-  signInAnonymously(auth).catch(console.error);
+  signInAnonymously(auth).catch((error) => {
+    console.error("Error al iniciar como anónimo:", error);
+  });
 });
+
 document.getElementById("logout").addEventListener("click", () => {
   signOut(auth);
 });
+
 onAuthStateChanged(auth, (user) => {
   const info = document.getElementById("user-info");
   if (user) {
@@ -216,9 +256,35 @@ onAuthStateChanged(auth, (user) => {
     info.innerHTML = user.isAnonymous
       ? `👤 Estás chateando como invitado`
       : `<img src="${photo}" style="width:20px;border-radius:50%"> ${name}`;
-    window.chatUser = { name, uid: user.uid, email: user.email || "", photo, isAnon: user.isAnonymous };
+    window.chatUser = {
+      name: name,
+      uid: user.uid,
+      email: user.email || "",
+      photo: photo,
+      isAnon: user.isAnonymous
+    };
   } else {
     info.textContent = "No has iniciado sesión";
     window.chatUser = null;
+  }
+});
+
+// --- MENÚ RESPONSIVO ---
+function toggleMenu() {
+  const menu = document.getElementById("menuItems");
+  if (menu.style.display === "flex") {
+    menu.style.display = "none";
+  } else {
+    menu.style.display = "flex";
+  }
+}
+
+document.addEventListener("click", function (e) {
+  const menu = document.getElementById("menuItems");
+  const toggle = document.querySelector(".menu-toggle");
+  if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+    if (window.innerWidth < 768) {
+      menu.style.display = "none";
+    }
   }
 });
