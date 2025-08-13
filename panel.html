@@ -84,7 +84,7 @@
 </div>
 
 <button onclick="resetearReaccionesVertical()">🔁 Resetear Reacciones Verticales</button>
-
+<button id="btnEnviarNotificacion">📢 Enviar alerta de transmisión</button>
 
 
   <div class="chat-box">
@@ -316,7 +316,27 @@ function cargarURLReproductor() {
 }
 
 window.addEventListener("DOMContentLoaded", cargarURLReproductor);
+document.getElementById("btnEnviarNotificacion").addEventListener("click", async () => {
+    const snap = await get(ref(db, "tokens"));
+    if (!snap.exists()) return alert("No hay suscriptores todavía.");
+    const tokens = Object.keys(snap.val());
 
+    fetch("https://us-central1-TU_PROYECTO.cloudfunctions.net/enviarNotificacion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tokens: tokens,
+        notification: {
+          title: "🎥 Estamos en vivo",
+          body: "Haz clic para unirte a la transmisión",
+          icon: "https://radiophonicaonline.github.io/streaming/logo.png",
+          click_action: "https://radiophonicaonline.github.io/streaming/"
+        }
+      })
+    });
+
+    alert("✅ Notificación enviada (si el endpoint está configurado).");
+  });
 </script>
 
 </body>
