@@ -36,31 +36,78 @@ set(miConexion, true);
 
 // 🔹 Guardar ID en sessionStorage para el mapa
 sessionStorage.setItem("conexionId", miConexion.key);
+// Función para guardar ubicación en conexiones y conteo diario
+function guardarUbicacion(ubicacion) {
+  // Guardar en la conexión actual
+  set(ref(db, `conexiones/${miConexion.key}/ubicacion`), ubicacion);
 
-// 🔹 Guardar ubicación en la conexión + registrar en conteo diario por región
-fetch("https://ipapi.co/json/")
-  .then(res => res.json())
-  .then(data => {
-    const ubicacion = {
-      lat: data.latitude,
-      lon: data.longitude,
-      city: data.city,
-      region: data.region,
-      country: data.country_name
-    };
+  // Guardar también en el conteo diario por región
+  const hoy = new Date().toISOString().split("T")[0];
+  const regionRef = ref(db, `conexiones_diarias/${hoy}/${ubicacion.region || 'Desconocida'}`);
+  get(regionRef).then(snap => {
+    const actual = snap.val() || 0;
+    set(regionRef, actual + 1);
+  });
+}
 
-    // Guardar en la conexión actual
-    set(ref(db, `conexiones/${miConexion.key}/ubicacion`), ubicacion);
-
-    // Guardar también en el conteo diario por región
-    const hoy = new Date().toISOString().split("T")[0];
-    const regionRef = ref(db, `conexiones_diarias/${hoy}/${ubicacion.region}`);
-    get(regionRef).then(snap => {
-      const actual = snap.val() || 0;
-      set(regionRef, actual + 1);
-    });
-  })
-  .catch(err => console.error("Error obteniendo ubicación:", err));
+// Intentar primero GPS
+if ("geolocation" in navigator) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      // Datos con precisión alta desde GPS
+      const ubicacion = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        city: "Desconocida",
+        region: "Desconocida",
+        country: "Desconocido"
+      };
+      // Usar IP para completar ciudad/región si es posible
+      fetch("https://ipapi.co/json/")
+        .then(res => res.json())
+        .then(data => {
+          ubicacion.city = data.city || ubicacion.city;
+          ubicacion.region = data.region || ubicacion.region;
+          ubicacion.country = data.country_name || ubicacion.country;
+          guardarUbicacion(ubicacion);
+        })
+        .catch(() => guardarUbicacion(ubicacion));
+    },
+    (err) => {
+      console.warn("GPS no autorizado o falló:", err);
+      // Plan B → Ubicación por IP
+      fetch("https://ipapi.co/json/")
+        .then(res => res.json())
+        .then(data => {
+          const ubicacion = {
+            lat: data.latitude,
+            lon: data.longitude,
+            city: data.city,
+            region: data.region,
+            country: data.country_name
+          };
+          guardarUbicacion(ubicacion);
+        })
+        .catch(err => console.error("Error obteniendo ubicación IP:", err));
+    },
+    { enableHighAccuracy: true, timeout: 5000 }
+  );
+} else {
+  // Si el navegador no soporta GPS → IP
+  fetch("https://ipapi.co/json/")
+    .then(res => res.json())
+    .then(data => {
+      const ubicacion = {
+        lat: data.latitude,
+        lon: data.longitude,
+        city: data.city,
+        region: data.region,
+        country: data.country_name
+      };
+      guardarUbicacion(ubicacion);
+    })
+    .catch(err => console.error("Error obteniendo ubicación IP:", err));
+}
 
 
 onDisconnect(miConexion).remove();
