@@ -17,7 +17,7 @@
       height: 100px;
       box-sizing: border-box;
       text-shadow: 2px 2px 4px #000;
-      font-weight: bold; /* 👈 esto es lo que necesitas */
+      font-weight: bold;
     }
 
     #hora, #clima {
@@ -40,7 +40,8 @@
   <script>
     // API CONFIG
     const apiKey = 'bc4f5eacdd704beb01543595e8a25c3a'; // tu API key de OpenWeatherMap
-    const ciudad = 'Santiago'; // ciudad a mostrar
+    const ciudades = ["Santiago", "Valparaíso", "Concepción", "Antofagasta", "La Serena", "Puerto Montt", "Iquique", "Temuco"]; 
+    let indiceCiudad = 0;
 
     // Función para actualizar hora y fecha
     function actualizarHora() {
@@ -63,10 +64,11 @@
       document.getElementById('hora').innerText = `🕒 ${fecha} - ${hora}`;
     }
 
-    // Función para obtener clima
-   async function obtenerClima() {
+    // Función para obtener clima de la ciudad actual
+    async function obtenerClima() {
       try {
-        const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&lang=es&units=metric`;
+        const ciudad = ciudades[indiceCiudad];
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${ciudad},CL&appid=${apiKey}&lang=es&units=metric`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("No se pudo obtener clima");
         const data = await response.json();
@@ -79,13 +81,18 @@
       }
     }
 
+    // Función para cambiar de ciudad
+    function cambiarCiudad() {
+      indiceCiudad = (indiceCiudad + 1) % ciudades.length;
+      obtenerClima();
+    }
 
     // Iniciar
     actualizarHora();
     setInterval(actualizarHora, 1000);
 
     obtenerClima();
-    setInterval(obtenerClima, 10 * 60 * 1000); // cada 10 minutos
+    setInterval(cambiarCiudad, 10000); // cada 10 segundos cambia ciudad
   </script>
 </body>
 </html>
