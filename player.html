@@ -2,85 +2,132 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <style>
-body{margin:0;background:black;overflow:hidden}
+html,body{
+  margin:0;
+  background:black;
+  overflow:hidden;
+}
 
 video{
-  width:100vw;
-  height:100vh;
-  object-fit:contain;
-  opacity:1;
-  transition:opacity 0.8s ease;
+  position:absolute;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  background:black;
 }
 </style>
 </head>
+
 <body>
 
-<video id="video" autoplay></video>
+<video id="main" autoplay></video>
+<video id="fx" style="display:none"></video>
 
 <script>
-const video = document.getElementById("video");
 const canal = new BroadcastChannel("obs_player");
 
+const main = document.getElementById("main");
+const fx = document.getElementById("fx");
+
 let autoplay = true;
-let currentFiles = [];
+let currentFolder = null;
 
-function fadeOut(cb){
-  video.style.opacity = 0;
-  setTimeout(cb, 800);
-}
-
-function fadeIn(){ video.style.opacity = 1; }
+/* ===== PLAY ARCHIVO ===== */
 
 function playFile(file){
-  fadeOut(()=>{
-    video.src = URL.createObjectURL(file);
-    video.play();
-    fadeIn();
-  });
+  main.src = URL.createObjectURL(file);
+  main.play();
+  currentFolder = null;
 }
 
-function playRandom(files){
+/* ===== PLAY CARPETA (ALEATORIO INTERNO) ===== */
+
+function playFolder(files){
+
   if(!files.length) return;
-  const i = Math.floor(Math.random()*files.length);
-  currentFiles = files;
-  playFile(files[i]);
+
+  currentFolder = files;
+
+  const f = files[Math.floor(Math.random() * files.length)];
+
+  main.src = URL.createObjectURL(f);
+  main.play();
 }
 
-video.onended = ()=>{
-  if(autoplay && currentFiles.length){
-    playRandom(currentFiles);
+/* ===== SIGUIENTE AUTOMÁTICO ===== */
+
+main.onended = () => {
+
+  if(!autoplay) return;
+
+  if(currentFolder){
+    playFolder(currentFolder);
+  }
+  else{
+    canal.postMessage({type:"requestNext"});
   }
 };
 
-canal.onmessage = e=>{
-  const msg = e.data;
+/* ===== FX ===== */
 
-  if(msg.type === "playFile"){
-    autoplay = false;
-    playFile(msg.file);
-  }
+function playFX(file){
 
-  if(msg.type === "playFolder"){
-    autoplay = true;
-    playRandom(msg.files);
-  }
+  fx.src = URL.createObjectURL(file);
+  fx.style.display="block";
 
-  if(msg.type === "setAutoplay"){
-    autoplay = msg.value;
-  }
+  fx.onended = () => {
+    fx.style.display="none";
+  };
 
-  if(msg.type === "pause") video.pause();
-  if(msg.type === "play") video.play();
+  fx.play();
+}
 
-  if(msg.type === "stop"){
-    video.pause();
-    video.currentTime = 0;
-  }
+/* ===== CONTROLES ===== */
 
-  if(msg.type === "fx"){
-    const fx = new Audio(URL.createObjectURL(msg.file));
-    fx.play();
+function play(){ main.play(); }
+function pause(){ main.pause(); }
+function stop(){
+  main.pause();
+  main.currentTime = 0;
+}
+
+/* ===== COMUNICACIÓN ===== */
+
+canal.onmessage = e => {
+
+  const d = e.data;
+
+  switch(d.type){
+
+    case "playFile":
+      playFile(d.file);
+      break;
+
+    case "playFolder":
+      playFolder(d.files);
+      break;
+
+    case "fx":
+      playFX(d.file);
+      break;
+
+    case "play":
+      play();
+      break;
+
+    case "pause":
+      pause();
+      break;
+
+    case "stop":
+      stop();
+      break;
+
+    case "setAutoplay":
+      autoplay = d.value;
+      break;
   }
 };
 </script>
