@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Radiophonica Player V1</title>
+
+<style>
+  body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+  }
+
+  video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    background: black;
+  }
+
+  #logo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 120px;
+    opacity: 0.85;
+  }
+</style>
+</head>
+
+<body>
+
+<img id="logo" src="logo.png">
+
+<video id="player" autoplay></video>
+
+<script>
+
+// 🔥 LISTA DE ARCHIVOS (URLs directas)
+const playlist = [
+
+  "URL_VIDEO_1",
+  "URL_VIDEO_2",
+  "URL_VIDEO_3"
+
+];
+
+const player = document.getElementById("player");
+
+// 🎲 Elegir uno aleatorio
+function playRandom() {
+  const index = Math.floor(Math.random() * playlist.length);
+  player.src = playlist[index];
+  player.play();
+}
+
+// 🔁 Cuando termina → otro random
+player.addEventListener("ended", playRandom);
+
+// ▶️ Iniciar
+playRandom();
+
+</script>
+
+</body>
+</html>
