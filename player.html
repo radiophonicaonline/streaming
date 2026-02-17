@@ -2,11 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Radiophonica Player Local</title>
+<title>Radiophonica Player Local V2</title>
 
 <style>
-  body { margin:0; background:black; overflow:hidden; }
+  body { margin:0; background:black; overflow:hidden; font-family:sans-serif; }
   video { width:100vw; height:100vh; object-fit:contain; }
+
   #logo {
     position:absolute;
     top:20px;
@@ -14,36 +15,55 @@
     width:120px;
     opacity:0.9;
   }
+
+  #panel {
+    position:absolute;
+    bottom:20px;
+    left:20px;
+    background:rgba(0,0,0,0.6);
+    padding:10px;
+    border-radius:8px;
+    color:white;
+  }
+
+  button { margin-top:5px; }
 </style>
 </head>
 
 <body>
 
 <img id="logo" src="logo.png">
+
 <video id="player" autoplay controls></video>
+
+<div id="panel">
+  <div>Cargar videos locales:</div>
+  <input type="file" id="fileInput" multiple accept="video/*,audio/*">
+  <br>
+  <button onclick="playRandom()">▶️ Reproducir random</button>
+</div>
 
 <script>
 
-// 🎬 RUTAS LOCALES
-const playlist = [
-
-  "Videos/video1.mp4",
-  "Videos/video2.mp4",
-  "Videos/video3.mp4"
-
-];
-
+let playlist = [];
 const player = document.getElementById("player");
 
+// 📂 Cargar archivos desde PC
+document.getElementById("fileInput").addEventListener("change", e => {
+  playlist = Array.from(e.target.files).map(file => URL.createObjectURL(file));
+});
+
+// 🎲 Reproducir random
 function playRandom() {
+  if (playlist.length === 0) return alert("Carga archivos primero");
+
   const index = Math.floor(Math.random() * playlist.length);
   player.src = playlist[index];
   player.play();
 }
 
+// 🔁 Loop random
 player.addEventListener("ended", playRandom);
-
-playRandom();
 
 </script>
 
