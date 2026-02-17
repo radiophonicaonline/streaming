@@ -32,23 +32,19 @@ const main = document.getElementById("main");
 const fx = document.getElementById("fx");
 
 let autoplay = true;
-let currentFolder = null;
 
 /* ===== PLAY ARCHIVO ===== */
 
 function playFile(file){
   main.src = URL.createObjectURL(file);
   main.play();
-  currentFolder = null;
 }
 
-/* ===== PLAY CARPETA (ALEATORIO INTERNO) ===== */
+/* ===== PLAY CARPETA → SOLO 1 RANDOM ===== */
 
 function playFolder(files){
 
   if(!files.length) return;
-
-  currentFolder = files;
 
   const f = files[Math.floor(Math.random() * files.length)];
 
@@ -56,18 +52,14 @@ function playFolder(files){
   main.play();
 }
 
-/* ===== SIGUIENTE AUTOMÁTICO ===== */
+/* ===== CUANDO TERMINA ===== */
 
 main.onended = () => {
 
   if(!autoplay) return;
 
-  if(currentFolder){
-    playFolder(currentFolder);
-  }
-  else{
-    canal.postMessage({type:"requestNext"});
-  }
+  // pide al panel el siguiente item
+  canal.postMessage({type:"next"});
 };
 
 /* ===== FX ===== */
@@ -76,6 +68,7 @@ function playFX(file){
 
   fx.src = URL.createObjectURL(file);
   fx.style.display="block";
+  fx.volume = main.volume;
 
   fx.onended = () => {
     fx.style.display="none";
@@ -93,7 +86,7 @@ function stop(){
   main.currentTime = 0;
 }
 
-/* ===== COMUNICACIÓN ===== */
+/* ===== COMUNICACIÓN PANEL → PLAYER ===== */
 
 canal.onmessage = e => {
 
@@ -127,6 +120,11 @@ canal.onmessage = e => {
 
     case "setAutoplay":
       autoplay = d.value;
+      break;
+
+    case "volume":
+      main.volume = d.value;
+      fx.volume = d.value;
       break;
   }
 };
