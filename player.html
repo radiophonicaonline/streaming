@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Radiophonica Player Local V2</title>
+<title>Radiophonica Player</title>
 
 <style>
-  body { margin:0; background:black; overflow:hidden; font-family:sans-serif; }
+  body { margin:0; background:black; overflow:hidden; }
   video { width:100vw; height:100vh; object-fit:contain; }
 
   #logo {
@@ -15,54 +15,43 @@
     width:120px;
     opacity:0.9;
   }
-
-  #panel {
-    position:absolute;
-    bottom:20px;
-    left:20px;
-    background:rgba(0,0,0,0.6);
-    padding:10px;
-    border-radius:8px;
-    color:white;
-  }
-
-  button { margin-top:5px; }
 </style>
 </head>
 
 <body>
 
 <img id="logo" src="logo.png">
-
-<video id="player" autoplay controls></video>
-
-<div id="panel">
-  <div>Cargar videos locales:</div>
-  <input type="file" id="fileInput" multiple accept="video/*,audio/*">
-  <br>
-  <button onclick="playRandom()">▶️ Reproducir random</button>
-</div>
+<video id="player" autoplay></video>
 
 <script>
 
 let playlist = [];
+
 const player = document.getElementById("player");
 
-// 📂 Cargar archivos desde PC
-document.getElementById("fileInput").addEventListener("change", e => {
-  playlist = Array.from(e.target.files).map(file => URL.createObjectURL(file));
-});
+// 🔄 Revisar comandos del panel
+setInterval(() => {
+
+  const data = localStorage.getItem("radiophonica_playlist");
+
+  if (data) {
+    playlist = JSON.parse(data);
+    localStorage.removeItem("radiophonica_playlist");
+    playRandom();
+  }
+
+}, 1000);
 
 // 🎲 Reproducir random
 function playRandom() {
-  if (playlist.length === 0) return alert("Carga archivos primero");
+  if (playlist.length === 0) return;
 
   const index = Math.floor(Math.random() * playlist.length);
   player.src = playlist[index];
   player.play();
 }
 
-// 🔁 Loop random
+// 🔁 Loop
 player.addEventListener("ended", playRandom);
 
 </script>
