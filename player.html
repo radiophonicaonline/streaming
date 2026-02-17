@@ -2,28 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Radiophonica Player V1</title>
+<title>Radiophonica Player Local</title>
 
 <style>
-  body {
-    margin: 0;
-    background: black;
-    overflow: hidden;
-  }
-
-  video {
-    width: 100vw;
-    height: 100vh;
-    object-fit: contain;
-    background: black;
-  }
-
+  body { margin:0; background:black; overflow:hidden; }
+  video { width:100vw; height:100vh; object-fit:contain; }
   #logo {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 120px;
-    opacity: 0.85;
+    position:absolute;
+    top:20px;
+    left:20px;
+    width:120px;
+    opacity:0.9;
   }
 </style>
 </head>
@@ -31,33 +20,29 @@
 <body>
 
 <img id="logo" src="logo.png">
-
-<video id="player" autoplay></video>
+<video id="player" autoplay controls></video>
 
 <script>
 
-// 🔥 LISTA DE ARCHIVOS (URLs directas)
+// 🎬 RUTAS LOCALES
 const playlist = [
 
-  "URL_VIDEO_1",
-  "URL_VIDEO_2",
-  "URL_VIDEO_3"
+  "Videos/video1.mp4",
+  "Videos/video2.mp4",
+  "Videos/video3.mp4"
 
 ];
 
 const player = document.getElementById("player");
 
-// 🎲 Elegir uno aleatorio
 function playRandom() {
   const index = Math.floor(Math.random() * playlist.length);
   player.src = playlist[index];
   player.play();
 }
 
-// 🔁 Cuando termina → otro random
 player.addEventListener("ended", playRandom);
 
-// ▶️ Iniciar
 playRandom();
 
 </script>
