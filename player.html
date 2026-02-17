@@ -16,92 +16,77 @@ video{
   height:100%;
   object-fit:cover;
   background:black;
-  transition:opacity 1s linear;
 }
-
-#v1{opacity:1; z-index:1;}
-#v2{opacity:0; z-index:2;}
 </style>
 </head>
 
 <body>
 
-<video id="v1"></video>
-<video id="v2"></video>
+<video id="main" autoplay></video>
+<video id="fx" style="display:none"></video>
 
 <script>
 const canal = new BroadcastChannel("obs_player");
 
-const v1 = document.getElementById("v1");
-const v2 = document.getElementById("v2");
-
-let active = v1;
-let standby = v2;
+const main = document.getElementById("main");
+const fx = document.getElementById("fx");
 
 let autoplay = true;
-let fadeTime = 3; // segundos
 
-/* ===== CROSSFADE ===== */
+/* ===== PLAY ARCHIVO ===== */
 
-function crossfade(file){
-
-  standby.src = URL.createObjectURL(file);
-  standby.volume = 0;
-  standby.currentTime = 0;
-
-  standby.play();
-
-  // animación
-  standby.style.opacity = 1;
-  active.style.opacity = 0;
-
-  const steps = 30;
-  let step = 0;
-
-  const interval = setInterval(()=>{
-
-    step++;
-
-    const p = step / steps;
-
-    standby.volume = p;
-    active.volume = 1 - p;
-
-    if(step >= steps){
-
-      clearInterval(interval);
-
-      active.pause();
-
-      // intercambiar roles
-      const temp = active;
-      active = standby;
-      standby = temp;
-
-      standby.style.opacity = 0;
-    }
-
-  }, (fadeTime*1000)/steps);
+function playFile(file){
+  main.src = URL.createObjectURL(file);
+  main.play();
 }
 
-/* ===== PLAY DIRECTO (sin fade) ===== */
+/* ===== PLAY CARPETA → SOLO 1 RANDOM ===== */
 
-function playDirect(file){
+function playFolder(files){
 
-  active.src = URL.createObjectURL(file);
-  active.volume = 1;
-  active.play();
+  if(!files.length) return;
+
+  const f = files[Math.floor(Math.random() * files.length)];
+
+  main.src = URL.createObjectURL(f);
+  main.play();
 }
 
 /* ===== CUANDO TERMINA ===== */
 
-active.onended = () => {
-  if(autoplay){
-    canal.postMessage({type:"next"});
-  }
+main.onended = () => {
+
+  if(!autoplay) return;
+
+  // pide al panel el siguiente item
+  canal.postMessage({type:"next"});
 };
 
-/* ===== COMUNICACIÓN ===== */
+/* ===== FX ===== */
+
+function playFX(file){
+
+  fx.src = URL.createObjectURL(file);
+  fx.style.display="block";
+  fx.volume = main.volume;
+
+  fx.onended = () => {
+    fx.style.display="none";
+  };
+
+  fx.play();
+}
+
+/* ===== CONTROLES ===== */
+
+function play(){ main.play(); }
+function pause(){ main.pause(); }
+function stop(){
+  main.pause();
+  main.currentTime = 0;
+}
+
+/* ===== COMUNICACIÓN PANEL → PLAYER ===== */
 
 canal.onmessage = e => {
 
@@ -110,34 +95,36 @@ canal.onmessage = e => {
   switch(d.type){
 
     case "playFile":
-      crossfade(d.file);
+      playFile(d.file);
       break;
 
     case "playFolder":
-      const f = d.files[Math.floor(Math.random()*d.files.length)];
-      crossfade(f);
+      playFolder(d.files);
+      break;
+
+    case "fx":
+      playFX(d.file);
       break;
 
     case "play":
-      active.play();
+      play();
       break;
 
     case "pause":
-      active.pause();
+      pause();
       break;
 
     case "stop":
-      active.pause();
-      active.currentTime = 0;
-      break;
-
-    case "volume":
-      active.volume = d.value;
-      standby.volume = d.value;
+      stop();
       break;
 
     case "setAutoplay":
       autoplay = d.value;
+      break;
+
+    case "volume":
+      main.volume = d.value;
+      fx.volume = d.value;
       break;
   }
 };
@@ -145,3 +132,4 @@ canal.onmessage = e => {
 
 </body>
 </html>
+
