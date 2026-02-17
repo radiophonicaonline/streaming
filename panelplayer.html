@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Radiophonica</title>
+
+<style>
+  body {
+    font-family: sans-serif;
+    background: #111;
+    color: white;
+    padding: 20px;
+  }
+
+  h2 { margin-top: 0; }
+
+  input, button {
+    margin-top: 10px;
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  #lista {
+    margin-top: 15px;
+    background: #000;
+    padding: 10px;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .item {
+    padding: 4px;
+    border-bottom: 1px solid #333;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>🎛️ Panel Radiophonica</h2>
+
+<div>Cargar videos o audios:</div>
+
+<input type="file" id="fileInput" multiple accept="video/*,audio/*">
+
+<br>
+
+<button onclick="enviar()">▶️ Enviar al Player</button>
+
+<div id="lista">No hay archivos cargados</div>
+
+<script>
+
+let playlist = [];
+
+const lista = document.getElementById("lista");
+
+// 📂 Cargar archivos desde PC
+document.getElementById("fileInput").addEventListener("change", e => {
+
+  const files = Array.from(e.target.files);
+
+  playlist = files.map(f => ({
+    name: f.name,
+    url: URL.createObjectURL(f)
+  }));
+
+  mostrarLista();
+
+});
+
+// 📋 Mostrar lista
+function mostrarLista() {
+
+  if (playlist.length === 0) {
+    lista.innerHTML = "No hay archivos cargados";
+    return;
+  }
+
+  lista.innerHTML = playlist
+    .map(f => `<div class="item">🎬 ${f.name}</div>`)
+    .join("");
+
+}
+
+// 📡 Enviar al player
+function enviar() {
+
+  if (!playlist.length) return alert("Selecciona archivos");
+
+  const urls = playlist.map(f => f.url);
+
+  localStorage.setItem(
+    "radiophonica_playlist",
+    JSON.stringify(urls)
+  );
+
+  alert("Playlist enviada al player");
+
+}
+
+</script>
+
+</body>
+</html>
