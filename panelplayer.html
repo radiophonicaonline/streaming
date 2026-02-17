@@ -5,96 +5,144 @@
 <style>
 body{background:#111;color:white;font-family:sans-serif;padding:15px}
 
-button{
-  margin:5px;
-  padding:8px 12px;
-  background:#444;
-  color:white;
-  border:none;
-  cursor:pointer;
-}
-
+button{margin:5px;padding:8px 12px;background:#444;color:white;border:none;cursor:pointer}
 button:hover{background:#666}
 
-#lista div{
-  padding:6px;
+.item{
+  padding:8px;
   border-bottom:1px solid #333;
-  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
 }
 
-#lista div:hover{background:#333}
+.item span{cursor:pointer}
+
+.fxbtn{
+  display:inline-block;
+  background:#900;
+  padding:10px;
+  margin:5px;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
 
-<h2>🎬 Panel Player</h2>
+<h2>🎬 Playlist</h2>
 
-<button onclick="cargarVideos()">➕ Cargar videos</button>
-<button onclick="cargarCarpeta()">📂 Cargar carpeta</button>
+<button onclick="cargarVideos()">➕ Videos</button>
+<button onclick="cargarCarpeta()">📂 Carpeta</button>
+<label><input type="checkbox" id="auto" checked> Auto</label>
 
-<hr>
-
-<button onclick="play()">▶ Play</button>
-<button onclick="pause()">⏸ Pause</button>
-<button onclick="stop()">⏹ Stop</button>
-<button onclick="next()">🔀 Transición a otro</button>
-
-<hr>
-
-<h3>📋 Lista</h3>
 <div id="lista"></div>
+
+<hr>
+
+<h2>🎛️ Controles</h2>
+
+<button onclick="play()">▶</button>
+<button onclick="pause()">⏸</button>
+<button onclick="stop()">⏹</button>
+
+<hr>
+
+<h2>🔊 Botonera FX / Jingles</h2>
+
+<button onclick="cargarFX()">➕ Cargar FX</button>
+<div id="fx"></div>
 
 <input type="file" id="files" accept="video/*" multiple hidden>
 <input type="file" id="folder" webkitdirectory hidden>
+<input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
 
 <script>
 const canal = new BroadcastChannel("obs_player");
 
-let archivos = [];
+let items = []; // archivos o carpetas
+let fxlist = [];
 
 const lista = document.getElementById("lista");
+const fxdiv = document.getElementById("fx");
 
 function actualizarLista(){
-  lista.innerHTML = "";
+  lista.innerHTML="";
 
-  archivos.forEach((f,i)=>{
-    const div = document.createElement("div");
-    div.textContent = f.name;
+  items.forEach((it,i)=>{
+    const div=document.createElement("div");
+    div.className="item";
 
-    div.onclick = ()=>{
-      canal.postMessage({
-        type:"playIndex",
-        files:archivos,
-        index:i
-      });
+    const span=document.createElement("span");
+    span.textContent=it.name;
+
+    span.onclick=()=>{
+      if(it.type==="file"){
+        canal.postMessage({type:"playFile",file:it.file});
+      }
+      else{
+        canal.postMessage({type:"playFolder",files:it.files});
+      }
     };
 
+    const del=document.createElement("button");
+    del.textContent="❌";
+    del.onclick=()=>{
+      items.splice(i,1);
+      actualizarLista();
+    };
+
+    div.appendChild(span);
+    div.appendChild(del);
     lista.appendChild(div);
   });
 }
 
-function cargarVideos(){
-  document.getElementById("files").click();
-}
+function cargarVideos(){ document.getElementById("files").click(); }
+function cargarCarpeta(){ document.getElementById("folder").click(); }
+function cargarFX(){ document.getElementById("fxfiles").click(); }
 
-function cargarCarpeta(){
-  document.getElementById("folder").click();
-}
-
-document.getElementById("files").onchange = e=>{
-  archivos.push(...e.target.files);
+document.getElementById("files").onchange=e=>{
+  for(const f of e.target.files){
+    items.push({type:"file",name:f.name,file:f});
+  }
   actualizarLista();
 };
 
-document.getElementById("folder").onchange = e=>{
-  archivos.push(...e.target.files);
+document.getElementById("folder").onchange=e=>{
+  const files=[...e.target.files];
+  const folderName=files[0].webkitRelativePath.split("/")[0];
+
+  items.push({
+    type:"folder",
+    name:"📂 "+folderName,
+    files:files
+  });
+
   actualizarLista();
+};
+
+document.getElementById("fxfiles").onchange=e=>{
+  for(const f of e.target.files){
+    fxlist.push(f);
+
+    const btn=document.createElement("div");
+    btn.className="fxbtn";
+    btn.textContent=f.name;
+
+    btn.onclick=()=>{
+      canal.postMessage({type:"fx",file:f});
+    };
+
+    fxdiv.appendChild(btn);
+  }
 };
 
 function play(){ canal.postMessage({type:"play"}) }
 function pause(){ canal.postMessage({type:"pause"}) }
 function stop(){ canal.postMessage({type:"stop"}) }
-function next(){ canal.postMessage({type:"next"}) }
+
+document.getElementById("auto").onchange=e=>{
+  canal.postMessage({type:"setAutoplay",value:e.target.checked});
+};
 </script>
 
 </body>
