@@ -2,33 +2,76 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <style>
-body{background:#111;color:white;font-family:sans-serif;padding:15px}
-
-button{margin:5px;padding:8px 12px;background:#444;color:white;border:none;cursor:pointer}
-button:hover{background:#666}
-
-.item{
-  padding:8px;
-  border-bottom:1px solid #333;
-  display:flex;
-  justify-content:space-between;
+body{
+  background:#0b0b0b;
+  color:#eee;
+  font-family:Segoe UI, sans-serif;
+  padding:12px;
 }
 
-.item span{cursor:pointer}
+/* BOTONES */
+
+button{
+  background:#2a2a2a;
+  color:#fff;
+  border:none;
+  padding:6px 10px;
+  margin:3px;
+  cursor:pointer;
+  border-radius:4px;
+  font-size:13px;
+}
+
+button:hover{ background:#444 }
+
+/* LISTA COMPACTA */
+
+#lista{
+  height:260px;
+  overflow-y:auto;
+  border:1px solid #222;
+  margin-top:8px;
+  font-size:13px;
+}
+
+.item{
+  display:flex;
+  justify-content:space-between;
+  padding:4px 6px;
+  border-bottom:1px solid #1c1c1c;
+}
+
+.item:hover{ background:#1a1a1a }
+
+.item span{
+  cursor:pointer;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:240px;
+}
+
+/* FX */
 
 .fxbtn{
   display:inline-block;
-  background:#900;
-  padding:10px;
-  margin:5px;
+  background:#7a0d0d;
+  padding:6px 8px;
+  margin:4px;
   cursor:pointer;
+  border-radius:4px;
+  font-size:12px;
 }
+
+.fxbtn:hover{ background:#a31212 }
 </style>
 </head>
+
 <body>
 
-<h2>🎬 Playlist</h2>
+<h3>🎬 Playlist</h3>
 
 <button onclick="cargarVideos()">➕ Videos</button>
 <button onclick="cargarCarpeta()">📂 Carpeta</button>
@@ -36,9 +79,13 @@ button:hover{background:#666}
 
 <div id="lista"></div>
 
-<hr>
+<h3>🎮 Navegación</h3>
 
-<h2>🎛️ Controles</h2>
+<button onclick="prev()">⏮ Anterior</button>
+<button onclick="next()">⏭ Siguiente</button>
+<button onclick="random()">🔀 Aleatorio</button>
+
+<h3>🎛️ Controles</h3>
 
 <button onclick="play()">▶</button>
 <button onclick="pause()">⏸</button>
@@ -46,7 +93,7 @@ button:hover{background:#666}
 
 <hr>
 
-<h2>🔊 Botonera FX / Jingles</h2>
+<h3>🔊 FX / Jingles</h3>
 
 <button onclick="cargarFX()">➕ Cargar FX</button>
 <div id="fx"></div>
@@ -58,11 +105,15 @@ button:hover{background:#666}
 <script>
 const canal = new BroadcastChannel("obs_player");
 
-let items = []; // archivos o carpetas
-let fxlist = [];
+let items = [];
+let history = [];
+let historyIndex = -1;
+let currentIndex = -1;
 
 const lista = document.getElementById("lista");
 const fxdiv = document.getElementById("fx");
+
+/* ===== ACTUALIZAR LISTA ===== */
 
 function actualizarLista(){
   lista.innerHTML="";
@@ -73,18 +124,10 @@ function actualizarLista(){
 
     const span=document.createElement("span");
     span.textContent=it.name;
-
-    span.onclick=()=>{
-      if(it.type==="file"){
-        canal.postMessage({type:"playFile",file:it.file});
-      }
-      else{
-        canal.postMessage({type:"playFolder",files:it.files});
-      }
-    };
+    span.onclick=()=> reproducirItem(i);
 
     const del=document.createElement("button");
-    del.textContent="❌";
+    del.textContent="✖";
     del.onclick=()=>{
       items.splice(i,1);
       actualizarLista();
@@ -96,33 +139,84 @@ function actualizarLista(){
   });
 }
 
+/* ===== REPRODUCIR ITEM ===== */
+
+function reproducirItem(i){
+
+  if(i < 0 || i >= items.length) return;
+
+  currentIndex = i;
+
+  const it = items[i];
+
+  history.push(i);
+  historyIndex = history.length - 1;
+
+  if(it.type==="file"){
+    canal.postMessage({type:"playFile",file:it.file});
+  }
+  else{
+    canal.postMessage({type:"playFolder",files:it.files});
+  }
+}
+
+/* ===== NAVEGACIÓN ===== */
+
+function next(){
+  if(!items.length) return;
+
+  let i = currentIndex + 1;
+  if(i >= items.length) i = 0;
+
+  reproducirItem(i);
+}
+
+function prev(){
+  if(!items.length) return;
+
+  let i = currentIndex - 1;
+  if(i < 0) i = items.length - 1;
+
+  reproducirItem(i);
+}
+
+function random(){
+  if(!items.length) return;
+
+  const i = Math.floor(Math.random() * items.length);
+  reproducirItem(i);
+}
+
+/* ===== CARGAS ===== */
+
 function cargarVideos(){ document.getElementById("files").click(); }
 function cargarCarpeta(){ document.getElementById("folder").click(); }
 function cargarFX(){ document.getElementById("fxfiles").click(); }
 
 document.getElementById("files").onchange=e=>{
   for(const f of e.target.files){
-    items.push({type:"file",name:f.name,file:f});
+    items.push({type:"file",name:"🎬 "+f.name,file:f});
   }
   actualizarLista();
 };
 
 document.getElementById("folder").onchange=e=>{
   const files=[...e.target.files];
-  const folderName=files[0].webkitRelativePath.split("/")[0];
+  const name=files[0].webkitRelativePath.split("/")[0];
 
   items.push({
     type:"folder",
-    name:"📂 "+folderName,
+    name:"📂 "+name,
     files:files
   });
 
   actualizarLista();
 };
 
+/* ===== FX ===== */
+
 document.getElementById("fxfiles").onchange=e=>{
   for(const f of e.target.files){
-    fxlist.push(f);
 
     const btn=document.createElement("div");
     btn.className="fxbtn";
@@ -135,6 +229,8 @@ document.getElementById("fxfiles").onchange=e=>{
     fxdiv.appendChild(btn);
   }
 };
+
+/* ===== CONTROLES ===== */
 
 function play(){ canal.postMessage({type:"play"}) }
 function pause(){ canal.postMessage({type:"pause"}) }
