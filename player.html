@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <style>
-body { margin:0; background:black; overflow:hidden; }
+body{margin:0;background:black;overflow:hidden}
 
 video{
   width:100vw;
@@ -22,17 +22,15 @@ video{
 const video = document.getElementById("video");
 const canal = new BroadcastChannel("obs_player");
 
-let playlist = [];
-let index = 0;
+let autoplay = true;
+let currentFiles = [];
 
 function fadeOut(cb){
   video.style.opacity = 0;
   setTimeout(cb, 800);
 }
 
-function fadeIn(){
-  video.style.opacity = 1;
-}
+function fadeIn(){ video.style.opacity = 1; }
 
 function playFile(file){
   fadeOut(()=>{
@@ -42,28 +40,34 @@ function playFile(file){
   });
 }
 
-function playRandom(){
-  if(!playlist.length) return;
-  index = Math.floor(Math.random()*playlist.length);
-  playFile(playlist[index]);
+function playRandom(files){
+  if(!files.length) return;
+  const i = Math.floor(Math.random()*files.length);
+  currentFiles = files;
+  playFile(files[i]);
 }
 
-canal.onmessage = e => {
+video.onended = ()=>{
+  if(autoplay && currentFiles.length){
+    playRandom(currentFiles);
+  }
+};
+
+canal.onmessage = e=>{
   const msg = e.data;
 
-  if(msg.type === "addFiles"){
-    playlist.push(...msg.files);
+  if(msg.type === "playFile"){
+    autoplay = false;
+    playFile(msg.file);
   }
 
-  if(msg.type === "playIndex"){
-    playlist = msg.files;
-    index = msg.index;
-    playFile(playlist[index]);
+  if(msg.type === "playFolder"){
+    autoplay = true;
+    playRandom(msg.files);
   }
 
-  if(msg.type === "playRandom"){
-    playlist = msg.files;
-    playRandom();
+  if(msg.type === "setAutoplay"){
+    autoplay = msg.value;
   }
 
   if(msg.type === "pause") video.pause();
@@ -74,8 +78,9 @@ canal.onmessage = e => {
     video.currentTime = 0;
   }
 
-  if(msg.type === "next"){
-    playRandom();
+  if(msg.type === "fx"){
+    const fx = new Audio(URL.createObjectURL(msg.file));
+    fx.play();
   }
 };
 </script>
