@@ -1,68 +1,83 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Radiophonica Player</title>
-
 <style>
-  body { margin:0; background:black; overflow:hidden; }
-  video { width:100vw; height:100vh; object-fit:contain; }
+body { margin:0; background:black; overflow:hidden; }
 
-  #logo {
-    position:absolute;
-    top:20px;
-    left:20px;
-    width:120px;
-    opacity:0.9;
-  }
+video{
+  width:100vw;
+  height:100vh;
+  object-fit:contain;
+  opacity:1;
+  transition:opacity 0.8s ease;
+}
 </style>
 </head>
-
 <body>
 
-<img id="logo" src="logo.png">
-<video id="player" autoplay></video>
+<video id="video" autoplay></video>
 
 <script>
+const video = document.getElementById("video");
+const canal = new BroadcastChannel("obs_player");
 
 let playlist = [];
-const player = document.getElementById("player");
+let index = 0;
 
-// 🔄 Revisar comandos del panel
-setInterval(() => {
+function fadeOut(cb){
+  video.style.opacity = 0;
+  setTimeout(cb, 800);
+}
 
-  // ▶️ reproducir ahora
-  const playNow = localStorage.getItem("radiophonica_play_now");
+function fadeIn(){
+  video.style.opacity = 1;
+}
 
-  if (playNow) {
-    player.src = playNow;
-    player.play();
-    localStorage.removeItem("radiophonica_play_now");
+function playFile(file){
+  fadeOut(()=>{
+    video.src = URL.createObjectURL(file);
+    video.play();
+    fadeIn();
+  });
+}
+
+function playRandom(){
+  if(!playlist.length) return;
+  index = Math.floor(Math.random()*playlist.length);
+  playFile(playlist[index]);
+}
+
+canal.onmessage = e => {
+  const msg = e.data;
+
+  if(msg.type === "addFiles"){
+    playlist.push(...msg.files);
   }
 
-  // 🎲 modo automático
-  const data = localStorage.getItem("radiophonica_playlist");
+  if(msg.type === "playIndex"){
+    playlist = msg.files;
+    index = msg.index;
+    playFile(playlist[index]);
+  }
 
-  if (data) {
-    playlist = JSON.parse(data);
-    localStorage.removeItem("radiophonica_playlist");
+  if(msg.type === "playRandom"){
+    playlist = msg.files;
     playRandom();
   }
 
-}, 500);
+  if(msg.type === "pause") video.pause();
+  if(msg.type === "play") video.play();
 
-// 🎲 Random
-function playRandom() {
-  if (playlist.length === 0) return;
+  if(msg.type === "stop"){
+    video.pause();
+    video.currentTime = 0;
+  }
 
-  const index = Math.floor(Math.random() * playlist.length);
-  player.src = playlist[index];
-  player.play();
-}
-
-// 🔁 Loop automático
-player.addEventListener("ended", playRandom);
-
+  if(msg.type === "next"){
+    playRandom();
+  }
+};
 </script>
 
 </body>
