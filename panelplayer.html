@@ -1,304 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Player con Autoplay + Crossfade</title>
 <style>
-body{
-  background:#0b0b0b;
-  color:#eee;
-  font-family:Segoe UI, sans-serif;
-  padding:12px;
-}
-
-/* BOTONES */
-
-button{
-  background:#2a2a2a;
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  margin:3px;
-  cursor:pointer;
-  border-radius:4px;
-  font-size:13px;
-}
-
-button:hover{ background:#444 }
-
-/* LISTA */
-
-#lista{
-  height:260px;
-  overflow-y:auto;
-  border:1px solid #222;
-  margin-top:8px;
-  font-size:13px;
-}
-
-.item{
-  display:flex;
-  justify-content:space-between;
-  padding:4px 6px;
-  border-bottom:1px solid #1c1c1c;
-}
-
-.item:hover{ background:#1a1a1a }
-
-.item span{
-  cursor:pointer;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:240px;
-}
-
-/* FX */
-
-.fxbtn{
-  display:inline-block;
-  background:#7a0d0d;
-  padding:6px 8px;
-  margin:4px;
-  cursor:pointer;
-  border-radius:4px;
-  font-size:12px;
-}
-
-.fxbtn:hover{ background:#a31212 }
+  body{background:#111;color:#eee;font-family:Arial;margin:0;padding:10px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  button{background:#222;color:#eee;border:1px solid #444;padding:8px 12px;border-radius:6px;cursor:pointer}
+  button:hover{background:#333}
+  input[type=range]{width:140px}
+  #list{max-height:220px;overflow:auto;border:1px solid #333;border-radius:6px;padding:6px}
+  .item{padding:4px 6px;border-radius:4px;cursor:pointer}
+  .item:hover{background:#222}
+  .active{background:#2a2a2a}
+  video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  #stage{position:relative;width:100%;height:60vh;background:#000;border-radius:8px;overflow:hidden}
 </style>
 </head>
-
 <body>
 
-<h3>🎬 Playlist</h3>
+<div class="controls">
+  <input id="files" type="file" accept="video/*,audio/*" multiple webkitdirectory />
+  <button id="prev">⏮ Anterior</button>
+  <button id="play">▶ Play</button>
+  <button id="pause">⏸ Pause</button>
+  <button id="stop">⏹ Stop</button>
+  <button id="next">⏭ Siguiente</button>
+  <label><input id="auto" type="checkbox" checked /> Auto</label>
+  <label>Vol <input id="vol" type="range" min="0" max="1" step="0.01" value="1"></label>
+</div>
 
-<button onclick="cargarVideos()">➕ Videos</button>
-<button onclick="cargarCarpeta()">📂 Carpeta</button>
+<div id="list"></div>
 
-<label>
-  <input type="checkbox" id="auto" checked> Auto
-</label>
-
-<div id="lista"></div>
-
-<h3>🎮 Navegación</h3>
-
-<button onclick="prev()">⏮ Anterior</button>
-<button onclick="next()">⏭ Siguiente</button>
-<button onclick="random()">🔀 Aleatorio</button>
-
-<h3>🎛️ Controles</h3>
-
-<button onclick="play()">▶</button>
-<button onclick="pause()">⏸</button>
-<button onclick="stop()">⏹</button>
-
-<h3>🔊 Volumen</h3>
-
-<input type="range"
-       min="0" max="1" step="0.01"
-       value="1"
-       oninput="setVol(this.value)">
-
-<hr>
-
-<h3>🔊 FX / Jingles</h3>
-
-<button onclick="cargarFX()">➕ Cargar FX</button>
-<div id="fx"></div>
-
-<input type="file" id="files" accept="video/*" multiple hidden>
-<input type="file" id="folder" webkitdirectory hidden>
-<input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
+<div id="stage">
+  <video id="v1" playsinline></video>
+  <video id="v2" playsinline style="opacity:0"></video>
+</div>
 
 <script>
-const canal = new BroadcastChannel("obs_player");
+const filesInput = document.getElementById('files');
+const listDiv = document.getElementById('list');
+const v1 = document.getElementById('v1');
+const v2 = document.getElementById('v2');
+const autoChk = document.getElementById('auto');
+const vol = document.getElementById('vol');
 
 let items = [];
-let currentIndex = -1;
+let index = -1;
+let front = v1; // video visible
+let back = v2;  // video oculto
+const FADE = 1.2; // segundos
 
-const lista = document.getElementById("lista");
-const fxdiv = document.getElementById("fx");
+function swap(){ const t = front; front = back; back = t; }
 
-/* ===== ACTUALIZAR LISTA ===== */
-
-function actualizarLista(){
-
-  lista.innerHTML="";
-
+function renderList(){
+  listDiv.innerHTML = '';
   items.forEach((it,i)=>{
-
-    const div=document.createElement("div");
-    div.className="item";
-
-    const span=document.createElement("span");
-    span.textContent=it.name;
-    span.onclick=()=> reproducirItem(i);
-
-    const del=document.createElement("button");
-    del.textContent="✖";
-    del.onclick=()=>{
-      items.splice(i,1);
-      if(currentIndex===i) currentIndex=-1;
-      actualizarLista();
-    };
-
-    div.appendChild(span);
-    div.appendChild(del);
-    lista.appendChild(div);
+    const d = document.createElement('div');
+    d.className = 'item' + (i===index?' active':'');
+    d.textContent = it.name;
+    d.onclick = ()=> playIndex(i,true);
+    listDiv.appendChild(d);
   });
 }
 
-/* ===== REPRODUCIR ITEM ===== */
-
-function reproducirItem(i){
-
-  if(i < 0 || i >= items.length) return;
-
-  currentIndex = i;
-
-  const it = items[i];
-
-  if(it.type==="file"){
-    canal.postMessage({type:"playFile",file:it.file});
-  }
-  else{
-    canal.postMessage({type:"playFolder",files:it.files});
-  }
-}
-
-/* ===== NAVEGACIÓN ===== */
-
-function next(){
-
-  if(!items.length) return;
-
-  let i = currentIndex + 1;
-
-  if(i >= items.length) i = 0;
-
-  reproducirItem(i);
-}
-
-function prev(){
-
-  if(!items.length) return;
-
-  let i = currentIndex - 1;
-
-  if(i < 0) i = items.length - 1;
-
-  reproducirItem(i);
-}
-
-function random(){
-
-  if(!items.length) return;
-
-  const i = Math.floor(Math.random() * items.length);
-
-  reproducirItem(i);
-}
-
-/* ===== CARGAS ===== */
-
-function cargarVideos(){
-  document.getElementById("files").click();
-}
-
-function cargarCarpeta(){
-  document.getElementById("folder").click();
-}
-
-function cargarFX(){
-  document.getElementById("fxfiles").click();
-}
-
-document.getElementById("files").onchange=e=>{
-
-  for(const f of e.target.files){
-    items.push({
-      type:"file",
-      name:"🎬 "+f.name,
-      file:f
-    });
-  }
-
-  actualizarLista();
+filesInput.onchange = e=>{
+  items = Array.from(e.target.files);
+  index = items.length ? 0 : -1;
+  renderList();
 };
 
-document.getElementById("folder").onchange=e=>{
+function setVolume(v){ front.volume = v; back.volume = v; }
+vol.oninput = e=> setVolume(parseFloat(e.target.value));
 
-  const files=[...e.target.files];
-  const name=files[0].webkitRelativePath.split("/")[0];
+async function playIndex(i, fade){
+  if(i<0 || i>=items.length) return;
+  index = i; renderList();
+  const file = items[i];
+  const url = URL.createObjectURL(file);
 
-  items.push({
-    type:"folder",
-    name:"📂 "+name,
-    files:files
-  });
+  back.src = url;
+  back.currentTime = 0;
+  back.volume = 0;
+  await back.play().catch(()=>{});
 
-  actualizarLista();
-};
-
-/* ===== FX ===== */
-
-document.getElementById("fxfiles").onchange=e=>{
-
-  for(const f of e.target.files){
-
-    const btn=document.createElement("div");
-    btn.className="fxbtn";
-    btn.textContent=f.name;
-
-    btn.onclick=()=>{
-      canal.postMessage({type:"fx",file:f});
-    };
-
-    fxdiv.appendChild(btn);
+  if(fade){
+    back.style.opacity = 1;
+    const steps = 30;
+    for(let s=0;s<=steps;s++){
+      const k = s/steps;
+      back.volume = k * vol.value;
+      front.volume = (1-k) * vol.value;
+      back.style.opacity = k;
+      front.style.opacity = 1-k;
+      await new Promise(r=>setTimeout(r, FADE*1000/steps));
+    }
+    front.pause();
+    front.src = '';
+    front.style.opacity = 0;
+    swap();
+  }else{
+    front.src = url;
+    front.volume = vol.value;
+    await front.play().catch(()=>{});
   }
-};
-
-/* ===== CONTROLES ===== */
-
-function play(){
-  canal.postMessage({type:"play"});
 }
 
-function pause(){
-  canal.postMessage({type:"pause"});
-}
+function next(){ if(items.length) playIndex((index+1)%items.length,true); }
+function prev(){ if(items.length) playIndex((index-1+items.length)%items.length,true); }
 
-function stop(){
-  canal.postMessage({type:"stop"});
-}
+// Autoplay al terminar
+v1.onended = v2.onended = ()=>{ if(autoChk.checked) next(); };
 
-function setVol(v){
-  canal.postMessage({
-    type:"volume",
-    value:parseFloat(v)
-  });
-}
+// Controles
+document.getElementById('next').onclick = next;
+document.getElementById('prev').onclick = prev;
+document.getElementById('play').onclick = ()=> front.play();
+document.getElementById('pause').onclick = ()=> front.pause();
+document.getElementById('stop').onclick = ()=>{ front.pause(); front.currentTime=0; };
 
-document.getElementById("auto").onchange=e=>{
-  canal.postMessage({
-    type:"setAutoplay",
-    value:e.target.checked
-  });
-};
-
-/* ===== PLAYER PIDE SIGUIENTE ===== */
-
-canal.onmessage = e => {
-
-  const d = e.data;
-
-  if(d.type === "next"){
-    next();
-  }
-};
 </script>
-
 </body>
 </html>
