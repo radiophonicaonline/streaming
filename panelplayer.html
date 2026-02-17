@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Panel Radiophonica</title>
+<title>Panel Radiophonica PRO</title>
 
 <style>
   body {
@@ -12,12 +12,9 @@
     padding: 20px;
   }
 
-  h2 { margin-top: 0; }
-
   input, button {
     margin-top: 10px;
     padding: 8px;
-    font-size: 14px;
   }
 
   #lista {
@@ -25,20 +22,25 @@
     background: #000;
     padding: 10px;
     border-radius: 8px;
-    max-height: 300px;
+    max-height: 350px;
     overflow-y: auto;
   }
 
   .item {
-    padding: 4px;
+    padding: 6px;
     border-bottom: 1px solid #333;
+    cursor: pointer;
+  }
+
+  .item:hover {
+    background: #222;
   }
 </style>
 </head>
 
 <body>
 
-<h2>🎛️ Panel Radiophonica</h2>
+<h2>🎛️ Panel Radiophonica PRO</h2>
 
 <div>Cargar videos o audios:</div>
 
@@ -46,17 +48,16 @@
 
 <br>
 
-<button onclick="enviar()">▶️ Enviar al Player</button>
+<button onclick="enviarRandom()">🎲 Enviar modo aleatorio</button>
 
 <div id="lista">No hay archivos cargados</div>
 
 <script>
 
 let playlist = [];
-
 const lista = document.getElementById("lista");
 
-// 📂 Cargar archivos desde PC
+// 📂 Cargar archivos
 document.getElementById("fileInput").addEventListener("change", e => {
 
   const files = Array.from(e.target.files);
@@ -70,24 +71,38 @@ document.getElementById("fileInput").addEventListener("change", e => {
 
 });
 
-// 📋 Mostrar lista
+// 📋 Mostrar lista clickeable
 function mostrarLista() {
 
-  if (playlist.length === 0) {
+  if (!playlist.length) {
     lista.innerHTML = "No hay archivos cargados";
     return;
   }
 
   lista.innerHTML = playlist
-    .map(f => `<div class="item">🎬 ${f.name}</div>`)
+    .map((f, i) => `
+      <div class="item" onclick="reproducir(${i})">
+        ▶️ ${f.name}
+      </div>
+    `)
     .join("");
 
 }
 
-// 📡 Enviar al player
-function enviar() {
+// ▶️ Reproducir uno específico
+function reproducir(index) {
 
-  if (!playlist.length) return alert("Selecciona archivos");
+  const url = playlist[index].url;
+
+  localStorage.setItem(
+    "radiophonica_play_now",
+    url
+  );
+
+}
+
+// 🎲 Enviar lista para modo automático
+function enviarRandom() {
 
   const urls = playlist.map(f => f.url);
 
@@ -96,7 +111,7 @@ function enviar() {
     JSON.stringify(urls)
   );
 
-  alert("Playlist enviada al player");
+  alert("Modo automático activado");
 
 }
 
