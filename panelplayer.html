@@ -1,120 +1,100 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Panel Radiophonica PRO</title>
-
 <style>
-  body {
-    font-family: sans-serif;
-    background: #111;
-    color: white;
-    padding: 20px;
-  }
+body{background:#111;color:white;font-family:sans-serif;padding:15px}
 
-  input, button {
-    margin-top: 10px;
-    padding: 8px;
-  }
+button{
+  margin:5px;
+  padding:8px 12px;
+  background:#444;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
 
-  #lista {
-    margin-top: 15px;
-    background: #000;
-    padding: 10px;
-    border-radius: 8px;
-    max-height: 350px;
-    overflow-y: auto;
-  }
+button:hover{background:#666}
 
-  .item {
-    padding: 6px;
-    border-bottom: 1px solid #333;
-    cursor: pointer;
-  }
+#lista div{
+  padding:6px;
+  border-bottom:1px solid #333;
+  cursor:pointer;
+}
 
-  .item:hover {
-    background: #222;
-  }
+#lista div:hover{background:#333}
 </style>
 </head>
-
 <body>
 
-<h2>🎛️ Panel Radiophonica PRO</h2>
+<h2>🎬 Panel Player</h2>
 
-<div>Cargar videos o audios:</div>
+<button onclick="cargarVideos()">➕ Cargar videos</button>
+<button onclick="cargarCarpeta()">📂 Cargar carpeta</button>
 
-<input type="file" id="fileInput" multiple accept="video/*,audio/*">
+<hr>
 
-<br>
+<button onclick="play()">▶ Play</button>
+<button onclick="pause()">⏸ Pause</button>
+<button onclick="stop()">⏹ Stop</button>
+<button onclick="next()">🔀 Transición a otro</button>
 
-<button onclick="enviarRandom()">🎲 Enviar modo aleatorio</button>
+<hr>
 
-<div id="lista">No hay archivos cargados</div>
+<h3>📋 Lista</h3>
+<div id="lista"></div>
+
+<input type="file" id="files" accept="video/*" multiple hidden>
+<input type="file" id="folder" webkitdirectory hidden>
 
 <script>
+const canal = new BroadcastChannel("obs_player");
 
-let playlist = [];
+let archivos = [];
+
 const lista = document.getElementById("lista");
 
-// 📂 Cargar archivos
-document.getElementById("fileInput").addEventListener("change", e => {
+function actualizarLista(){
+  lista.innerHTML = "";
 
-  const files = Array.from(e.target.files);
+  archivos.forEach((f,i)=>{
+    const div = document.createElement("div");
+    div.textContent = f.name;
 
-  playlist = files.map(f => ({
-    name: f.name,
-    url: URL.createObjectURL(f)
-  }));
+    div.onclick = ()=>{
+      canal.postMessage({
+        type:"playIndex",
+        files:archivos,
+        index:i
+      });
+    };
 
-  mostrarLista();
-
-});
-
-// 📋 Mostrar lista clickeable
-function mostrarLista() {
-
-  if (!playlist.length) {
-    lista.innerHTML = "No hay archivos cargados";
-    return;
-  }
-
-  lista.innerHTML = playlist
-    .map((f, i) => `
-      <div class="item" onclick="reproducir(${i})">
-        ▶️ ${f.name}
-      </div>
-    `)
-    .join("");
-
+    lista.appendChild(div);
+  });
 }
 
-// ▶️ Reproducir uno específico
-function reproducir(index) {
-
-  const url = playlist[index].url;
-
-  localStorage.setItem(
-    "radiophonica_play_now",
-    url
-  );
-
+function cargarVideos(){
+  document.getElementById("files").click();
 }
 
-// 🎲 Enviar lista para modo automático
-function enviarRandom() {
-
-  const urls = playlist.map(f => f.url);
-
-  localStorage.setItem(
-    "radiophonica_playlist",
-    JSON.stringify(urls)
-  );
-
-  alert("Modo automático activado");
-
+function cargarCarpeta(){
+  document.getElementById("folder").click();
 }
 
+document.getElementById("files").onchange = e=>{
+  archivos.push(...e.target.files);
+  actualizarLista();
+};
+
+document.getElementById("folder").onchange = e=>{
+  archivos.push(...e.target.files);
+  actualizarLista();
+};
+
+function play(){ canal.postMessage({type:"play"}) }
+function pause(){ canal.postMessage({type:"pause"}) }
+function stop(){ canal.postMessage({type:"stop"}) }
+function next(){ canal.postMessage({type:"next"}) }
 </script>
 
 </body>
