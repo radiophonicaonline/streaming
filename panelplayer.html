@@ -26,7 +26,7 @@ button{
 
 button:hover{ background:#444 }
 
-/* LISTA COMPACTA */
+/* LISTA */
 
 #lista{
   height:260px;
@@ -75,7 +75,10 @@ button:hover{ background:#444 }
 
 <button onclick="cargarVideos()">➕ Videos</button>
 <button onclick="cargarCarpeta()">📂 Carpeta</button>
-<label><input type="checkbox" id="auto" checked> Auto</label>
+
+<label>
+  <input type="checkbox" id="auto" checked> Auto
+</label>
 
 <div id="lista"></div>
 
@@ -90,6 +93,13 @@ button:hover{ background:#444 }
 <button onclick="play()">▶</button>
 <button onclick="pause()">⏸</button>
 <button onclick="stop()">⏹</button>
+
+<h3>🔊 Volumen</h3>
+
+<input type="range"
+       min="0" max="1" step="0.01"
+       value="1"
+       oninput="setVol(this.value)">
 
 <hr>
 
@@ -106,8 +116,6 @@ button:hover{ background:#444 }
 const canal = new BroadcastChannel("obs_player");
 
 let items = [];
-let history = [];
-let historyIndex = -1;
 let currentIndex = -1;
 
 const lista = document.getElementById("lista");
@@ -116,9 +124,11 @@ const fxdiv = document.getElementById("fx");
 /* ===== ACTUALIZAR LISTA ===== */
 
 function actualizarLista(){
+
   lista.innerHTML="";
 
   items.forEach((it,i)=>{
+
     const div=document.createElement("div");
     div.className="item";
 
@@ -130,6 +140,7 @@ function actualizarLista(){
     del.textContent="✖";
     del.onclick=()=>{
       items.splice(i,1);
+      if(currentIndex===i) currentIndex=-1;
       actualizarLista();
     };
 
@@ -149,9 +160,6 @@ function reproducirItem(i){
 
   const it = items[i];
 
-  history.push(i);
-  historyIndex = history.length - 1;
-
   if(it.type==="file"){
     canal.postMessage({type:"playFile",file:it.file});
   }
@@ -163,44 +171,65 @@ function reproducirItem(i){
 /* ===== NAVEGACIÓN ===== */
 
 function next(){
+
   if(!items.length) return;
 
   let i = currentIndex + 1;
+
   if(i >= items.length) i = 0;
 
   reproducirItem(i);
 }
 
 function prev(){
+
   if(!items.length) return;
 
   let i = currentIndex - 1;
+
   if(i < 0) i = items.length - 1;
 
   reproducirItem(i);
 }
 
 function random(){
+
   if(!items.length) return;
 
   const i = Math.floor(Math.random() * items.length);
+
   reproducirItem(i);
 }
 
 /* ===== CARGAS ===== */
 
-function cargarVideos(){ document.getElementById("files").click(); }
-function cargarCarpeta(){ document.getElementById("folder").click(); }
-function cargarFX(){ document.getElementById("fxfiles").click(); }
+function cargarVideos(){
+  document.getElementById("files").click();
+}
+
+function cargarCarpeta(){
+  document.getElementById("folder").click();
+}
+
+function cargarFX(){
+  document.getElementById("fxfiles").click();
+}
 
 document.getElementById("files").onchange=e=>{
+
   for(const f of e.target.files){
-    items.push({type:"file",name:"🎬 "+f.name,file:f});
+    items.push({
+      type:"file",
+      name:"🎬 "+f.name,
+      file:f
+    });
   }
+
   actualizarLista();
 };
 
 document.getElementById("folder").onchange=e=>{
+
   const files=[...e.target.files];
   const name=files[0].webkitRelativePath.split("/")[0];
 
@@ -216,6 +245,7 @@ document.getElementById("folder").onchange=e=>{
 /* ===== FX ===== */
 
 document.getElementById("fxfiles").onchange=e=>{
+
   for(const f of e.target.files){
 
     const btn=document.createElement("div");
@@ -232,12 +262,41 @@ document.getElementById("fxfiles").onchange=e=>{
 
 /* ===== CONTROLES ===== */
 
-function play(){ canal.postMessage({type:"play"}) }
-function pause(){ canal.postMessage({type:"pause"}) }
-function stop(){ canal.postMessage({type:"stop"}) }
+function play(){
+  canal.postMessage({type:"play"});
+}
+
+function pause(){
+  canal.postMessage({type:"pause"});
+}
+
+function stop(){
+  canal.postMessage({type:"stop"});
+}
+
+function setVol(v){
+  canal.postMessage({
+    type:"volume",
+    value:parseFloat(v)
+  });
+}
 
 document.getElementById("auto").onchange=e=>{
-  canal.postMessage({type:"setAutoplay",value:e.target.checked});
+  canal.postMessage({
+    type:"setAutoplay",
+    value:e.target.checked
+  });
+};
+
+/* ===== PLAYER PIDE SIGUIENTE ===== */
+
+canal.onmessage = e => {
+
+  const d = e.data;
+
+  if(d.type === "next"){
+    next();
+  }
 };
 </script>
 
