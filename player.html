@@ -26,12 +26,21 @@
 <script>
 
 let playlist = [];
-
 const player = document.getElementById("player");
 
 // 🔄 Revisar comandos del panel
 setInterval(() => {
 
+  // ▶️ reproducir ahora
+  const playNow = localStorage.getItem("radiophonica_play_now");
+
+  if (playNow) {
+    player.src = playNow;
+    player.play();
+    localStorage.removeItem("radiophonica_play_now");
+  }
+
+  // 🎲 modo automático
   const data = localStorage.getItem("radiophonica_playlist");
 
   if (data) {
@@ -40,9 +49,9 @@ setInterval(() => {
     playRandom();
   }
 
-}, 1000);
+}, 500);
 
-// 🎲 Reproducir random
+// 🎲 Random
 function playRandom() {
   if (playlist.length === 0) return;
 
@@ -51,7 +60,7 @@ function playRandom() {
   player.play();
 }
 
-// 🔁 Loop
+// 🔁 Loop automático
 player.addEventListener("ended", playRandom);
 
 </script>
