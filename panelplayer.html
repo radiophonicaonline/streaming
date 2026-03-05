@@ -68,10 +68,6 @@ background:black;
 <input type="checkbox" id="auto" checked>Auto
 </label>
 
-<label>
-<input type="checkbox" id="cross" checked>Crossfade
-</label>
-
 <div id="lista"></div>
 
 <h3>Navegación</h3>
@@ -138,13 +134,21 @@ span.oncontextmenu=e=>{
 e.preventDefault()
 
 if(it.type==="file"){
+
 preview.src=URL.createObjectURL(it.file)
+it.previewFile=it.file
+
 }else{
+
 const f=it.files[Math.floor(Math.random()*it.files.length)]
 preview.src=URL.createObjectURL(f)
+
+it.previewFile=f
+
 }
 
 preview.play()
+
 }
 
 const up=document.createElement("button")
@@ -168,7 +172,7 @@ actualizarLista()
 const copy=document.createElement("button")
 copy.textContent="C"
 copy.onclick=()=>{
-items.splice(i+1,0,it)
+items.splice(i+1,0,JSON.parse(JSON.stringify(it)))
 actualizarLista()
 }
 
@@ -198,9 +202,19 @@ currentIndex=i
 const it=items[i]
 
 if(it.type==="file"){
+
 canal.postMessage({type:"playFile",file:it.file})
+
 }else{
-canal.postMessage({type:"playFolder",files:it.files})
+
+let file=it.previewFile
+
+if(!file){
+file=it.files[Math.floor(Math.random()*it.files.length)]
+}
+
+canal.postMessage({type:"playFile",file:file})
+
 }
 
 actualizarLista()
@@ -318,15 +332,6 @@ document.getElementById("auto").onchange=e=>{
 
 canal.postMessage({
 type:"setAutoplay",
-value:e.target.checked
-})
-
-}
-
-document.getElementById("cross").onchange=e=>{
-
-canal.postMessage({
-type:"crossfade",
 value:e.target.checked
 })
 
