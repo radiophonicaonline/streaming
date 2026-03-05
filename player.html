@@ -2,9 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<title>Player</title>
 
 <style>
-html,body{
+body{
 margin:0;
 background:black;
 overflow:hidden;
@@ -19,157 +20,142 @@ background:black;
 transition:opacity 1s;
 }
 
-#main{opacity:1}
-#fx{opacity:0}
+#videoA{opacity:1;}
+#videoB{opacity:0;}
 </style>
 </head>
 
 <body>
 
-<video id="main" autoplay></video>
-<video id="fx"></video>
+<video id="videoA"></video>
+<video id="videoB"></video>
+
+<audio id="fx"></audio>
 
 <script>
 
-const canal = new BroadcastChannel("obs_player")
+let playlist=[]
+let currentIndex=0
 
-const main=document.getElementById("main")
-const fx=document.getElementById("fx")
+let videoA=document.getElementById("videoA")
+let videoB=document.getElementById("videoB")
+let fx=document.getElementById("fx")
 
-let autoplay=true
+let active="A"
+
 let crossfade=true
 
-function playFile(file){
+window.addEventListener("message",(e)=>{
 
-if(!crossfade){
+let d=e.data
 
-main.src=URL.createObjectURL(file)
-main.play()
-return
+if(d.type==="playlist"){
+playlist=d.list
+currentIndex=0
+playIndex(currentIndex)
 }
 
-fx.src=URL.createObjectURL(file)
-fx.volume=0
-fx.style.opacity=0
+if(d.type==="playIndex"){
+currentIndex=d.index
+playIndex(currentIndex)
+}
+
+if(d.type==="next"){
+next()
+}
+
+if(d.type==="prev"){
+prev()
+}
+
+if(d.type==="fx"){
+playFX(d.url)
+}
+
+if(d.type==="volume"){
+videoA.volume=d.value
+videoB.volume=d.value
+}
+
+})
+
+function playIndex(i){
+
+let item=playlist[i]
+if(!item)return
+
+if(item.type==="folder"){
+let r=Math.floor(Math.random()*item.files.length)
+loadVideo(item.files[r])
+}else{
+loadVideo(item.url)
+}
+
+}
+
+function loadVideo(url){
+
+let v1=active==="A"?videoA:videoB
+let v2=active==="A"?videoB:videoA
+
+v2.src=url
+v2.currentTime=0
+v2.play()
+
+if(crossfade){
+
+v2.style.opacity=1
+v1.style.opacity=0
+
+setTimeout(()=>{
+v1.pause()
+},1000)
+
+}else{
+
+v1.pause()
+v1.style.opacity=0
+v2.style.opacity=1
+
+}
+
+active=active==="A"?"B":"A"
+
+v2.onended=()=>{
+next()
+}
+
+}
+
+function next(){
+
+currentIndex++
+
+if(currentIndex>=playlist.length){
+currentIndex=0
+}
+
+playIndex(currentIndex)
+
+}
+
+function prev(){
+
+currentIndex--
+
+if(currentIndex<0){
+currentIndex=playlist.length-1
+}
+
+playIndex(currentIndex)
+
+}
+
+function playFX(url){
+
+fx.src=url
+fx.currentTime=0
 fx.play()
-
-let step=0
-
-const fade=setInterval(()=>{
-
-step+=0.05
-
-main.volume=1-step
-fx.volume=step
-
-main.style.opacity=1-step
-fx.style.opacity=step
-
-if(step>=1){
-
-clearInterval(fade)
-
-main.src=fx.src
-main.volume=1
-main.style.opacity=1
-
-fx.pause()
-fx.style.opacity=0
-
-main.play()
-
-}
-
-},100)
-
-}
-
-function playFolder(files){
-
-if(!files.length) return
-
-const f=files[Math.floor(Math.random()*files.length)]
-
-playFile(f)
-
-}
-
-function videoEnded(){
-
-if(!autoplay) return
-
-canal.postMessage({type:"next"})
-
-}
-
-main.onended = videoEnded
-fx.onended = videoEnded
-
-function playFX(file){
-
-fx.src=URL.createObjectURL(file)
-fx.style.opacity=1
-fx.volume=main.volume
-
-fx.onended=()=>{
-fx.style.opacity=0
-}
-
-fx.play()
-
-}
-
-function play(){main.play()}
-function pause(){main.pause()}
-function stop(){
-main.pause()
-main.currentTime=0
-}
-
-canal.onmessage=e=>{
-
-const d=e.data
-
-switch(d.type){
-
-case"playFile":
-playFile(d.file)
-break
-
-case"playFolder":
-playFolder(d.files)
-break
-
-case"fx":
-playFX(d.file)
-break
-
-case"play":
-play()
-break
-
-case"pause":
-pause()
-break
-
-case"stop":
-stop()
-break
-
-case"setAutoplay":
-autoplay=d.value
-break
-
-case"volume":
-main.volume=d.value
-fx.volume=d.value
-break
-
-case"crossfade":
-crossfade=d.value
-break
-
-}
 
 }
 
@@ -177,4 +163,3 @@ break
 
 </body>
 </html>
-
