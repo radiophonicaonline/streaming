@@ -94,13 +94,16 @@ playFile(f)
 
 }
 
-main.onended=()=>{
+function videoEnded(){
 
 if(!autoplay) return
 
 canal.postMessage({type:"next"})
 
 }
+
+main.onended = videoEnded
+fx.onended = videoEnded
 
 function playFX(file){
 
@@ -174,3 +177,4 @@ break
 
 </body>
 </html>
+
