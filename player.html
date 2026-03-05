@@ -64,17 +64,13 @@ main.onended = () => {
 
 /* ===== FX ===== */
 
-function playFX(file){
+function playFile(file){
 
-  fx.src = URL.createObjectURL(file);
-  fx.style.display="block";
-  fx.volume = main.volume;
+const url = URL.createObjectURL(file);
 
-  fx.onended = () => {
-    fx.style.display="none";
-  };
+main.src = url;
+main.play();
 
-  fx.play();
 }
 
 /* ===== CONTROLES ===== */
@@ -130,5 +126,6 @@ canal.onmessage = e => {
 
 </body>
 </html>
+
 
 
