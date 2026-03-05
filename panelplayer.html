@@ -2,341 +2,197 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<title>Panel Player</title>
 
 <style>
 
 body{
-background:#0b0b0b;
-color:#eee;
-font-family:Segoe UI;
-padding:10px;
+font-family:Arial;
+background:#111;
+color:white;
 }
 
 button{
-background:#2a2a2a;
-color:white;
-border:none;
-padding:5px 8px;
-margin:2px;
-cursor:pointer;
+margin:4px;
+padding:6px 10px;
 }
 
-button:hover{
-background:#444;
-}
-
-#lista{
-height:260px;
+#playlist{
+border:1px solid #444;
+height:300px;
 overflow:auto;
-border:1px solid #222;
+padding:5px;
 }
 
 .item{
-display:flex;
-justify-content:space-between;
 padding:4px;
-border-bottom:1px solid #222;
-}
-
-.item.active{
-background:#244b7a;
-}
-
-.item span{
+border-bottom:1px solid #333;
 cursor:pointer;
-flex:1;
 }
 
-#preview{
-width:100%;
-margin-top:10px;
-background:black;
+.item:hover{
+background:#333;
+}
+
+.playing{
+background:#0066cc;
 }
 
 </style>
-
 </head>
 
 <body>
 
+<h2>Panel Player</h2>
+
+<input type="file" id="files" multiple accept="video/*">
+<button onclick="addFiles()">Agregar archivos</button>
+
+<input type="file" id="folder" webkitdirectory>
+<button onclick="addFolder()">Agregar carpeta</button>
+
+<br><br>
+
+<button onclick="prev()">Prev</button>
+<button onclick="next()">Next</button>
+
+<label>
+Volumen
+<input type="range" min="0" max="1" step="0.01" onchange="volume(this.value)">
+</label>
+
 <h3>Playlist</h3>
 
-<button onclick="cargarVideos()">Videos</button>
-<button onclick="cargarCarpeta()">Carpeta</button>
+<div id="playlist"></div>
 
-<label>
-<input type="checkbox" id="auto" checked>Auto
-</label>
+<h3>FX</h3>
 
-<label>
-<input type="checkbox" id="cross" checked>Crossfade
-</label>
-
-<div id="lista"></div>
-
-<h3>Navegación</h3>
-
-<button onclick="prev()">Anterior</button>
-<button onclick="next()">Siguiente</button>
-<button onclick="random()">Aleatorio</button>
-
-<h3>Controles</h3>
-
-<button onclick="play()">Play</button>
-<button onclick="pause()">Pause</button>
-<button onclick="stop()">Stop</button>
-
-<h3>Volumen</h3>
-
-<input type="range" min="0" max="1" step="0.01" value="1"
-oninput="setVol(this.value)">
-
-<h3>Preview</h3>
-
-<video id="preview" controls></video>
-
-<hr>
-
-<button onclick="cargarFX()">Cargar FX</button>
-
-<div id="fx"></div>
-
-<input type="file" id="files" accept="video/*" multiple hidden>
-<input type="file" id="folder" webkitdirectory hidden>
-<input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
+<input type="file" id="fxfile" accept="audio/*">
+<button onclick="playFX()">Play FX</button>
 
 <script>
 
-const canal=new BroadcastChannel("obs_player")
+let playlist=[]
+let playerWindow=null
 
-let items=[]
-let currentIndex=-1
+function send(data){
 
-const lista=document.getElementById("lista")
-const preview=document.getElementById("preview")
-const fxdiv=document.getElementById("fx")
-
-function actualizarLista(){
-
-lista.innerHTML=""
-
-items.forEach((it,i)=>{
-
-const div=document.createElement("div")
-div.className="item"
-
-if(i===currentIndex){
-div.classList.add("active")
+if(!playerWindow){
+playerWindow=window.open("player.html")
 }
 
-const span=document.createElement("span")
-span.textContent=it.name
+playerWindow.postMessage(data,"*")
 
-span.onclick=()=>reproducirItem(i)
-
-span.oncontextmenu=e=>{
-e.preventDefault()
-
-if(it.type==="file"){
-preview.src=URL.createObjectURL(it.file)
-}else{
-const f=it.files[Math.floor(Math.random()*it.files.length)]
-preview.src=URL.createObjectURL(f)
 }
 
-preview.play()
+function addFiles(){
+
+let files=document.getElementById("files").files
+
+for(let f of files){
+
+playlist.push({
+type:"file",
+name:f.name,
+url:URL.createObjectURL(f)
+})
+
 }
 
-const up=document.createElement("button")
-up.textContent="↑"
-up.onclick=()=>{
-if(i>0){
-[items[i],items[i-1]]=[items[i-1],items[i]]
-actualizarLista()
-}
+render()
+
+send({
+type:"playlist",
+list:playlist
+})
+
 }
 
-const down=document.createElement("button")
-down.textContent="↓"
-down.onclick=()=>{
-if(i<items.length-1){
-[items[i],items[i+1]]=[items[i+1],items[i]]
-actualizarLista()
-}
-}
+function addFolder(){
 
-const copy=document.createElement("button")
-copy.textContent="C"
-copy.onclick=()=>{
-items.splice(i+1,0,it)
-actualizarLista()
+let files=document.getElementById("folder").files
+
+let arr=[]
+
+for(let f of files){
+
+if(f.type.startsWith("video")){
+arr.push(URL.createObjectURL(f))
 }
 
-const del=document.createElement("button")
-del.textContent="X"
-del.onclick=()=>{
-items.splice(i,1)
-actualizarLista()
 }
 
-div.appendChild(span)
-div.appendChild(up)
-div.appendChild(down)
-div.appendChild(copy)
-div.appendChild(del)
+playlist.push({
+type:"folder",
+name:"Carpeta",
+files:arr
+})
 
-lista.appendChild(div)
+render()
+
+send({
+type:"playlist",
+list:playlist
+})
+
+}
+
+function render(){
+
+let div=document.getElementById("playlist")
+div.innerHTML=""
+
+playlist.forEach((p,i)=>{
+
+let d=document.createElement("div")
+d.className="item"
+d.innerText=p.name || "Carpeta"
+
+d.onclick=()=>{
+send({type:"playIndex",index:i})
+mark(i)
+}
+
+div.appendChild(d)
 
 })
 
 }
 
-function reproducirItem(i){
+function mark(i){
 
-currentIndex=i
+let items=document.querySelectorAll(".item")
 
-const it=items[i]
+items.forEach(e=>e.classList.remove("playing"))
 
-if(it.type==="file"){
-canal.postMessage({type:"playFile",file:it.file})
-}else{
-canal.postMessage({type:"playFolder",files:it.files})
+if(items[i]){
+items[i].classList.add("playing")
 }
-
-actualizarLista()
 
 }
 
 function next(){
-
-if(!items.length) return
-
-let i=currentIndex+1
-
-if(i>=items.length)i=0
-
-reproducirItem(i)
-
+send({type:"next"})
 }
 
 function prev(){
-
-if(!items.length) return
-
-let i=currentIndex-1
-
-if(i<0)i=items.length-1
-
-reproducirItem(i)
-
+send({type:"prev"})
 }
 
-function random(){
-
-const i=Math.floor(Math.random()*items.length)
-
-reproducirItem(i)
-
+function volume(v){
+send({type:"volume",value:v})
 }
 
-function cargarVideos(){
-document.getElementById("files").click()
-}
+function playFX(){
 
-function cargarCarpeta(){
-document.getElementById("folder").click()
-}
+let f=document.getElementById("fxfile").files[0]
 
-function cargarFX(){
-document.getElementById("fxfiles").click()
-}
+if(!f)return
 
-document.getElementById("files").onchange=e=>{
-
-for(const f of e.target.files){
-
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
+send({
+type:"fx",
+url:URL.createObjectURL(f)
 })
-
-}
-
-actualizarLista()
-
-}
-
-document.getElementById("folder").onchange=e=>{
-
-const files=[...e.target.files]
-
-const name=files[0].webkitRelativePath.split("/")[0]
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:files
-})
-
-actualizarLista()
-
-}
-
-document.getElementById("fxfiles").onchange=e=>{
-
-for(const f of e.target.files){
-
-const btn=document.createElement("button")
-
-btn.textContent=f.name
-
-btn.onclick=()=>{
-canal.postMessage({type:"fx",file:f})
-}
-
-fxdiv.appendChild(btn)
-
-}
-
-}
-
-function play(){canal.postMessage({type:"play"})}
-function pause(){canal.postMessage({type:"pause"})}
-function stop(){canal.postMessage({type:"stop"})}
-
-function setVol(v){
-
-canal.postMessage({
-type:"volume",
-value:parseFloat(v)
-})
-
-}
-
-document.getElementById("auto").onchange=e=>{
-
-canal.postMessage({
-type:"setAutoplay",
-value:e.target.checked
-})
-
-}
-
-document.getElementById("cross").onchange=e=>{
-
-canal.postMessage({
-type:"crossfade",
-value:e.target.checked
-})
-
-}
-
-canal.onmessage=e=>{
-
-if(e.data.type==="next"){
-next()
-}
 
 }
 
