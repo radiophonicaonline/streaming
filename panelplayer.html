@@ -124,13 +124,33 @@ const fxdiv = document.getElementById("fx");
 /* ===== ACTUALIZAR LISTA ===== */
 
 function actualizarLista(){
+const up=document.createElement("button");
+up.textContent="↑";
+up.onclick=()=>{
+  if(i>0){
+    [items[i],items[i-1]]=[items[i-1],items[i]];
+    actualizarLista();
+  }
+};
 
+const down=document.createElement("button");
+down.textContent="↓";
+down.onclick=()=>{
+  if(i<items.length-1){
+    [items[i],items[i+1]]=[items[i+1],items[i]];
+    actualizarLista();
+  }
+};
   lista.innerHTML="";
 
   items.forEach((it,i)=>{
 
     const div=document.createElement("div");
     div.className="item";
+
+if(i === currentIndex){
+  div.style.background="#264c7c";
+}
 
     const span=document.createElement("span");
     span.textContent=it.name;
@@ -143,7 +163,8 @@ function actualizarLista(){
       if(currentIndex===i) currentIndex=-1;
       actualizarLista();
     };
-
+div.appendChild(up);
+div.appendChild(down);
     div.appendChild(span);
     div.appendChild(del);
     lista.appendChild(div);
@@ -302,3 +323,4 @@ canal.onmessage = e => {
 
 </body>
 </html>
+
