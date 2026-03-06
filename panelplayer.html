@@ -91,15 +91,8 @@ oninput="setVol(this.value)">
 
 <video id="preview" controls></video>
 
-<hr>
-
-<button onclick="cargarFX()">Cargar FX</button>
-
-<div id="fx"></div>
-
 <input type="file" id="files" accept="video/*" multiple hidden>
 <input type="file" id="folder" webkitdirectory hidden>
-<input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
 
 <script>
 
@@ -110,7 +103,19 @@ let currentIndex=-1
 
 const lista=document.getElementById("lista")
 const preview=document.getElementById("preview")
-const fxdiv=document.getElementById("fx")
+
+function shuffle(array){
+
+for(let i=array.length-1;i>0;i--){
+
+const j=Math.floor(Math.random()*(i+1))
+[array[i],array[j]]=[array[j],array[i]]
+
+}
+
+return array
+
+}
 
 function actualizarLista(){
 
@@ -131,6 +136,7 @@ span.textContent=it.name
 span.onclick=()=>reproducirItem(i)
 
 span.oncontextmenu=e=>{
+
 e.preventDefault()
 
 if(it.type==="file"){
@@ -140,9 +146,15 @@ it.previewFile=it.file
 
 }else{
 
-const f=it.files[Math.floor(Math.random()*it.files.length)]
-preview.src=URL.createObjectURL(f)
+if(!it.shuffle || it.shuffle.length===0){
 
+it.shuffle=shuffle([...it.files])
+
+}
+
+const f=it.shuffle[0]
+
+preview.src=URL.createObjectURL(f)
 it.previewFile=f
 
 }
@@ -154,33 +166,53 @@ preview.play()
 const up=document.createElement("button")
 up.textContent="↑"
 up.onclick=()=>{
+
 if(i>0){
+
 [items[i],items[i-1]]=[items[i-1],items[i]]
 actualizarLista()
+
 }
+
 }
 
 const down=document.createElement("button")
 down.textContent="↓"
 down.onclick=()=>{
+
 if(i<items.length-1){
+
 [items[i],items[i+1]]=[items[i+1],items[i]]
 actualizarLista()
+
 }
+
 }
 
 const copy=document.createElement("button")
 copy.textContent="C"
 copy.onclick=()=>{
-items.splice(i+1,0,JSON.parse(JSON.stringify(it)))
+
+const nuevo={
+type:it.type,
+name:it.name,
+file:it.file,
+files:it.files ? [...it.files] : null
+}
+
+items.splice(i+1,0,nuevo)
+
 actualizarLista()
+
 }
 
 const del=document.createElement("button")
 del.textContent="X"
 del.onclick=()=>{
+
 items.splice(i,1)
 actualizarLista()
+
 }
 
 div.appendChild(span)
@@ -201,21 +233,31 @@ currentIndex=i
 
 const it=items[i]
 
+let file
+
 if(it.type==="file"){
 
-canal.postMessage({type:"playFile",file:it.file})
+file=it.file
 
 }else{
 
-let file=it.previewFile
+if(it.previewFile){
 
-if(!file){
-file=it.files[Math.floor(Math.random()*it.files.length)]
+file=it.previewFile
+
+}else{
+
+if(!it.shuffle || it.shuffle.length===0){
+it.shuffle=shuffle([...it.files])
+}
+
+file=it.shuffle.shift()
+
+}
+
 }
 
 canal.postMessage({type:"playFile",file:file})
-
-}
 
 actualizarLista()
 
@@ -261,10 +303,6 @@ function cargarCarpeta(){
 document.getElementById("folder").click()
 }
 
-function cargarFX(){
-document.getElementById("fxfiles").click()
-}
-
 document.getElementById("files").onchange=e=>{
 
 for(const f of e.target.files){
@@ -290,28 +328,11 @@ const name=files[0].webkitRelativePath.split("/")[0]
 items.push({
 type:"folder",
 name:"📂 "+name,
-files:files
+files:files,
+shuffle:null
 })
 
 actualizarLista()
-
-}
-
-document.getElementById("fxfiles").onchange=e=>{
-
-for(const f of e.target.files){
-
-const btn=document.createElement("button")
-
-btn.textContent=f.name
-
-btn.onclick=()=>{
-canal.postMessage({type:"fx",file:f})
-}
-
-fxdiv.appendChild(btn)
-
-}
 
 }
 
