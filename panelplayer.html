@@ -107,10 +107,8 @@ const preview=document.getElementById("preview")
 function shuffle(array){
 
 for(let i=array.length-1;i>0;i--){
-
 const j=Math.floor(Math.random()*(i+1))
 [array[i],array[j]]=[array[j],array[i]]
-
 }
 
 return array
@@ -141,21 +139,19 @@ e.preventDefault()
 
 if(it.type==="file"){
 
-preview.src=URL.createObjectURL(it.file)
-it.previewFile=it.file
+preview.src=it.url
+it.previewURL=it.url
 
 }else{
 
 if(!it.shuffle || it.shuffle.length===0){
-
 it.shuffle=shuffle([...it.files])
-
 }
 
 const f=it.shuffle[0]
 
-preview.src=URL.createObjectURL(f)
-it.previewFile=f
+preview.src=f.url
+it.previewURL=f.url
 
 }
 
@@ -166,27 +162,19 @@ preview.play()
 const up=document.createElement("button")
 up.textContent="↑"
 up.onclick=()=>{
-
 if(i>0){
-
 [items[i],items[i-1]]=[items[i-1],items[i]]
 actualizarLista()
-
 }
-
 }
 
 const down=document.createElement("button")
 down.textContent="↓"
 down.onclick=()=>{
-
 if(i<items.length-1){
-
 [items[i],items[i+1]]=[items[i+1],items[i]]
 actualizarLista()
-
 }
-
 }
 
 const copy=document.createElement("button")
@@ -196,8 +184,9 @@ copy.onclick=()=>{
 const nuevo={
 type:it.type,
 name:it.name,
-file:it.file,
-files:it.files ? [...it.files] : null
+url:it.url,
+files:it.files ? it.files.map(f=>({...f})) : null,
+shuffle:null
 }
 
 items.splice(i+1,0,nuevo)
@@ -209,10 +198,8 @@ actualizarLista()
 const del=document.createElement("button")
 del.textContent="X"
 del.onclick=()=>{
-
 items.splice(i,1)
 actualizarLista()
-
 }
 
 div.appendChild(span)
@@ -233,31 +220,29 @@ currentIndex=i
 
 const it=items[i]
 
-let file
+let url
 
 if(it.type==="file"){
 
-file=it.file
+url=it.url
 
 }else{
 
-if(it.previewFile){
-
-file=it.previewFile
-
+if(it.previewURL){
+url=it.previewURL
 }else{
 
 if(!it.shuffle || it.shuffle.length===0){
 it.shuffle=shuffle([...it.files])
 }
 
-file=it.shuffle.shift()
+url=it.shuffle.shift().url
 
 }
 
 }
 
-canal.postMessage({type:"playFile",file:file})
+canal.postMessage({type:"playURL",url:url})
 
 actualizarLista()
 
@@ -268,7 +253,6 @@ function next(){
 if(!items.length) return
 
 let i=currentIndex+1
-
 if(i>=items.length)i=0
 
 reproducirItem(i)
@@ -280,7 +264,6 @@ function prev(){
 if(!items.length) return
 
 let i=currentIndex-1
-
 if(i<0)i=items.length-1
 
 reproducirItem(i)
@@ -290,7 +273,6 @@ reproducirItem(i)
 function random(){
 
 const i=Math.floor(Math.random()*items.length)
-
 reproducirItem(i)
 
 }
@@ -310,7 +292,7 @@ for(const f of e.target.files){
 items.push({
 type:"file",
 name:"🎬 "+f.name,
-file:f
+url:URL.createObjectURL(f)
 })
 
 }
@@ -325,10 +307,15 @@ const files=[...e.target.files]
 
 const name=files[0].webkitRelativePath.split("/")[0]
 
+const arr=files.map(f=>({
+name:f.name,
+url:URL.createObjectURL(f)
+}))
+
 items.push({
 type:"folder",
 name:"📂 "+name,
-files:files,
+files:arr,
 shuffle:null
 })
 
