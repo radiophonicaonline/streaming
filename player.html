@@ -27,70 +27,67 @@ background:black;
 
 <script>
 
-const canal = new BroadcastChannel("obs_player");
-const main = document.getElementById("main");
+const canal = new BroadcastChannel("obs_player")
+const main = document.getElementById("main")
 
-let autoplay=true;
+let autoplay=true
 
-function playFile(file){
+function playURL(url){
 
-main.src = URL.createObjectURL(file);
-main.play();
+main.src=url
+main.play()
 
 }
 
 main.onended=()=>{
 
-if(!autoplay) return;
+if(autoplay){
+canal.postMessage({type:"next"})
+}
 
-canal.postMessage({type:"next"});
+}
 
-};
-
-function play(){ main.play(); }
-
-function pause(){ main.pause(); }
+function play(){ main.play() }
+function pause(){ main.pause() }
 
 function stop(){
-
-main.pause();
-main.currentTime=0;
-
+main.pause()
+main.currentTime=0
 }
 
 canal.onmessage=e=>{
 
-const d=e.data;
+const d=e.data
 
 switch(d.type){
 
-case "playFile":
-playFile(d.file);
-break;
+case "playURL":
+playURL(d.url)
+break
 
 case "play":
-play();
-break;
+play()
+break
 
 case "pause":
-pause();
-break;
+pause()
+break
 
 case "stop":
-stop();
-break;
+stop()
+break
 
 case "setAutoplay":
-autoplay=d.value;
-break;
+autoplay=d.value
+break
 
 case "volume":
-main.volume=d.value;
-break;
+main.volume=d.value
+break
 
 }
 
-};
+}
 
 </script>
 
