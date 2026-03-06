@@ -68,6 +68,10 @@ background:black;
 <input type="checkbox" id="auto" checked>Auto
 </label>
 
+<label>
+<input type="checkbox" id="cross" checked>Crossfade
+</label>
+
 <div id="lista"></div>
 
 <h3>Navegación</h3>
@@ -91,8 +95,15 @@ oninput="setVol(this.value)">
 
 <video id="preview" controls></video>
 
+<hr>
+
+<button onclick="cargarFX()">Cargar FX</button>
+
+<div id="fx"></div>
+
 <input type="file" id="files" accept="video/*" multiple hidden>
 <input type="file" id="folder" webkitdirectory hidden>
+<input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
 
 <script>
 
@@ -103,17 +114,7 @@ let currentIndex=-1
 
 const lista=document.getElementById("lista")
 const preview=document.getElementById("preview")
-
-function shuffle(array){
-
-for(let i=array.length-1;i>0;i--){
-const j=Math.floor(Math.random()*(i+1))
-[array[i],array[j]]=[array[j],array[i]]
-}
-
-return array
-
-}
+const fxdiv=document.getElementById("fx")
 
 function actualizarLista(){
 
@@ -134,29 +135,16 @@ span.textContent=it.name
 span.onclick=()=>reproducirItem(i)
 
 span.oncontextmenu=e=>{
-
 e.preventDefault()
 
 if(it.type==="file"){
-
-preview.src=it.url
-it.previewURL=it.url
-
+preview.src=URL.createObjectURL(it.file)
 }else{
-
-if(!it.shuffle || it.shuffle.length===0){
-it.shuffle=shuffle([...it.files])
-}
-
-const f=it.shuffle[0]
-
-preview.src=f.url
-it.previewURL=f.url
-
+const f=it.files[Math.floor(Math.random()*it.files.length)]
+preview.src=URL.createObjectURL(f)
 }
 
 preview.play()
-
 }
 
 const up=document.createElement("button")
@@ -180,19 +168,8 @@ actualizarLista()
 const copy=document.createElement("button")
 copy.textContent="C"
 copy.onclick=()=>{
-
-const nuevo={
-type:it.type,
-name:it.name,
-url:it.url,
-files:it.files ? it.files.map(f=>({...f})) : null,
-shuffle:null
-}
-
-items.splice(i+1,0,nuevo)
-
+items.splice(i+1,0,it)
 actualizarLista()
-
 }
 
 const del=document.createElement("button")
@@ -220,29 +197,11 @@ currentIndex=i
 
 const it=items[i]
 
-let url
-
 if(it.type==="file"){
-
-url=it.url
-
+canal.postMessage({type:"playFile",file:it.file})
 }else{
-
-if(it.previewURL){
-url=it.previewURL
-}else{
-
-if(!it.shuffle || it.shuffle.length===0){
-it.shuffle=shuffle([...it.files])
+canal.postMessage({type:"playFolder",files:it.files})
 }
-
-url=it.shuffle.shift().url
-
-}
-
-}
-
-canal.postMessage({type:"playURL",url:url})
 
 actualizarLista()
 
@@ -253,6 +212,7 @@ function next(){
 if(!items.length) return
 
 let i=currentIndex+1
+
 if(i>=items.length)i=0
 
 reproducirItem(i)
@@ -264,6 +224,7 @@ function prev(){
 if(!items.length) return
 
 let i=currentIndex-1
+
 if(i<0)i=items.length-1
 
 reproducirItem(i)
@@ -273,6 +234,7 @@ reproducirItem(i)
 function random(){
 
 const i=Math.floor(Math.random()*items.length)
+
 reproducirItem(i)
 
 }
@@ -285,6 +247,10 @@ function cargarCarpeta(){
 document.getElementById("folder").click()
 }
 
+function cargarFX(){
+document.getElementById("fxfiles").click()
+}
+
 document.getElementById("files").onchange=e=>{
 
 for(const f of e.target.files){
@@ -292,7 +258,7 @@ for(const f of e.target.files){
 items.push({
 type:"file",
 name:"🎬 "+f.name,
-url:URL.createObjectURL(f)
+file:f
 })
 
 }
@@ -307,19 +273,31 @@ const files=[...e.target.files]
 
 const name=files[0].webkitRelativePath.split("/")[0]
 
-const arr=files.map(f=>({
-name:f.name,
-url:URL.createObjectURL(f)
-}))
-
 items.push({
 type:"folder",
 name:"📂 "+name,
-files:arr,
-shuffle:null
+files:files
 })
 
 actualizarLista()
+
+}
+
+document.getElementById("fxfiles").onchange=e=>{
+
+for(const f of e.target.files){
+
+const btn=document.createElement("button")
+
+btn.textContent=f.name
+
+btn.onclick=()=>{
+canal.postMessage({type:"fx",file:f})
+}
+
+fxdiv.appendChild(btn)
+
+}
 
 }
 
@@ -340,6 +318,15 @@ document.getElementById("auto").onchange=e=>{
 
 canal.postMessage({
 type:"setAutoplay",
+value:e.target.checked
+})
+
+}
+
+document.getElementById("cross").onchange=e=>{
+
+canal.postMessage({
+type:"crossfade",
 value:e.target.checked
 })
 
