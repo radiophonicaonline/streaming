@@ -5,127 +5,94 @@
 
 <style>
 html,body{
-  margin:0;
-  background:black;
-  overflow:hidden;
+margin:0;
+background:black;
+overflow:hidden;
 }
 
 video{
-  position:absolute;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  background:black;
+position:absolute;
+width:100%;
+height:100%;
+object-fit:cover;
+background:black;
 }
 </style>
+
 </head>
 
 <body>
 
 <video id="main" autoplay></video>
-<video id="fx" style="display:none"></video>
 
 <script>
+
 const canal = new BroadcastChannel("obs_player");
-
 const main = document.getElementById("main");
-const fx = document.getElementById("fx");
 
-let autoplay = true;
-
-/* ===== PLAY ARCHIVO ===== */
-
-function playFile(file){
-  main.src = URL.createObjectURL(file);
-  main.play();
-}
-
-/* ===== PLAY CARPETA → SOLO 1 RANDOM ===== */
-
-function playFolder(files){
-
-  if(!files.length) return;
-
-  const f = files[Math.floor(Math.random() * files.length)];
-
-  main.src = URL.createObjectURL(f);
-  main.play();
-}
-
-/* ===== CUANDO TERMINA ===== */
-
-main.onended = () => {
-
-  if(!autoplay) return;
-
-  // pide al panel el siguiente item
-  canal.postMessage({type:"next"});
-};
-
-/* ===== FX ===== */
+let autoplay=true;
 
 function playFile(file){
 
-const url = URL.createObjectURL(file);
-
-main.src = url;
+main.src = URL.createObjectURL(file);
 main.play();
 
 }
 
-/* ===== CONTROLES ===== */
+main.onended=()=>{
+
+if(!autoplay) return;
+
+canal.postMessage({type:"next"});
+
+};
 
 function play(){ main.play(); }
+
 function pause(){ main.pause(); }
+
 function stop(){
-  main.pause();
-  main.currentTime = 0;
+
+main.pause();
+main.currentTime=0;
+
 }
 
-/* ===== COMUNICACIÓN PANEL → PLAYER ===== */
+canal.onmessage=e=>{
 
-canal.onmessage = e => {
+const d=e.data;
 
-  const d = e.data;
+switch(d.type){
 
-  switch(d.type){
+case "playFile":
+playFile(d.file);
+break;
 
-    case "playFile":
-      playFile(d.file);
-      break;
+case "play":
+play();
+break;
 
-  
+case "pause":
+pause();
+break;
 
-    case "fx":
-      playFX(d.file);
-      break;
+case "stop":
+stop();
+break;
 
-    case "play":
-      play();
-      break;
+case "setAutoplay":
+autoplay=d.value;
+break;
 
-    case "pause":
-      pause();
-      break;
+case "volume":
+main.volume=d.value;
+break;
 
-    case "stop":
-      stop();
-      break;
+}
 
-    case "setAutoplay":
-      autoplay = d.value;
-      break;
-
-    case "volume":
-      main.volume = d.value;
-      fx.volume = d.value;
-      break;
-  }
 };
+
 </script>
 
 </body>
 </html>
-
-
-
