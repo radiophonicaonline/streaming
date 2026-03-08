@@ -87,7 +87,20 @@ background:black;
 <button onclick="stopPreview()">STOP</button>
 
 <hr>
+<h3>Controles Player</h3>
 
+<button onclick="playerPlay()">▶</button>
+<button onclick="playerPause()">⏸</button>
+<button onclick="playerStop()">⏹</button>
+
+<button onclick="back10()">⏪ 10s</button>
+<button onclick="forward10()">10s ⏩</button>
+
+<br><br>
+
+Volumen
+<input type="range" min="0" max="1" step="0.01" value="1"
+oninput="setVolume(this.value)">
 <h3>FX</h3>
 
 <button onclick="cargarFX()">Cargar FX</button>
@@ -375,8 +388,67 @@ fxdiv.appendChild(btn);
 }
 
 };
+function playerPlay(){
+canal.postMessage({type:"play"});
+}
 
+function playerPause(){
+canal.postMessage({type:"pause"});
+}
+
+function playerStop(){
+canal.postMessage({type:"stop"});
+}
+
+function forward10(){
+canal.postMessage({type:"forward"});
+}
+
+function back10(){
+canal.postMessage({type:"back"});
+}
+
+function setVolume(v){
+canal.postMessage({
+type:"volume",
+value:parseFloat(v)
+});
+}
+  document.addEventListener("keydown",e=>{
+
+if(e.target.tagName==="INPUT") return;
+
+switch(e.key){
+
+case " ":
+playerPlay();
+break;
+
+case "p":
+playerPause();
+break;
+
+case "s":
+playerStop();
+break;
+
+case "ArrowRight":
+forward10();
+break;
+
+case "ArrowLeft":
+back10();
+break;
+
+case "n":
+canal.postMessage({type:"next"});
+break;
+
+}
+
+});
 </script>
 
 </body>
 </html>
+
