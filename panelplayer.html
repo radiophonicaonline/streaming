@@ -4,92 +4,93 @@
 <meta charset="UTF-8">
 
 <style>
-
 body{
-background:#0b0b0b;
-color:#eee;
-font-family:Segoe UI, sans-serif;
-padding:12px;
+  background:#0b0b0b;
+  color:#eee;
+  font-family:Segoe UI, sans-serif;
+  padding:12px;
 }
+
+/* BOTONES */
 
 button{
-background:#2a2a2a;
-color:#fff;
-border:none;
-padding:6px 10px;
-margin:3px;
-cursor:pointer;
-border-radius:4px;
-font-size:13px;
+  background:#2a2a2a;
+  color:#fff;
+  border:none;
+  padding:6px 10px;
+  margin:3px;
+  cursor:pointer;
+  border-radius:4px;
+  font-size:13px;
 }
 
-button:hover{background:#444}
+button:hover{ background:#444 }
+
+/* LISTA */
 
 #lista{
-height:260px;
-overflow-y:auto;
-border:1px solid #222;
-margin-top:8px;
-font-size:13px;
+  height:260px;
+  overflow-y:auto;
+  border:1px solid #222;
+  margin-top:8px;
+  font-size:13px;
 }
 
 .item{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:4px 6px;
-border-bottom:1px solid #1c1c1c;
+  display:flex;
+  justify-content:space-between;
+  padding:4px 6px;
+  border-bottom:1px solid #1c1c1c;
 }
 
-.item:hover{background:#1a1a1a}
-
-.playing{
-background:#113a1c !important;
-}
+.item:hover{ background:#1a1a1a }
 
 .item span{
-cursor:pointer;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-max-width:200px;
+  cursor:pointer;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:240px;
 }
 
-/* preview player */
+/* ITEM ACTIVO */
 
-#previewPanel{
-margin-top:10px;
-background:#000;
-border:1px solid #333;
-padding:6px;
-width:260px;
+.active{
+  background:#184a8b !important;
 }
 
-#previewPanel video{
-width:100%;
-background:black;
-}
-
-#previewControls{
-margin-top:4px;
-}
-
-#previewControls button{
-font-size:12px;
-padding:4px 6px;
-}
+/* FX */
 
 .fxbtn{
-display:inline-block;
-background:#7a0d0d;
-padding:6px 8px;
-margin:4px;
-cursor:pointer;
-border-radius:4px;
-font-size:12px;
+  display:inline-block;
+  background:#7a0d0d;
+  padding:6px 8px;
+  margin:4px;
+  cursor:pointer;
+  border-radius:4px;
+  font-size:12px;
 }
 
-.fxbtn:hover{background:#a31212}
+.fxbtn:hover{ background:#a31212 }
+
+/* PREVIEW */
+
+#previewBox{
+  margin-top:10px;
+  border:1px solid #333;
+  padding:6px;
+}
+
+#previewVideo{
+  width:100%;
+  background:#000;
+}
+
+#previewTitle{
+  font-size:12px;
+  margin-top:4px;
+  color:#aaa;
+}
 
 </style>
 </head>
@@ -121,11 +122,7 @@ font-size:12px;
 
 <h3>🔊 Volumen</h3>
 
-<input type="range"
-min="0"
-max="1"
-step="0.01"
-value="1"
+<input type="range" min="0" max="1" step="0.01" value="1"
 oninput="setVol(this.value)">
 
 <hr>
@@ -137,20 +134,16 @@ oninput="setVol(this.value)">
 
 <hr>
 
-<h3>🎧 Preview Manual</h3>
+<h3>🎥 Preview</h3>
 
-<div id="previewPanel">
+<div id="previewBox">
 
-<video id="previewPlayer"></video>
+<video id="previewVideo" controls></video>
 
-<div id="previewControls">
+<div id="previewTitle">sin preview</div>
 
-<button onclick="previewPlay()">▶</button>
-<button onclick="previewPause()">⏸</button>
-<button onclick="previewStop()">⏹</button>
-<button onclick="sendToAir()">📡 Enviar al aire</button>
-
-</div>
+<button onclick="mandarAlAire()">▶ CUE → AIR</button>
+<button onclick="stopPreview()">⏹ STOP PREVIEW</button>
 
 </div>
 
@@ -162,15 +155,17 @@ oninput="setVol(this.value)">
 
 const canal = new BroadcastChannel("obs_player");
 
-let items=[];
-let currentIndex=-1;
+let items = [];
+let currentIndex = -1;
+let previewIndex = -1;
 
-let previewFile=null;
+const lista = document.getElementById("lista");
+const fxdiv = document.getElementById("fx");
 
-const lista=document.getElementById("lista");
-const previewPlayer=document.getElementById("previewPlayer");
+const previewVideo = document.getElementById("previewVideo");
+const previewTitle = document.getElementById("previewTitle");
 
-/* LISTA */
+/* ===== LISTA ===== */
 
 function actualizarLista(){
 
@@ -181,32 +176,35 @@ items.forEach((it,i)=>{
 const div=document.createElement("div");
 div.className="item";
 
-if(i===currentIndex)div.classList.add("playing");
+if(i===currentIndex)
+div.classList.add("active");
 
 const span=document.createElement("span");
 span.textContent=it.name;
 
-/* CLICK NORMAL = AIR */
+/* CLICK IZQUIERDO = PLAY */
 
-span.onclick=()=>reproducirItem(i);
+span.onclick=()=>{
+reproducirItem(i);
+};
 
 /* CLICK DERECHO = PREVIEW */
 
 span.oncontextmenu=e=>{
-
 e.preventDefault();
+previewItem(i);
+};
 
-if(it.type!=="file")return;
+const del=document.createElement("button");
+del.textContent="✖";
 
-previewFile=it.file;
-
-previewPlayer.src=URL.createObjectURL(it.file);
-
-previewPlayer.play();
-
+del.onclick=()=>{
+items.splice(i,1);
+actualizarLista();
 };
 
 div.appendChild(span);
+div.appendChild(del);
 
 lista.appendChild(div);
 
@@ -214,71 +212,87 @@ lista.appendChild(div);
 
 }
 
-/* REPRODUCIR */
+/* ===== REPRODUCIR ===== */
 
 function reproducirItem(i){
+
+if(i<0 || i>=items.length) return;
 
 currentIndex=i;
 
 const it=items[i];
 
 if(it.type==="file"){
-
 canal.postMessage({
 type:"playFile",
 file:it.file
 });
-
-}else{
-
+}
+else{
 canal.postMessage({
 type:"playFolder",
 files:it.files
 });
-
 }
 
 actualizarLista();
 
 }
 
-/* PREVIEW CONTROLES */
+/* ===== PREVIEW ===== */
 
-function previewPlay(){
-previewPlayer.play();
-}
+function previewItem(i){
 
-function previewPause(){
-previewPlayer.pause();
-}
+previewIndex=i;
 
-function previewStop(){
+const it=items[i];
 
-previewPlayer.pause();
-previewPlayer.currentTime=0;
+previewTitle.textContent="Preview: "+it.name;
 
-}
+if(it.type==="file"){
 
-/* ENVIAR AL AIRE */
+previewVideo.src=URL.createObjectURL(it.file);
+previewVideo.play();
 
-function sendToAir(){
+}else{
 
-if(!previewFile)return;
+const f=it.files[0];
 
-canal.postMessage({
-type:"playFile",
-file:previewFile
-});
+previewVideo.src=URL.createObjectURL(f);
+previewVideo.play();
 
 }
 
-/* NAVEGACIÓN */
+}
+
+function stopPreview(){
+
+previewVideo.pause();
+previewVideo.src="";
+
+previewTitle.textContent="sin preview";
+
+}
+
+/* ===== MANDAR PREVIEW AL AIRE ===== */
+
+function mandarAlAire(){
+
+if(previewIndex===-1) return;
+
+reproducirItem(previewIndex);
+
+}
+
+/* ===== NAVEGACIÓN ===== */
 
 function next(){
 
+if(!items.length) return;
+
 let i=currentIndex+1;
 
-if(i>=items.length)i=0;
+if(i>=items.length) i=0;
 
 reproducirItem(i);
 
@@ -286,9 +300,11 @@ reproducirItem(i);
 
 function prev(){
 
+if(!items.length) return;
+
 let i=currentIndex-1;
 
-if(i<0)i=items.length-1;
+if(i<0) i=items.length-1;
 
 reproducirItem(i);
 
@@ -296,24 +312,18 @@ reproducirItem(i);
 
 function random(){
 
-let i=Math.floor(Math.random()*items.length);
+if(!items.length) return;
+
+const i=Math.floor(Math.random()*items.length);
 
 reproducirItem(i);
 
 }
 
-/* CARGAS */
+/* ===== CARGAR VIDEOS ===== */
 
 function cargarVideos(){
 document.getElementById("files").click();
-}
-
-function cargarCarpeta(){
-document.getElementById("folder").click();
-}
-
-function cargarFX(){
-document.getElementById("fxfiles").click();
 }
 
 document.getElementById("files").onchange=e=>{
@@ -332,9 +342,16 @@ actualizarLista();
 
 };
 
+/* ===== CARGAR CARPETA ===== */
+
+function cargarCarpeta(){
+document.getElementById("folder").click();
+}
+
 document.getElementById("folder").onchange=e=>{
 
 const files=[...e.target.files];
+
 const name=files[0].webkitRelativePath.split("/")[0];
 
 items.push({
@@ -347,7 +364,11 @@ actualizarLista();
 
 };
 
-/* FX */
+/* ===== FX ===== */
+
+function cargarFX(){
+document.getElementById("fxfiles").click();
+}
 
 document.getElementById("fxfiles").onchange=e=>{
 
@@ -365,35 +386,41 @@ file:f
 });
 };
 
-document.getElementById("fx").appendChild(btn);
+fxdiv.appendChild(btn);
 
 }
 
 };
 
-/* CONTROLES */
+/* ===== CONTROLES ===== */
 
-function play(){canal.postMessage({type:"play"});}
-function pause(){canal.postMessage({type:"pause"});}
-function stop(){canal.postMessage({type:"stop"});}
+function play(){
+canal.postMessage({type:"play"});
+}
+
+function pause(){
+canal.postMessage({type:"pause"});
+}
+
+function stop(){
+canal.postMessage({type:"stop"});
+}
 
 function setVol(v){
-
 canal.postMessage({
 type:"volume",
 value:parseFloat(v)
 });
-
 }
 
 document.getElementById("auto").onchange=e=>{
-
 canal.postMessage({
 type:"setAutoplay",
 value:e.target.checked
 });
-
 };
+
+/* ===== PLAYER PIDE SIGUIENTE ===== */
 
 canal.onmessage=e=>{
 
