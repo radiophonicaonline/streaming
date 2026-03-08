@@ -55,9 +55,28 @@ text-overflow:ellipsis;
 max-width:200px;
 }
 
-.controls button{
-font-size:11px;
-padding:3px 5px;
+/* preview player */
+
+#previewPanel{
+margin-top:10px;
+background:#000;
+border:1px solid #333;
+padding:6px;
+width:260px;
+}
+
+#previewPanel video{
+width:100%;
+background:black;
+}
+
+#previewControls{
+margin-top:4px;
+}
+
+#previewControls button{
+font-size:12px;
+padding:4px 6px;
 }
 
 .fxbtn{
@@ -72,37 +91,6 @@ font-size:12px;
 
 .fxbtn:hover{background:#a31212}
 
-/* preview hover */
-
-#previewBox{
-position:fixed;
-bottom:20px;
-right:20px;
-width:220px;
-background:#000;
-border:1px solid #333;
-display:none;
-}
-
-#previewBox video{
-width:100%;
-pointer-events:none;
-}
-
-/* preview siguiente */
-
-#nextVideoBox{
-margin-top:6px;
-width:220px;
-background:#000;
-border:1px solid #333;
-}
-
-#nextVideoBox video{
-width:100%;
-pointer-events:none;
-}
-
 </style>
 </head>
 
@@ -116,14 +104,6 @@ pointer-events:none;
 <label>
 <input type="checkbox" id="auto" checked> Auto
 </label>
-
-<h3>⏭ Siguiente</h3>
-
-<div id="nextPreview">---</div>
-
-<div id="nextVideoBox">
-<video id="nextVideo" muted></video>
-</div>
 
 <div id="lista"></div>
 
@@ -155,8 +135,23 @@ oninput="setVol(this.value)">
 <button onclick="cargarFX()">➕ Cargar FX</button>
 <div id="fx"></div>
 
-<div id="previewBox">
-<video id="previewVideo" muted playsinline></video>
+<hr>
+
+<h3>🎧 Preview Manual</h3>
+
+<div id="previewPanel">
+
+<video id="previewPlayer"></video>
+
+<div id="previewControls">
+
+<button onclick="previewPlay()">▶</button>
+<button onclick="previewPause()">⏸</button>
+<button onclick="previewStop()">⏹</button>
+<button onclick="sendToAir()">📡 Enviar al aire</button>
+
+</div>
+
 </div>
 
 <input type="file" id="files" accept="video/*" multiple hidden>
@@ -170,18 +165,12 @@ const canal = new BroadcastChannel("obs_player");
 let items=[];
 let currentIndex=-1;
 
-let lastRandom=-1;
+let previewFile=null;
 
 const lista=document.getElementById("lista");
-const fxdiv=document.getElementById("fx");
+const previewPlayer=document.getElementById("previewPlayer");
 
-const previewBox=document.getElementById("previewBox");
-const previewVideo=document.getElementById("previewVideo");
-
-const nextPreview=document.getElementById("nextPreview");
-const nextVideo=document.getElementById("nextVideo");
-
-/* ===== LISTA ===== */
+/* LISTA */
 
 function actualizarLista(){
 
@@ -194,87 +183,30 @@ div.className="item";
 
 if(i===currentIndex)div.classList.add("playing");
 
-div.draggable=true;
-
-div.ondragstart=e=>{
-e.dataTransfer.setData("index",i);
-};
-
-div.ondragover=e=>e.preventDefault();
-
-div.ondrop=e=>{
-const from=e.dataTransfer.getData("index");
-const temp=items[from];
-items.splice(from,1);
-items.splice(i,0,temp);
-actualizarLista();
-};
-
 const span=document.createElement("span");
 span.textContent=it.name;
 
+/* CLICK NORMAL = AIR */
+
 span.onclick=()=>reproducirItem(i);
 
-/* preview hover */
+/* CLICK DERECHO = PREVIEW */
 
-span.onmouseenter=()=>{
+span.oncontextmenu=e=>{
 
-if(!it.file)return;
+e.preventDefault();
 
-const url=URL.createObjectURL(it.file);
+if(it.type!=="file")return;
 
-previewVideo.pause();
-previewVideo.src=url;
-previewVideo.volume=0;
-previewVideo.currentTime=0;
+previewFile=it.file;
 
-previewBox.style.display="block";
+previewPlayer.src=URL.createObjectURL(it.file);
 
-previewVideo.play().catch(()=>{});
+previewPlayer.play();
 
 };
-
-span.onmouseleave=()=>{
-
-previewVideo.pause();
-previewVideo.removeAttribute("src");
-previewVideo.load();
-
-previewBox.style.display="none";
-
-};
-
-/* controles */
-
-const controls=document.createElement("div");
-controls.className="controls";
-
-const up=document.createElement("button");
-up.textContent="⬆";
-up.onclick=()=>moverArriba(i);
-
-const down=document.createElement("button");
-down.textContent="⬇";
-down.onclick=()=>moverAbajo(i);
-
-const copy=document.createElement("button");
-copy.textContent="📄";
-copy.onclick=()=>copiarItem(i);
-
-const del=document.createElement("button");
-del.textContent="✖";
-del.onclick=()=>{
-items.splice(i,1);
-actualizarLista();
-};
-
-controls.appendChild(up);
-controls.appendChild(down);
-controls.appendChild(copy);
-controls.appendChild(del);
 
 div.appendChild(span);
-div.appendChild(controls);
 
 lista.appendChild(div);
 
@@ -282,11 +214,9 @@ lista.appendChild(div);
 
 }
 
-/* ===== REPRODUCIR ===== */
+/* REPRODUCIR */
 
 function reproducirItem(i){
-
-if(i<0||i>=items.length)return;
 
 currentIndex=i;
 
@@ -312,61 +242,39 @@ actualizarLista();
 
 }
 
-/* ===== ORDEN ===== */
+/* PREVIEW CONTROLES */
 
-function moverArriba(i){
+function previewPlay(){
+previewPlayer.play();
+}
 
-if(i===0)return;
+function previewPause(){
+previewPlayer.pause();
+}
 
-[items[i-1],items[i]]=[items[i],items[i-1]];
+function previewStop(){
 
-actualizarLista();
+previewPlayer.pause();
+previewPlayer.currentTime=0;
 
 }
 
-function moverAbajo(i){
+/* ENVIAR AL AIRE */
 
-if(i===items.length-1)return;
+function sendToAir(){
 
-[items[i+1],items[i]]=[items[i],items[i+1]];
+if(!previewFile)return;
 
-actualizarLista();
-
-}
-
-/* ===== COPIAR ===== */
-
-function copiarItem(i){
-
-const it=items[i];
-
-if(it.type==="file"){
-
-items.splice(i+1,0,{
-type:"file",
-name:it.name+" copia",
-file:it.file
-});
-
-}else{
-
-items.splice(i+1,0,{
-type:"folder",
-name:it.name+" copia",
-files:it.files
+canal.postMessage({
+type:"playFile",
+file:previewFile
 });
 
 }
 
-actualizarLista();
-
-}
-
-/* ===== NAVEGACIÓN ===== */
+/* NAVEGACIÓN */
 
 function next(){
-
-if(!items.length)return;
 
 let i=currentIndex+1;
 
@@ -378,8 +286,6 @@ reproducirItem(i);
 
 function prev(){
 
-if(!items.length)return;
-
 let i=currentIndex-1;
 
 if(i<0)i=items.length-1;
@@ -390,21 +296,13 @@ reproducirItem(i);
 
 function random(){
 
-if(!items.length)return;
-
-let i;
-
-do{
-i=Math.floor(Math.random()*items.length);
-}while(i===lastRandom&&items.length>1);
-
-lastRandom=i;
+let i=Math.floor(Math.random()*items.length);
 
 reproducirItem(i);
 
 }
 
-/* ===== CARGAS ===== */
+/* CARGAS */
 
 function cargarVideos(){
 document.getElementById("files").click();
@@ -449,7 +347,7 @@ actualizarLista();
 
 };
 
-/* ===== FX ===== */
+/* FX */
 
 document.getElementById("fxfiles").onchange=e=>{
 
@@ -467,13 +365,13 @@ file:f
 });
 };
 
-fxdiv.appendChild(btn);
+document.getElementById("fx").appendChild(btn);
 
 }
 
 };
 
-/* ===== CONTROLES ===== */
+/* CONTROLES */
 
 function play(){canal.postMessage({type:"play"});}
 function pause(){canal.postMessage({type:"pause"});}
@@ -497,26 +395,12 @@ value:e.target.checked
 
 };
 
-/* ===== MENSAJES PLAYER ===== */
-
 canal.onmessage=e=>{
 
 const d=e.data;
 
 if(d.type==="next"){
 next();
-}
-
-if(d.type==="previewNext"){
-
-nextPreview.textContent=d.name;
-
-nextVideo.pause();
-nextVideo.src=d.url;
-nextVideo.currentTime=0;
-
-nextVideo.play().catch(()=>{});
-
 }
 
 };
