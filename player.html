@@ -16,7 +16,7 @@ width:100%;
 height:100%;
 object-fit:cover;
 background:black;
-transition:opacity 1s linear;
+transition:opacity 0.8s linear;
 }
 
 #v1{opacity:1}
@@ -35,116 +35,107 @@ transition:opacity 1s linear;
 
 const canal = new BroadcastChannel("obs_player");
 
-const v1=document.getElementById("v1");
-const v2=document.getElementById("v2");
-const fx=document.getElementById("fx");
+const v1 = document.getElementById("v1");
+const v2 = document.getElementById("v2");
+const fx = document.getElementById("fx");
 
-let active=1;
-let autoplay=true;
+let active = 1;
+let autoplay = true;
+let folderFiles = [];
 
-let folderFiles=[];
-let currentFile=null;
-let nextFile=null;
+/* ===== UTIL ===== */
 
-/* CROSSFADE */
+function current(){
+return active===1 ? v1 : v2;
+}
 
-function crossfade(src){
+function hidden(){
+return active===1 ? v2 : v1;
+}
 
-const current=active===1?v1:v2;
-const next=active===1?v2:v1;
+/* ===== LIMPIAR VIDEO ===== */
 
-next.src=src;
-next.volume=current.volume;
+function clearVideo(v){
 
-next.currentTime=0;
-
-next.play();
-
-next.style.opacity=1;
-current.style.opacity=0;
-
-active=active===1?2:1;
+v.pause();
+v.removeAttribute("src");
+v.load();
 
 }
 
-/* ARCHIVO */
+/* ===== CROSSFADE ===== */
+
+function crossfade(file){
+
+const cur = current();
+const nxt = hidden();
+
+/* limpiar video oculto */
+
+clearVideo(nxt);
+
+nxt.src = URL.createObjectURL(file);
+nxt.volume = cur.volume;
+
+nxt.currentTime = 0;
+
+nxt.play().catch(()=>{});
+
+nxt.style.opacity = 1;
+cur.style.opacity = 0;
+
+/* detener video anterior */
+
+setTimeout(()=>{
+clearVideo(cur);
+},800);
+
+active = active===1 ? 2 : 1;
+
+}
+
+/* ===== PLAY ARCHIVO ===== */
 
 function playFile(file){
 
-folderFiles=[];
+folderFiles = [];
 
-currentFile=file;
-
-const src=URL.createObjectURL(file);
-
-crossfade(src);
+crossfade(file);
 
 }
 
-/* CARPETA */
+/* ===== PLAY CARPETA ===== */
 
 function playFolder(files){
 
-folderFiles=files;
+folderFiles = files;
 
-pickNext();
-
-playCurrent();
+playRandom();
 
 }
 
-function pickNext(){
+function playRandom(){
 
-if(!folderFiles.length)return;
+if(!folderFiles.length) return;
 
-let i=Math.floor(Math.random()*folderFiles.length);
+const i = Math.floor(Math.random()*folderFiles.length);
 
-nextFile=folderFiles[i];
-
-}
-
-/* reproducir actual */
-
-function playCurrent(){
-
-if(!nextFile)return;
-
-currentFile=nextFile;
-
-const src=URL.createObjectURL(currentFile);
-
-crossfade(src);
-
-/* elegir siguiente */
-
-pickNext();
-
-/* avisar al panel */
-
-canal.postMessage({
-type:"previewNext",
-name:nextFile.name,
-url:URL.createObjectURL(nextFile)
-});
+crossfade(folderFiles[i]);
 
 }
 
-/* FIN VIDEO */
+/* ===== FIN VIDEO ===== */
 
-function getCurrent(){
-return active===1?v1:v2;
-}
-
-v1.onended=onEnd;
-v2.onended=onEnd;
+v1.onended = onEnd;
+v2.onended = onEnd;
 
 function onEnd(){
 
-if(!autoplay)return;
+if(!autoplay) return;
 
 if(folderFiles.length){
 
-playCurrent();
+playRandom();
 
 }else{
 
@@ -154,33 +145,41 @@ canal.postMessage({type:"next"});
 
 }
 
-/* FX */
+/* ===== FX ===== */
 
 function playFX(file){
 
-fx.src=URL.createObjectURL(file);
+fx.pause();
 
-fx.volume=getCurrent().volume;
+fx.src = URL.createObjectURL(file);
+fx.volume = current().volume;
 
-fx.onended=()=>{
-fx.src="";
-};
-
-fx.play();
+fx.play().catch(()=>{});
 
 }
 
-/* CONTROLES */
+/* ===== CONTROLES ===== */
 
-function play(){getCurrent().play();}
-function pause(){getCurrent().pause();}
-function stop(){getCurrent().pause();getCurrent().currentTime=0}
+function play(){
+current().play().catch(()=>{});
+}
 
-/* MENSAJES */
+function pause(){
+current().pause();
+}
 
-canal.onmessage=e=>{
+function stop(){
 
-const d=e.data;
+clearVideo(v1);
+clearVideo(v2);
+
+}
+
+/* ===== MENSAJES ===== */
+
+canal.onmessage = e => {
+
+const d = e.data;
 
 switch(d.type){
 
@@ -209,13 +208,13 @@ stop();
 break;
 
 case "setAutoplay":
-autoplay=d.value;
+autoplay = d.value;
 break;
 
 case "volume":
-v1.volume=d.value;
-v2.volume=d.value;
-fx.volume=d.value;
+v1.volume = d.value;
+v2.volume = d.value;
+fx.volume = d.value;
 break;
 
 }
@@ -223,5 +222,6 @@ break;
 };
 
 </script>
+
 </body>
 </html>
