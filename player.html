@@ -5,17 +5,17 @@
 
 <style>
 html,body{
-  margin:0;
-  background:black;
-  overflow:hidden;
+margin:0;
+background:black;
+overflow:hidden;
 }
 
 video{
-  position:absolute;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  background:black;
+position:absolute;
+width:100%;
+height:100%;
+object-fit:cover;
+background:black;
 }
 </style>
 </head>
@@ -34,178 +34,105 @@ const fx = document.getElementById("fx");
 
 let autoplay = true;
 
-/* carpeta actual */
-
-let folderFiles = [];
-let folderIndex = -1;
-
-
-/* =========================
-   PLAY ARCHIVO
-========================= */
+/* =====================
+   PLAY VIDEO
+===================== */
 
 function playFile(file){
 
-  folderFiles = [];
-  folderIndex = -1;
-
-  main.src = URL.createObjectURL(file);
-  main.play();
+main.src = URL.createObjectURL(file);
+main.play();
 
 }
 
-
-/* =========================
-   PLAY CARPETA
-========================= */
-
-function playFolder(files){
-
-  if(!files.length) return;
-
-  folderFiles = files;
-
-  folderIndex = Math.floor(Math.random()*files.length);
-
-  main.src = URL.createObjectURL(folderFiles[folderIndex]);
-
-  main.play();
-}
-
-
-/* =========================
-   SIGUIENTE VIDEO CARPETA
-========================= */
-
-function nextFromFolder(){
-
-  if(!folderFiles.length) return false;
-
-  folderIndex++;
-
-  if(folderIndex >= folderFiles.length)
-    folderIndex = 0;
-
-  main.src = URL.createObjectURL(folderFiles[folderIndex]);
-
-  main.play();
-
-  return true;
-
-}
-
-
-/* =========================
-   CUANDO TERMINA VIDEO
-========================= */
-
-main.onended = () => {
-
-  if(!autoplay) return;
-
-  /* si estamos en carpeta */
-
-  if(folderFiles.length){
-
-    nextFromFolder();
-    return;
-
-  }
-
-  /* si es archivo individual */
-
-  canal.postMessage({
-    type:"next"
-  });
-
-};
-
-
-/* =========================
+/* =====================
    FX
-========================= */
+===================== */
 
 function playFX(file){
 
-  fx.src = URL.createObjectURL(file);
+fx.src = URL.createObjectURL(file);
 
-  fx.style.display="block";
+fx.style.display="block";
 
-  fx.volume = main.volume;
+fx.volume = main.volume;
 
-  fx.onended = () => {
-    fx.style.display="none";
-  };
+fx.onended=()=>{
+fx.style.display="none";
+};
 
-  fx.play();
+fx.play();
 
 }
 
+/* =====================
+   CUANDO TERMINA
+===================== */
 
-/* =========================
+main.onended=()=>{
+
+if(!autoplay) return;
+
+canal.postMessage({
+type:"next"
+});
+
+};
+
+/* =====================
    CONTROLES
-========================= */
+===================== */
 
-function play(){
-  main.play();
-}
-
-function pause(){
-  main.pause();
-}
+function play(){ main.play(); }
+function pause(){ main.pause(); }
 
 function stop(){
 
-  main.pause();
-  main.currentTime = 0;
+main.pause();
+main.currentTime=0;
 
 }
 
+/* =====================
+   MENSAJES PANEL
+===================== */
 
-/* =========================
-   COMUNICACIÓN PANEL
-========================= */
+canal.onmessage=e=>{
 
-canal.onmessage = e => {
+const d=e.data;
 
-  const d = e.data;
+switch(d.type){
 
-  switch(d.type){
+case "playFile":
+playFile(d.file);
+break;
 
-    case "playFile":
-      playFile(d.file);
-      break;
+case "fx":
+playFX(d.file);
+break;
 
-    case "playFolder":
-      playFolder(d.files);
-      break;
+case "play":
+play();
+break;
 
-    case "fx":
-      playFX(d.file);
-      break;
+case "pause":
+pause();
+break;
 
-    case "play":
-      play();
-      break;
+case "stop":
+stop();
+break;
 
-    case "pause":
-      pause();
-      break;
+case "volume":
+main.volume=d.value;
+fx.volume=d.value;
+break;
 
-    case "stop":
-      stop();
-      break;
+case "setAutoplay":
+autoplay=d.value;
+break;
 
-    case "setAutoplay":
-      autoplay = d.value;
-      break;
-
-    case "volume":
-      main.volume = d.value;
-      fx.volume = d.value;
-      break;
-
-  }
+}
 
 };
 
