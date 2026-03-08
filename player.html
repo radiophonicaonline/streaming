@@ -5,219 +5,207 @@
 
 <style>
 html,body{
-margin:0;
-background:black;
-overflow:hidden;
+  margin:0;
+  background:black;
+  overflow:hidden;
 }
 
 video{
-position:absolute;
-width:100%;
-height:100%;
-object-fit:cover;
-background:black;
-transition:opacity 0.8s linear;
+  position:absolute;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  background:black;
 }
-
-#v1{opacity:1}
-#v2{opacity:0}
 </style>
 </head>
 
 <body>
 
-<video id="v1" autoplay></video>
-<video id="v2"></video>
-
+<video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
 
 <script>
 
 const canal = new BroadcastChannel("obs_player");
 
-const v1 = document.getElementById("v1");
-const v2 = document.getElementById("v2");
+const main = document.getElementById("main");
 const fx = document.getElementById("fx");
 
-let active = 1;
 let autoplay = true;
+
+/* carpeta actual */
+
 let folderFiles = [];
+let folderIndex = -1;
 
-/* ===== UTIL ===== */
 
-function current(){
-return active===1 ? v1 : v2;
-}
-
-function hidden(){
-return active===1 ? v2 : v1;
-}
-
-/* ===== LIMPIAR VIDEO ===== */
-
-function clearVideo(v){
-
-v.pause();
-v.removeAttribute("src");
-v.load();
-
-}
-
-/* ===== CROSSFADE ===== */
-
-function crossfade(file){
-
-const cur = current();
-const nxt = hidden();
-
-/* limpiar video oculto */
-
-clearVideo(nxt);
-
-nxt.src = URL.createObjectURL(file);
-nxt.volume = cur.volume;
-
-nxt.currentTime = 0;
-
-nxt.play().catch(()=>{});
-
-nxt.style.opacity = 1;
-cur.style.opacity = 0;
-
-/* detener video anterior */
-
-setTimeout(()=>{
-clearVideo(cur);
-},800);
-
-active = active===1 ? 2 : 1;
-
-}
-
-/* ===== PLAY ARCHIVO ===== */
+/* =========================
+   PLAY ARCHIVO
+========================= */
 
 function playFile(file){
 
-folderFiles = [];
+  folderFiles = [];
+  folderIndex = -1;
 
-crossfade(file);
+  main.src = URL.createObjectURL(file);
+  main.play();
 
 }
 
-/* ===== PLAY CARPETA ===== */
+
+/* =========================
+   PLAY CARPETA
+========================= */
 
 function playFolder(files){
 
-folderFiles = files;
+  if(!files.length) return;
 
-playRandom();
+  folderFiles = files;
+
+  folderIndex = Math.floor(Math.random()*files.length);
+
+  main.src = URL.createObjectURL(folderFiles[folderIndex]);
+
+  main.play();
+}
+
+
+/* =========================
+   SIGUIENTE VIDEO CARPETA
+========================= */
+
+function nextFromFolder(){
+
+  if(!folderFiles.length) return false;
+
+  folderIndex++;
+
+  if(folderIndex >= folderFiles.length)
+    folderIndex = 0;
+
+  main.src = URL.createObjectURL(folderFiles[folderIndex]);
+
+  main.play();
+
+  return true;
 
 }
 
-function playRandom(){
 
-if(!folderFiles.length) return;
+/* =========================
+   CUANDO TERMINA VIDEO
+========================= */
 
-const i = Math.floor(Math.random()*folderFiles.length);
+main.onended = () => {
 
-crossfade(folderFiles[i]);
+  if(!autoplay) return;
 
-}
+  /* si estamos en carpeta */
 
-/* ===== FIN VIDEO ===== */
+  if(folderFiles.length){
 
-v1.onended = onEnd;
-v2.onended = onEnd;
+    nextFromFolder();
+    return;
 
-function onEnd(){
+  }
 
-if(!autoplay) return;
+  /* si es archivo individual */
 
-if(folderFiles.length){
+  canal.postMessage({
+    type:"next"
+  });
 
-playRandom();
+};
 
-}else{
 
-canal.postMessage({type:"next"});
-
-}
-
-}
-
-/* ===== FX ===== */
+/* =========================
+   FX
+========================= */
 
 function playFX(file){
 
-fx.pause();
+  fx.src = URL.createObjectURL(file);
 
-fx.src = URL.createObjectURL(file);
-fx.volume = current().volume;
+  fx.style.display="block";
 
-fx.play().catch(()=>{});
+  fx.volume = main.volume;
+
+  fx.onended = () => {
+    fx.style.display="none";
+  };
+
+  fx.play();
 
 }
 
-/* ===== CONTROLES ===== */
+
+/* =========================
+   CONTROLES
+========================= */
 
 function play(){
-current().play().catch(()=>{});
+  main.play();
 }
 
 function pause(){
-current().pause();
+  main.pause();
 }
 
 function stop(){
 
-clearVideo(v1);
-clearVideo(v2);
+  main.pause();
+  main.currentTime = 0;
 
 }
 
-/* ===== MENSAJES ===== */
+
+/* =========================
+   COMUNICACIÓN PANEL
+========================= */
 
 canal.onmessage = e => {
 
-const d = e.data;
+  const d = e.data;
 
-switch(d.type){
+  switch(d.type){
 
-case "playFile":
-playFile(d.file);
-break;
+    case "playFile":
+      playFile(d.file);
+      break;
 
-case "playFolder":
-playFolder(d.files);
-break;
+    case "playFolder":
+      playFolder(d.files);
+      break;
 
-case "fx":
-playFX(d.file);
-break;
+    case "fx":
+      playFX(d.file);
+      break;
 
-case "play":
-play();
-break;
+    case "play":
+      play();
+      break;
 
-case "pause":
-pause();
-break;
+    case "pause":
+      pause();
+      break;
 
-case "stop":
-stop();
-break;
+    case "stop":
+      stop();
+      break;
 
-case "setAutoplay":
-autoplay = d.value;
-break;
+    case "setAutoplay":
+      autoplay = d.value;
+      break;
 
-case "volume":
-v1.volume = d.value;
-v2.volume = d.value;
-fx.volume = d.value;
-break;
+    case "volume":
+      main.volume = d.value;
+      fx.volume = d.value;
+      break;
 
-}
+  }
 
 };
 
