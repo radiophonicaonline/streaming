@@ -11,8 +11,6 @@ body{
   padding:12px;
 }
 
-/* BOTONES */
-
 button{
   background:#2a2a2a;
   color:#fff;
@@ -26,8 +24,6 @@ button{
 
 button:hover{ background:#444 }
 
-/* LISTA */
-
 #lista{
   height:260px;
   overflow-y:auto;
@@ -38,6 +34,7 @@ button:hover{ background:#444 }
 
 .item{
   display:flex;
+  align-items:center;
   justify-content:space-between;
   padding:4px 6px;
   border-bottom:1px solid #1c1c1c;
@@ -45,15 +42,22 @@ button:hover{ background:#444 }
 
 .item:hover{ background:#1a1a1a }
 
+.item.playing{
+  background:#0f3a1f;
+}
+
 .item span{
   cursor:pointer;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width:240px;
+  max-width:220px;
 }
 
-/* FX */
+.controls button{
+  padding:3px 6px;
+  font-size:11px;
+}
 
 .fxbtn{
   display:inline-block;
@@ -77,7 +81,7 @@ button:hover{ background:#444 }
 <button onclick="cargarCarpeta()">📂 Carpeta</button>
 
 <label>
-  <input type="checkbox" id="auto" checked> Auto
+<input type="checkbox" id="auto" checked> Auto
 </label>
 
 <div id="lista"></div>
@@ -97,9 +101,9 @@ button:hover{ background:#444 }
 <h3>🔊 Volumen</h3>
 
 <input type="range"
-       min="0" max="1" step="0.01"
-       value="1"
-       oninput="setVol(this.value)">
+min="0" max="1" step="0.01"
+value="1"
+oninput="setVol(this.value)">
 
 <hr>
 
@@ -113,6 +117,7 @@ button:hover{ background:#444 }
 <input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
 
 <script>
+
 const canal = new BroadcastChannel("obs_player");
 
 let items = [];
@@ -120,8 +125,6 @@ let currentIndex = -1;
 
 const lista = document.getElementById("lista");
 const fxdiv = document.getElementById("fx");
-
-/* ===== ACTUALIZAR LISTA ===== */
 
 function actualizarLista(){
 
@@ -132,9 +135,28 @@ function actualizarLista(){
     const div=document.createElement("div");
     div.className="item";
 
+    if(i===currentIndex){
+      div.classList.add("playing");
+    }
+
     const span=document.createElement("span");
     span.textContent=it.name;
-    span.onclick=()=> reproducirItem(i);
+    span.onclick=()=>reproducirItem(i);
+
+    const controls=document.createElement("div");
+    controls.className="controls";
+
+    const up=document.createElement("button");
+    up.textContent="⬆";
+    up.onclick=()=>moverArriba(i);
+
+    const down=document.createElement("button");
+    down.textContent="⬇";
+    down.onclick=()=>moverAbajo(i);
+
+    const copy=document.createElement("button");
+    copy.textContent="📄";
+    copy.onclick=()=>copiarItem(i);
 
     const del=document.createElement("button");
     del.textContent="✖";
@@ -144,39 +166,107 @@ function actualizarLista(){
       actualizarLista();
     };
 
+    controls.appendChild(up);
+    controls.appendChild(down);
+    controls.appendChild(copy);
+    controls.appendChild(del);
+
     div.appendChild(span);
-    div.appendChild(del);
+    div.appendChild(controls);
+
     lista.appendChild(div);
+
   });
+
 }
 
-/* ===== REPRODUCIR ITEM ===== */
+/* REPRODUCIR ITEM */
 
 function reproducirItem(i){
 
-  if(i < 0 || i >= items.length) return;
+  if(i<0 || i>=items.length) return;
 
-  currentIndex = i;
+  currentIndex=i;
 
-  const it = items[i];
+  const it=items[i];
 
   if(it.type==="file"){
-    canal.postMessage({type:"playFile",file:it.file});
+    canal.postMessage({
+      type:"playFile",
+      file:it.file
+    });
+  }else{
+    canal.postMessage({
+      type:"playFolder",
+      files:it.files
+    });
   }
-  else{
-    canal.postMessage({type:"playFolder",files:it.files});
-  }
+
+  actualizarLista();
 }
 
-/* ===== NAVEGACIÓN ===== */
+/* MOVER */
+
+function moverArriba(i){
+
+  if(i===0) return;
+
+  const temp=items[i];
+  items[i]=items[i-1];
+  items[i-1]=temp;
+
+  if(currentIndex===i) currentIndex=i-1;
+  else if(currentIndex===i-1) currentIndex=i;
+
+  actualizarLista();
+}
+
+function moverAbajo(i){
+
+  if(i===items.length-1) return;
+
+  const temp=items[i];
+  items[i]=items[i+1];
+  items[i+1]=temp;
+
+  if(currentIndex===i) currentIndex=i+1;
+  else if(currentIndex===i+1) currentIndex=i;
+
+  actualizarLista();
+}
+
+/* COPIAR */
+
+function copiarItem(i){
+
+  const it=items[i];
+
+  if(it.type==="file"){
+    items.splice(i+1,0,{
+      type:"file",
+      name:it.name+" (copy)",
+      file:it.file
+    });
+  }else{
+    items.splice(i+1,0,{
+      type:"folder",
+      name:it.name+" (copy)",
+      files:it.files
+    });
+  }
+
+  actualizarLista();
+}
+
+/* NAVEGACIÓN */
 
 function next(){
 
   if(!items.length) return;
 
-  let i = currentIndex + 1;
+  let i=currentIndex+1;
 
-  if(i >= items.length) i = 0;
+  if(i>=items.length) i=0;
 
   reproducirItem(i);
 }
@@ -185,9 +275,9 @@ function prev(){
 
   if(!items.length) return;
 
-  let i = currentIndex - 1;
+  let i=currentIndex-1;
 
-  if(i < 0) i = items.length - 1;
+  if(i<0) i=items.length-1;
 
   reproducirItem(i);
 }
@@ -196,108 +286,120 @@ function random(){
 
   if(!items.length) return;
 
-  const i = Math.floor(Math.random() * items.length);
+  const i=Math.floor(Math.random()*items.length);
 
   reproducirItem(i);
 }
 
-/* ===== CARGAS ===== */
+/* CARGAS */
 
 function cargarVideos(){
-  document.getElementById("files").click();
+document.getElementById("files").click();
 }
 
 function cargarCarpeta(){
-  document.getElementById("folder").click();
+document.getElementById("folder").click();
 }
 
 function cargarFX(){
-  document.getElementById("fxfiles").click();
+document.getElementById("fxfiles").click();
 }
 
 document.getElementById("files").onchange=e=>{
 
-  for(const f of e.target.files){
-    items.push({
-      type:"file",
-      name:"🎬 "+f.name,
-      file:f
-    });
-  }
+for(const f of e.target.files){
 
-  actualizarLista();
+items.push({
+type:"file",
+name:"🎬 "+f.name,
+file:f
+});
+
+}
+
+actualizarLista();
+
 };
 
 document.getElementById("folder").onchange=e=>{
 
-  const files=[...e.target.files];
-  const name=files[0].webkitRelativePath.split("/")[0];
+const files=[...e.target.files];
 
-  items.push({
-    type:"folder",
-    name:"📂 "+name,
-    files:files
-  });
+const name=files[0].webkitRelativePath.split("/")[0];
 
-  actualizarLista();
+items.push({
+type:"folder",
+name:"📂 "+name,
+files:files
+});
+
+actualizarLista();
+
 };
 
-/* ===== FX ===== */
+/* FX */
 
 document.getElementById("fxfiles").onchange=e=>{
 
-  for(const f of e.target.files){
+for(const f of e.target.files){
 
-    const btn=document.createElement("div");
-    btn.className="fxbtn";
-    btn.textContent=f.name;
+const btn=document.createElement("div");
+btn.className="fxbtn";
+btn.textContent=f.name;
 
-    btn.onclick=()=>{
-      canal.postMessage({type:"fx",file:f});
-    };
-
-    fxdiv.appendChild(btn);
-  }
+btn.onclick=()=>{
+canal.postMessage({
+type:"fx",
+file:f
+});
 };
 
-/* ===== CONTROLES ===== */
+fxdiv.appendChild(btn);
+
+}
+
+};
+
+/* CONTROLES */
 
 function play(){
-  canal.postMessage({type:"play"});
+canal.postMessage({type:"play"});
 }
 
 function pause(){
-  canal.postMessage({type:"pause"});
+canal.postMessage({type:"pause"});
 }
 
 function stop(){
-  canal.postMessage({type:"stop"});
+canal.postMessage({type:"stop"});
 }
 
 function setVol(v){
-  canal.postMessage({
-    type:"volume",
-    value:parseFloat(v)
-  });
+canal.postMessage({
+type:"volume",
+value:parseFloat(v)
+});
 }
 
 document.getElementById("auto").onchange=e=>{
-  canal.postMessage({
-    type:"setAutoplay",
-    value:e.target.checked
-  });
+canal.postMessage({
+type:"setAutoplay",
+value:e.target.checked
+});
 };
 
-/* ===== PLAYER PIDE SIGUIENTE ===== */
+/* PLAYER PIDE SIGUIENTE */
 
 canal.onmessage = e => {
 
-  const d = e.data;
+const d = e.data;
 
-  if(d.type === "next"){
-    next();
-  }
+if(d.type === "next"){
+next();
+}
+
 };
+
 </script>
 
 </body>
