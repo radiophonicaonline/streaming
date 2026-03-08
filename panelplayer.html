@@ -256,9 +256,14 @@ previewVideo.play();
 
 }else{
 
-const f=it.files[0];
+/* carpeta → elegir video random */
 
-previewVideo.src=URL.createObjectURL(f);
+const r = Math.floor(Math.random()*it.files.length);
+
+const f = it.files[r];
+
+previewVideo.src = URL.createObjectURL(f);
+
 previewVideo.play();
 
 }
@@ -436,3 +441,4 @@ next();
 
 </body>
 </html>
+
