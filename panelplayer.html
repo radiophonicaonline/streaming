@@ -95,7 +95,9 @@ button:hover{ background:#444 }
 
 <button onclick="cargarVideos()">➕ Videos</button>
 <button onclick="cargarCarpeta()">📂 Carpeta</button>
-
+<h3>⏭ Siguiente (Preview)</h3>
+<div id="nextPreview">---</div>
+  
 <label>
 <input type="checkbox" id="auto" checked> Auto
 </label>
@@ -151,7 +153,7 @@ const fxdiv = document.getElementById("fx");
 
 const previewBox = document.getElementById("previewBox");
 const previewVideo = document.getElementById("previewVideo");
-
+const nextPreview = document.getElementById("nextPreview");
 /* ===== ACTUALIZAR LISTA ===== */
 
 function actualizarLista(){
@@ -456,9 +458,14 @@ if(d.type === "next"){
 next();
 }
 
+if(d.type === "previewNext"){
+nextPreview.textContent = d.name;
+}
+
 };
 
 </script>
 
 </body>
 </html>
+
