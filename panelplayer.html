@@ -4,92 +4,63 @@
 <meta charset="UTF-8">
 
 <style>
-body{
-  background:#0b0b0b;
-  color:#eee;
-  font-family:Segoe UI, sans-serif;
-  padding:12px;
-}
 
-/* BOTONES */
+body{
+background:#0b0b0b;
+color:#eee;
+font-family:Segoe UI;
+padding:10px;
+}
 
 button{
-  background:#2a2a2a;
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  margin:3px;
-  cursor:pointer;
-  border-radius:4px;
-  font-size:13px;
+background:#2a2a2a;
+color:white;
+border:none;
+padding:5px 8px;
+margin:2px;
+cursor:pointer;
 }
 
-button:hover{ background:#444 }
-
-/* LISTA */
+button:hover{
+background:#444;
+}
 
 #lista{
-  height:260px;
-  overflow-y:auto;
-  border:1px solid #222;
-  margin-top:8px;
-  font-size:13px;
+height:260px;
+overflow-y:auto;
+border:1px solid #222;
+margin-top:8px;
 }
 
 .item{
-  display:flex;
-  justify-content:space-between;
-  padding:4px 6px;
-  border-bottom:1px solid #1c1c1c;
+display:flex;
+justify-content:space-between;
+padding:4px;
+border-bottom:1px solid #1a1a1a;
 }
-
-.item:hover{ background:#1a1a1a }
 
 .item span{
-  cursor:pointer;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:240px;
+cursor:pointer;
+max-width:230px;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
 }
-
-/* ITEM ACTIVO */
 
 .active{
-  background:#184a8b !important;
+background:#184a8b;
 }
-
-/* FX */
 
 .fxbtn{
-  display:inline-block;
-  background:#7a0d0d;
-  padding:6px 8px;
-  margin:4px;
-  cursor:pointer;
-  border-radius:4px;
-  font-size:12px;
-}
-
-.fxbtn:hover{ background:#a31212 }
-
-/* PREVIEW */
-
-#previewBox{
-  margin-top:10px;
-  border:1px solid #333;
-  padding:6px;
+background:#7a0d0d;
+padding:5px;
+margin:3px;
+cursor:pointer;
 }
 
 #previewVideo{
-  width:100%;
-  background:#000;
-}
-
-#previewTitle{
-  font-size:12px;
-  margin-top:4px;
-  color:#aaa;
+width:100%;
+background:black;
 }
 
 </style>
@@ -97,75 +68,54 @@ button:hover{ background:#444 }
 
 <body>
 
-<h3>🎬 Playlist</h3>
+<h3>Playlist</h3>
 
-<button onclick="cargarVideos()">➕ Videos</button>
-<button onclick="cargarCarpeta()">📂 Carpeta</button>
+<button onclick="cargarVideos()">Videos</button>
+<button onclick="cargarCarpeta()">Carpeta</button>
 
 <label>
-<input type="checkbox" id="auto" checked> Auto
+<input type="checkbox" id="auto" checked>Auto
 </label>
 
 <div id="lista"></div>
 
-<h3>🎮 Navegación</h3>
-
-<button onclick="prev()">⏮</button>
-<button onclick="next()">⏭</button>
-<button onclick="random()">🔀</button>
-
-<h3>🎛️ Controles</h3>
-
-<button onclick="play()">▶</button>
-<button onclick="pause()">⏸</button>
-<button onclick="stop()">⏹</button>
-
-<h3>🔊 Volumen</h3>
-
-<input type="range" min="0" max="1" step="0.01" value="1"
-oninput="setVol(this.value)">
-
-<hr>
-
-<h3>🔊 FX / Jingles</h3>
-
-<button onclick="cargarFX()">➕ Cargar FX</button>
-<div id="fx"></div>
-
-<hr>
-
-<h3>🎥 Preview</h3>
-
-<div id="previewBox">
+<h3>Preview</h3>
 
 <video id="previewVideo" controls></video>
 
-<div id="previewTitle">sin preview</div>
+<button onclick="mandarAlAire()">CUE → AIR</button>
+<button onclick="stopPreview()">STOP</button>
 
-<button onclick="mandarAlAire()">▶ CUE → AIR</button>
-<button onclick="stopPreview()">⏹ STOP PREVIEW</button>
+<hr>
 
-</div>
+<h3>FX</h3>
 
-<input type="file" id="files" accept="video/*" multiple hidden>
+<button onclick="cargarFX()">Cargar FX</button>
+
+<div id="fx"></div>
+
+<input type="file" id="files" multiple hidden>
 <input type="file" id="folder" webkitdirectory hidden>
-<input type="file" id="fxfiles" accept="audio/*,video/*" multiple hidden>
+<input type="file" id="fxfiles" multiple hidden>
 
 <script>
 
-const canal = new BroadcastChannel("obs_player");
+const canal=new BroadcastChannel("obs_player");
 
-let items = [];
-let currentIndex = -1;
-let previewIndex = -1;
+let items=[];
+let currentIndex=-1;
 
-const lista = document.getElementById("lista");
-const fxdiv = document.getElementById("fx");
+let previewItemData=null;
 
-const previewVideo = document.getElementById("previewVideo");
-const previewTitle = document.getElementById("previewTitle");
+const lista=document.getElementById("lista");
 
-/* ===== LISTA ===== */
+const previewVideo=document.getElementById("previewVideo");
+
+const fxdiv=document.getElementById("fx");
+
+/* =====================
+LISTA
+===================== */
 
 function actualizarLista(){
 
@@ -182,29 +132,48 @@ div.classList.add("active");
 const span=document.createElement("span");
 span.textContent=it.name;
 
-/* CLICK IZQUIERDO = PLAY */
-
-span.onclick=()=>{
-reproducirItem(i);
-};
-
-/* CLICK DERECHO = PREVIEW */
+span.onclick=()=>playItem(i);
 
 span.oncontextmenu=e=>{
 e.preventDefault();
-previewItem(i);
+preview(i);
+};
+
+const botones=document.createElement("div");
+
+const up=document.createElement("button");
+up.textContent="▲";
+up.onclick=()=>{
+if(i===0) return;
+[items[i],items[i-1]]=[items[i-1],items[i]];
+actualizarLista();
+};
+
+const down=document.createElement("button");
+down.textContent="▼";
+down.onclick=()=>{
+if(i===items.length-1) return;
+[items[i],items[i+1]]=[items[i+1],items[i]];
+actualizarLista();
+};
+
+const copy=document.createElement("button");
+copy.textContent="⧉";
+copy.onclick=()=>{
+items.splice(i+1,0,structuredClone(it));
+actualizarLista();
 };
 
 const del=document.createElement("button");
 del.textContent="✖";
-
 del.onclick=()=>{
 items.splice(i,1);
 actualizarLista();
 };
 
-div.appendChild(span);
-div.appendChild(del);
+botones.append(up,down,copy,del);
+
+div.append(span,botones);
 
 lista.appendChild(div);
 
@@ -212,126 +181,130 @@ lista.appendChild(div);
 
 }
 
-/* ===== REPRODUCIR ===== */
+/* =====================
+PLAY
+===================== */
 
-function reproducirItem(i){
-
-if(i<0 || i>=items.length) return;
+function playItem(i){
 
 currentIndex=i;
 
 const it=items[i];
 
 if(it.type==="file"){
+
 canal.postMessage({
 type:"playFile",
 file:it.file
 });
-}
-else{
+
+}else{
+
+const r=Math.floor(Math.random()*it.files.length);
+
+const f=it.files[r];
+
 canal.postMessage({
-type:"playFolder",
-files:it.files
+type:"playFile",
+file:f
 });
+
 }
 
 actualizarLista();
 
 }
 
-/* ===== PREVIEW ===== */
+/* =====================
+PREVIEW
+===================== */
 
-function previewItem(i){
-
-previewIndex=i;
+function preview(i){
 
 const it=items[i];
-
-previewTitle.textContent="Preview: "+it.name;
 
 if(it.type==="file"){
 
 previewVideo.src=URL.createObjectURL(it.file);
-previewVideo.play();
+
+previewItemData={
+type:"file",
+file:it.file
+};
 
 }else{
 
-/* carpeta → elegir video random */
+const r=Math.floor(Math.random()*it.files.length);
 
-const r = Math.floor(Math.random()*it.files.length);
+const f=it.files[r];
 
-const f = it.files[r];
+previewVideo.src=URL.createObjectURL(f);
 
-previewVideo.src = URL.createObjectURL(f);
+previewItemData={
+type:"file",
+file:f
+};
+
+}
 
 previewVideo.play();
 
 }
 
+/* =====================
+CUE
+===================== */
+
+function mandarAlAire(){
+
+if(!previewItemData) return;
+
+canal.postMessage({
+type:"playFile",
+file:previewItemData.file
+});
+
 }
+
+/* =====================
+STOP PREVIEW
+===================== */
 
 function stopPreview(){
 
 previewVideo.pause();
 previewVideo.src="";
 
-previewTitle.textContent="sin preview";
+}
+
+/* =====================
+AUTOPLAY
+===================== */
+
+canal.onmessage=e=>{
+
+if(e.data.type==="next"){
+
+currentIndex++;
+
+if(currentIndex>=items.length)
+currentIndex=0;
+
+playItem(currentIndex);
 
 }
 
-/* ===== MANDAR PREVIEW AL AIRE ===== */
+};
 
-function mandarAlAire(){
-
-if(previewIndex===-1) return;
-
-reproducirItem(previewIndex);
-
-}
-
-/* ===== NAVEGACIÓN ===== */
-
-function next(){
-
-if(!items.length) return;
-
-let i=currentIndex+1;
-
-if(i>=items.length) i=0;
-
-reproducirItem(i);
-
-}
-
-function prev(){
-
-if(!items.length) return;
-
-let i=currentIndex-1;
-
-if(i<0) i=items.length-1;
-
-reproducirItem(i);
-
-}
-
-function random(){
-
-if(!items.length) return;
-
-const i=Math.floor(Math.random()*items.length);
-
-reproducirItem(i);
-
-}
-
-/* ===== CARGAR VIDEOS ===== */
+/* =====================
+CARGAR VIDEOS
+===================== */
 
 function cargarVideos(){
-document.getElementById("files").click();
+files.click();
 }
 
-document.getElementById("files").onchange=e=>{
+files.onchange=e=>{
 
 for(const f of e.target.files){
 
@@ -347,13 +320,15 @@ actualizarLista();
 
 };
 
-/* ===== CARGAR CARPETA ===== */
+/* =====================
+CARPETA
+===================== */
 
 function cargarCarpeta(){
-document.getElementById("folder").click();
+folder.click();
 }
 
-document.getElementById("folder").onchange=e=>{
+folder.onchange=e=>{
 
 const files=[...e.target.files];
 
@@ -369,13 +344,15 @@ actualizarLista();
 
 };
 
-/* ===== FX ===== */
+/* =====================
+FX
+===================== */
 
 function cargarFX(){
-document.getElementById("fxfiles").click();
+fxfiles.click();
 }
 
-document.getElementById("fxfiles").onchange=e=>{
+fxfiles.onchange=e=>{
 
 for(const f of e.target.files){
 
@@ -385,10 +362,12 @@ btn.className="fxbtn";
 btn.textContent=f.name;
 
 btn.onclick=()=>{
+
 canal.postMessage({
 type:"fx",
 file:f
 });
+
 };
 
 fxdiv.appendChild(btn);
@@ -397,48 +376,7 @@ fxdiv.appendChild(btn);
 
 };
 
-/* ===== CONTROLES ===== */
-
-function play(){
-canal.postMessage({type:"play"});
-}
-
-function pause(){
-canal.postMessage({type:"pause"});
-}
-
-function stop(){
-canal.postMessage({type:"stop"});
-}
-
-function setVol(v){
-canal.postMessage({
-type:"volume",
-value:parseFloat(v)
-});
-}
-
-document.getElementById("auto").onchange=e=>{
-canal.postMessage({
-type:"setAutoplay",
-value:e.target.checked
-});
-};
-
-/* ===== PLAYER PIDE SIGUIENTE ===== */
-
-canal.onmessage=e=>{
-
-const d=e.data;
-
-if(d.type==="next"){
-next();
-}
-
-};
-
 </script>
 
 </body>
 </html>
-
