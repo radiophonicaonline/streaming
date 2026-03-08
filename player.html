@@ -5,18 +5,18 @@
 
 <style>
 html,body{
-  margin:0;
-  background:black;
-  overflow:hidden;
+margin:0;
+background:black;
+overflow:hidden;
 }
 
 video{
-  position:absolute;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  background:black;
-  transition:opacity 1s linear;
+position:absolute;
+width:100%;
+height:100%;
+object-fit:cover;
+background:black;
+transition:opacity 1s linear;
 }
 
 #v1{opacity:1}
@@ -35,189 +35,193 @@ video{
 
 const canal = new BroadcastChannel("obs_player");
 
-const v1 = document.getElementById("v1");
-const v2 = document.getElementById("v2");
-const fx = document.getElementById("fx");
+const v1=document.getElementById("v1");
+const v2=document.getElementById("v2");
+const fx=document.getElementById("fx");
 
-let active = 1;
+let active=1;
+let autoplay=true;
 
-let autoplay = true;
+let folderFiles=[];
+let currentFile=null;
+let nextFile=null;
 
-let folderFiles = [];
-let lastIndex = -1;
+/* CROSSFADE */
 
-/* ===== CROSSFADE ===== */
+function crossfade(src){
 
-function crossfade(newSrc){
+const current=active===1?v1:v2;
+const next=active===1?v2:v1;
 
-  const current = active === 1 ? v1 : v2;
-  const next = active === 1 ? v2 : v1;
+next.src=src;
+next.volume=current.volume;
 
-  next.src = newSrc;
-  next.volume = current.volume;
-  next.currentTime = 0;
+next.currentTime=0;
 
-  next.play();
+next.play();
 
-  next.style.opacity = 1;
-  current.style.opacity = 0;
+next.style.opacity=1;
+current.style.opacity=0;
 
-  active = active === 1 ? 2 : 1;
+active=active===1?2:1;
+
 }
 
-/* ===== PLAY ARCHIVO ===== */
+/* ARCHIVO */
 
 function playFile(file){
 
-  const src = URL.createObjectURL(file);
+folderFiles=[];
 
-  crossfade(src);
+currentFile=file;
+
+const src=URL.createObjectURL(file);
+
+crossfade(src);
 
 }
 
-/* ===== PLAY CARPETA ===== */
+/* CARPETA */
 
 function playFolder(files){
 
-  folderFiles = files;
+folderFiles=files;
 
-  playRandom();
+pickNext();
 
-}
-
-function playRandom(){
-
-  if(!folderFiles.length) return;
-
-  let i;
-
-  do{
-    i = Math.floor(Math.random()*folderFiles.length);
-  }while(i === lastIndex && folderFiles.length>1);
-
-  lastIndex = i;
-
-  const file = folderFiles[i];
-
-  const src = URL.createObjectURL(file);
-
-  crossfade(src);
-
-  /* calcular siguiente preview */
-
-  let nextIndex;
-
-  do{
-    nextIndex = Math.floor(Math.random()*folderFiles.length);
-  }while(nextIndex === i && folderFiles.length>1);
-
-  const nextFile = folderFiles[nextIndex];
-
-  canal.postMessage({
-    type:"previewNext",
-    name: nextFile.name
-  });
+playCurrent();
 
 }
 
-/* ===== CUANDO TERMINA ===== */
+function pickNext(){
+
+if(!folderFiles.length)return;
+
+let i=Math.floor(Math.random()*folderFiles.length);
+
+nextFile=folderFiles[i];
+
+}
+
+/* reproducir actual */
+
+function playCurrent(){
+
+if(!nextFile)return;
+
+currentFile=nextFile;
+
+const src=URL.createObjectURL(currentFile);
+
+crossfade(src);
+
+/* elegir siguiente */
+
+pickNext();
+
+/* avisar al panel */
+
+canal.postMessage({
+type:"previewNext",
+name:nextFile.name,
+url:URL.createObjectURL(nextFile)
+});
+
+}
+
+/* FIN VIDEO */
 
 function getCurrent(){
-  return active===1 ? v1 : v2;
+return active===1?v1:v2;
 }
 
-function getHidden(){
-  return active===1 ? v2 : v1;
-}
-
-v1.onended = onEnd;
-v2.onended = onEnd;
+v1.onended=onEnd;
+v2.onended=onEnd;
 
 function onEnd(){
 
-  if(!autoplay) return;
+if(!autoplay)return;
 
-  if(folderFiles.length){
-    playRandom();
-  }else{
-    canal.postMessage({type:"next"});
-  }
+if(folderFiles.length){
+
+playCurrent();
+
+}else{
+
+canal.postMessage({type:"next"});
 
 }
 
-/* ===== FX ===== */
+}
+
+/* FX */
 
 function playFX(file){
 
-  fx.src = URL.createObjectURL(file);
-  fx.style.display="block";
-  fx.volume = getCurrent().volume;
+fx.src=URL.createObjectURL(file);
 
-  fx.onended = ()=>{
-    fx.style.display="none";
-  };
+fx.volume=getCurrent().volume;
 
-  fx.play();
+fx.onended=()=>{
+fx.src="";
+};
+
+fx.play();
 
 }
 
-/* ===== CONTROLES ===== */
+/* CONTROLES */
 
-function play(){ getCurrent().play(); }
+function play(){getCurrent().play();}
+function pause(){getCurrent().pause();}
+function stop(){getCurrent().pause();getCurrent().currentTime=0}
 
-function pause(){ getCurrent().pause(); }
+/* MENSAJES */
 
-function stop(){
-  getCurrent().pause();
-  getCurrent().currentTime = 0;
+canal.onmessage=e=>{
+
+const d=e.data;
+
+switch(d.type){
+
+case "playFile":
+playFile(d.file);
+break;
+
+case "playFolder":
+playFolder(d.files);
+break;
+
+case "fx":
+playFX(d.file);
+break;
+
+case "play":
+play();
+break;
+
+case "pause":
+pause();
+break;
+
+case "stop":
+stop();
+break;
+
+case "setAutoplay":
+autoplay=d.value;
+break;
+
+case "volume":
+v1.volume=d.value;
+v2.volume=d.value;
+fx.volume=d.value;
+break;
+
 }
 
-/* ===== COMUNICACIÓN ===== */
-
-canal.onmessage = e => {
-
-  const d = e.data;
-
-  switch(d.type){
-
-    case "playFile":
-      folderFiles = [];
-      playFile(d.file);
-      break;
-
-    case "playFolder":
-      playFolder(d.files);
-      break;
-
-    case "fx":
-      playFX(d.file);
-      break;
-
-    case "play":
-      play();
-      break;
-
-    case "pause":
-      pause();
-      break;
-
-    case "stop":
-      stop();
-      break;
-
-    case "setAutoplay":
-      autoplay = d.value;
-      break;
-
-    case "volume":
-      v1.volume = d.value;
-      v2.volume = d.value;
-      fx.volume = d.value;
-      break;
-  }
 };
 
 </script>
-
 </body>
 </html>
