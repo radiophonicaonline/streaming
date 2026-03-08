@@ -132,6 +132,13 @@ case "setAutoplay":
 autoplay=d.value;
 break;
 
+case "forward":
+main.currentTime += 10;
+break;
+
+case "back":
+main.currentTime -= 10;
+break;
 }
 
 };
@@ -140,3 +147,4 @@ break;
 
 </body>
 </html>
+
