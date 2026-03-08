@@ -16,51 +16,134 @@ video{
   height:100%;
   object-fit:cover;
   background:black;
+  transition:opacity 1s linear;
 }
+
+#v1{opacity:1}
+#v2{opacity:0}
 </style>
 </head>
 
 <body>
 
-<video id="main" autoplay></video>
+<video id="v1" autoplay></video>
+<video id="v2"></video>
+
 <video id="fx" style="display:none"></video>
 
 <script>
+
 const canal = new BroadcastChannel("obs_player");
 
-const main = document.getElementById("main");
+const v1 = document.getElementById("v1");
+const v2 = document.getElementById("v2");
 const fx = document.getElementById("fx");
 
+let active = 1;
+
 let autoplay = true;
+
+let folderFiles = [];
+let lastIndex = -1;
+
+/* ===== CROSSFADE ===== */
+
+function crossfade(newSrc){
+
+  const current = active === 1 ? v1 : v2;
+  const next = active === 1 ? v2 : v1;
+
+  next.src = newSrc;
+  next.volume = current.volume;
+  next.currentTime = 0;
+
+  next.play();
+
+  next.style.opacity = 1;
+  current.style.opacity = 0;
+
+  active = active === 1 ? 2 : 1;
+}
 
 /* ===== PLAY ARCHIVO ===== */
 
 function playFile(file){
-  main.src = URL.createObjectURL(file);
-  main.play();
+
+  const src = URL.createObjectURL(file);
+
+  crossfade(src);
+
 }
 
-/* ===== PLAY CARPETA → SOLO 1 RANDOM ===== */
+/* ===== PLAY CARPETA ===== */
 
 function playFolder(files){
 
-  if(!files.length) return;
+  folderFiles = files;
 
-  const f = files[Math.floor(Math.random() * files.length)];
+  playRandom();
 
-  main.src = URL.createObjectURL(f);
-  main.play();
+}
+
+function playRandom(){
+
+  if(!folderFiles.length) return;
+
+  let i;
+
+  do{
+    i = Math.floor(Math.random()*folderFiles.length);
+  }while(i === lastIndex && folderFiles.length>1);
+
+  lastIndex = i;
+
+  const file = folderFiles[i];
+
+  const src = URL.createObjectURL(file);
+
+  crossfade(src);
+
+  /* calcular siguiente preview */
+
+  let nextIndex;
+
+  do{
+    nextIndex = Math.floor(Math.random()*folderFiles.length);
+  }while(nextIndex === i && folderFiles.length>1);
+
+  const nextFile = folderFiles[nextIndex];
+
+  canal.postMessage({
+    type:"previewNext",
+    name: nextFile.name
+  });
+
 }
 
 /* ===== CUANDO TERMINA ===== */
 
-main.onended = () => {
+function getCurrent(){
+  return active===1 ? v1 : v2;
+}
+
+function getHidden(){
+  return active===1 ? v2 : v1;
+}
+
+v1.onended = onEnd;
+v2.onended = onEnd;
+
+function onEnd(){
 
   if(!autoplay) return;
 
-  // pide al panel el siguiente item
-  canal.postMessage({type:"next"});
-};
+  if(folderFiles.length){
+    playRandom();
+  }else{
+    canal.postMessage({type:"next"});
+  }
+
+}
 
 /* ===== FX ===== */
 
@@ -68,25 +151,28 @@ function playFX(file){
 
   fx.src = URL.createObjectURL(file);
   fx.style.display="block";
-  fx.volume = main.volume;
+  fx.volume = getCurrent().volume;
 
-  fx.onended = () => {
+  fx.onended = ()=>{
     fx.style.display="none";
   };
 
   fx.play();
+
 }
 
 /* ===== CONTROLES ===== */
 
-function play(){ main.play(); }
-function pause(){ main.pause(); }
+function play(){ getCurrent().play(); }
+
+function pause(){ getCurrent().pause(); }
+
 function stop(){
-  main.pause();
-  main.currentTime = 0;
+  getCurrent().pause();
+  getCurrent().currentTime = 0;
 }
 
-/* ===== COMUNICACIÓN PANEL → PLAYER ===== */
+/* ===== COMUNICACIÓN ===== */
 
 canal.onmessage = e => {
 
@@ -95,6 +181,7 @@ canal.onmessage = e => {
   switch(d.type){
 
     case "playFile":
+      folderFiles = [];
       playFile(d.file);
       break;
 
@@ -123,13 +210,14 @@ canal.onmessage = e => {
       break;
 
     case "volume":
-      main.volume = d.value;
+      v1.volume = d.value;
+      v2.volume = d.value;
       fx.volume = d.value;
       break;
   }
 };
+
 </script>
 
 </body>
 </html>
-
