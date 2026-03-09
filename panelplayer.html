@@ -207,6 +207,10 @@ currentIndex=i;
 
 const it=items[i];
 
+/* MOSTRAR NOMBRE EN PANEL */
+
+document.getElementById("nowPlaying").textContent = it.name;
+
 if(it.type==="file"){
 
 canal.postMessage({
@@ -219,6 +223,8 @@ file:it.file
 const r=Math.floor(Math.random()*it.files.length);
 
 const f=it.files[r];
+
+document.getElementById("nowPlaying").textContent = f.name;
 
 canal.postMessage({
 type:"playFile",
@@ -454,6 +460,7 @@ break;
 
 </body>
 </html>
+
 
 
 
