@@ -85,7 +85,9 @@ ninguno
 <h3>Preview</h3>
 
 <video id="previewVideo" controls></video>
-
+<div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
+sin preview
+</div>
 <button onclick="mandarAlAire()">CUE → AIR</button>
 <button onclick="stopPreview()">STOP</button>
 
@@ -251,7 +253,8 @@ previewVideo.src=URL.createObjectURL(it.file);
 
 previewItemData={
 type:"file",
-file:it.file
+file:it.file,
+name:it.file.name
 };
 
 }else{
@@ -264,10 +267,13 @@ previewVideo.src=URL.createObjectURL(f);
 
 previewItemData={
 type:"file",
-file:f
+file:f,
+name:f.name
 };
 
 }
+
+document.getElementById("previewName").textContent=previewItemData.name;
 
 previewVideo.play();
 
@@ -280,6 +286,9 @@ CUE
 function mandarAlAire(){
 
 if(!previewItemData) return;
+
+document.getElementById("nowPlaying").textContent =
+previewItemData.name;
 
 canal.postMessage({
 type:"playFile",
@@ -460,6 +469,7 @@ break;
 
 </body>
 </html>
+
 
 
 
