@@ -1,1 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Radiophonica Encoder</title>
+<link rel="stylesheet" href="style.css">
+</head>
 
+<body>
+
+<div class="panel">
+
+<h2>🎙 Radiophonica Encoder</h2>
+
+<label>Servidor</label>
+<input id="server" placeholder="icecast.zeno.fm">
+
+<label>Puerto</label>
+<input id="port" value="80">
+
+<label>Mount</label>
+<input id="mount" placeholder="/stream">
+
+<label>Password</label>
+<input id="password" type="password">
+
+<label>Bitrate</label>
+<select id="bitrate">
+<option>64</option>
+<option selected>128</option>
+<option>192</option>
+</select>
+
+<label>Entrada de audio</label>
+<select id="audioSource"></select>
+
+<div class="vu">
+<div id="meter"></div>
+</div>
+
+<div class="buttons">
+<button onclick="startStream()">INICIAR STREAM</button>
+<button onclick="stopStream()">DETENER</button>
+</div>
+
+<div id="status">Estado: OFFLINE</div>
+
+</div>
+
+<script src="encoder.js"></script>
+</body>
+</html>
