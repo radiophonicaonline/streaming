@@ -50,6 +50,87 @@
     }
   </style>
 </head>
+  <body>
+<nav class="menu-container">
+  <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+  <div class="menu-items" id="menuItems">
+    <a href="#Livestream">Livestream</a>
+
+    <a href="#chat">Chat</a>
+    <a href="#podcast">Podcast</a>
+    <a href="#app">RadophonicApp</a>
+    <a href="#Aportes">Aportes</a>
+  </div>
+</nav>
+
+<style>
+  .menu-container {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: #000000cc;
+    backdrop-filter: blur(6px);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .menu-toggle {
+    font-size: 24px;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    display: block;
+  }
+
+  .menu-items {
+    display: none;
+    flex-direction: column;
+    background: #000000dd;
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    min-width: 150px;
+    transition: all 0.3s ease;
+  }
+
+  .menu-items a {
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    font-weight: bold;
+    border-bottom: 1px solid #ffffff22;
+    display: block;
+  }
+
+  .menu-items a:hover {
+    background: #ffffff22;
+  }
+
+  /* En pantallas grandes mostrar como barra normal */
+  @media (min-width: 768px) {
+    .menu-toggle {
+      display: none;
+    }
+
+    .menu-items {
+      display: flex !important;
+      position: static;
+      flex-direction: row;
+      background: transparent;
+      min-width: unset;
+    }
+
+    .menu-items a {
+      border: none;
+    }
+  }
+</style>
 <body>
   <div id="cargando">Cargando reproductor...</div>
 
