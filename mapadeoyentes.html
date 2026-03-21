@@ -77,11 +77,11 @@ onValue(ref(db, "conexiones"), (snapshot) => {
 
       const marker = L.marker([lat, lon])
         .addTo(map)
-        ..bindPopup(`
+        .bindPopup(`
 📍 ${city}, ${region}, ${country} <br>
 🖥 ${conn.dispositivo || "Desconocido"} <br>
 🌐 ${conn.pagina || "N/A"}
-`);
+`)
       markers[id] = marker;
 
       if (region) {
