@@ -1,9 +1,23 @@
-import { getDatabase, ref, set, onDisconnect, get, child, runTransaction } 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getDatabase, ref, set, onDisconnect, get, runTransaction } 
 from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-const db = getDatabase();
+// 🔥 CONFIG (igual en todos lados)
+const firebaseConfig = {
+  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
+  databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
+  projectId: "contador-de-personas-5f8aa",
+  storageBucket: "contador-de-personas-5f8aa.appspot.com",
+  messagingSenderId: "1063230344919",
+  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+};
 
-// 🔑 ID único por dispositivo (persistente)
+// 🔥 Inicializar SIEMPRE
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 🔑 ID único
 let conexionId = localStorage.getItem("conexionId");
 
 if (!conexionId) {
@@ -11,60 +25,43 @@ if (!conexionId) {
   localStorage.setItem("conexionId", conexionId);
 }
 
-// Referencia única
 const conexionRef = ref(db, "conexiones/" + conexionId);
 
-// Verificar si ya existe conexión activa
-get(conexionRef).then(snapshot => {
+// 🔥 Obtener IP + ubicación
+fetch("https://ipapi.co/json/")
+.then(res => res.json())
+.then(data => {
 
-  if (!snapshot.exists()) {
+  const ubicacion = {
+    lat: data.latitude,
+    lon: data.longitude,
+    city: data.city,
+    region: data.region,
+    country: data.country_name
+  };
 
-    // Obtener ubicación
-    fetch("https://ipapi.co/json/")
-    .then(res => res.json())
-    .then(data => {
+  // Guardar conexión
+  set(conexionRef, {
+    timestamp: Date.now(),
+    ubicacion,
+    dispositivo: detectarDispositivo(),
+    pagina: window.location.pathname
+  });
 
-      const ubicacion = {
-        lat: data.latitude,
-        lon: data.longitude,
-        city: data.city,
-        region: data.region,
-        country: data.country_name
-      };
+  // 🔥 eliminar al salir
+  onDisconnect(conexionRef).remove();
 
-      // Guardar conexión
-      set(conexionRef, {
-        timestamp: Date.now(),
-        ubicacion: ubicacion,
-        dispositivo: detectarDispositivo(),
-        pagina: window.location.pathname
-      });
+  // 🔥 conteo diario
+  const hoy = new Date().toISOString().split("T")[0];
+  const regionRef = ref(db, `conexiones_diarias/${hoy}/${data.region}`);
 
-      // Eliminar al salir
-      onDisconnect(conexionRef).remove();
-
-      // 🔥 Conteo diario (solo 1 vez)
-      const hoy = new Date().toISOString().split("T")[0];
-      const regionRef = ref(db, `conexiones_diarias/${hoy}/${data.region}`);
-
-      runTransaction(regionRef, (current) => {
-        return (current || 0) + 1;
-      });
-
-    });
-
-  } else {
-    // Solo actualiza timestamp
-    set(conexionRef, {
-      ...snapshot.val(),
-      timestamp: Date.now(),
-      pagina: window.location.pathname
-    });
-  }
+  runTransaction(regionRef, (current) => {
+    return (current || 0) + 1;
+  });
 
 });
 
-// 📱 Detectar tipo de dispositivo
+// 📱 dispositivo
 function detectarDispositivo() {
   if (/mobile/i.test(navigator.userAgent)) return "📱 Móvil";
   return "💻 PC";
