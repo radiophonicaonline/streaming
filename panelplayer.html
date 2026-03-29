@@ -4,14 +4,12 @@
 <meta charset="UTF-8">
 
 <style>
-
 body{
 background:#0b0b0b;
 color:#eee;
 font-family:Segoe UI;
 padding:10px;
 }
-
 button{
 background:#2a2a2a;
 color:white;
@@ -20,25 +18,19 @@ padding:5px 8px;
 margin:2px;
 cursor:pointer;
 }
-
-button:hover{
-background:#444;
-}
-
+button:hover{background:#444;}
 #lista{
 height:260px;
 overflow-y:auto;
 border:1px solid #222;
 margin-top:8px;
 }
-
 .item{
 display:flex;
 justify-content:space-between;
 padding:4px;
 border-bottom:1px solid #1a1a1a;
 }
-
 .item span{
 cursor:pointer;
 max-width:230px;
@@ -46,23 +38,14 @@ overflow:hidden;
 text-overflow:ellipsis;
 white-space:nowrap;
 }
-
-.active{
-background:#184a8b;
-}
-
+.active{background:#184a8b;}
 .fxbtn{
 background:#7a0d0d;
 padding:5px;
 margin:3px;
 cursor:pointer;
 }
-
-#previewVideo{
-width:100%;
-background:black;
-}
-
+#previewVideo{width:100%;background:black;}
 </style>
 </head>
 
@@ -70,37 +53,33 @@ background:black;
 
 <h3>Playlist</h3>
 <h3>NOW PLAYING</h3>
-<div id="nowPlaying" style="color:#6cf;font-size:14px">
-ninguno
-</div>
+<div id="nowPlaying" style="color:#6cf;font-size:14px">ninguno</div>
+
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
-<button onclick="guardarLista()">💾 Guardar Lista</button>
-<button onclick="cargarListaArchivo()">📂 Cargar Lista</button>
 
-<input type="file" id="loadList" accept=".json" hidden>
-<label>
-<input type="checkbox" id="auto" checked>Auto
-</label>
+<label><input type="checkbox" id="auto" checked>Auto</label>
+
+<!-- 🔥 NUEVO -->
+<button onclick="guardarLista()">💾 Guardar</button>
+<button onclick="cargarListaArchivo()">📂 Cargar</button>
 
 <div id="lista"></div>
 
 <h3>Preview</h3>
-
 <video id="previewVideo" controls></video>
-<div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
-sin preview
-</div>
+<div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">sin preview</div>
+
 <button onclick="mandarAlAire()">CUE → AIR</button>
 <button onclick="stopPreview()">STOP</button>
 
 <hr>
+
 <h3>Controles Player</h3>
 
 <button onclick="playerPlay()">▶</button>
 <button onclick="playerPause()">⏸</button>
 <button onclick="playerStop()">⏹</button>
-
 <button onclick="back10()">⏪ 10s</button>
 <button onclick="forward10()">10s ⏩</button>
 
@@ -109,15 +88,15 @@ sin preview
 Volumen
 <input type="range" min="0" max="1" step="0.01" value="1"
 oninput="setVolume(this.value)">
+
 <h3>FX</h3>
-
 <button onclick="cargarFX()">Cargar FX</button>
-
 <div id="fx"></div>
 
 <input type="file" id="files" multiple hidden>
 <input type="file" id="folder" webkitdirectory hidden>
 <input type="file" id="fxfiles" multiple hidden>
+<input type="file" id="loadList" accept=".json" hidden>
 
 <script>
 
@@ -125,7 +104,6 @@ const canal=new BroadcastChannel("obs_player");
 
 let items=[];
 let currentIndex=-1;
-
 let previewItemData=null;
 
 const lista=document.getElementById("lista");
@@ -133,27 +111,23 @@ const previewVideo=document.getElementById("previewVideo");
 const fxdiv=document.getElementById("fx");
 
 /* =====================
-GUARDADO AUTO
+GUARDADO LOCAL
 ===================== */
 
 function guardarLocal(){
-localStorage.setItem("playlist", JSON.stringify(items));
+localStorage.setItem("playlist", JSON.stringify(items.map(it=>({
+type:it.type,
+name:it.name
+}))));
 localStorage.setItem("currentIndex", currentIndex);
 }
 
 function cargarLocal(){
-
-const data = localStorage.getItem("playlist");
-const index = localStorage.getItem("currentIndex");
-
+const data=localStorage.getItem("playlist");
 if(data){
-items = JSON.parse(data);
+items=JSON.parse(data);
 }
-
-if(index){
-currentIndex = parseInt(index);
-}
-
+currentIndex=parseInt(localStorage.getItem("currentIndex"))||-1;
 }
 
 /* =====================
@@ -169,14 +143,12 @@ items.forEach((it,i)=>{
 const div=document.createElement("div");
 div.className="item";
 
-if(i===currentIndex)
-div.classList.add("active");
+if(i===currentIndex) div.classList.add("active");
 
 const span=document.createElement("span");
 span.textContent=it.name;
 
 span.onclick=()=>playItem(i);
-
 span.oncontextmenu=e=>{
 e.preventDefault();
 preview(i);
@@ -184,41 +156,20 @@ preview(i);
 
 const botones=document.createElement("div");
 
-const up=document.createElement("button");
-up.textContent="▲";
-up.onclick=()=>{
-if(i===0) return;
-[items[i],items[i-1]]=[items[i-1],items[i]];
-actualizarLista();
-guardarLocal();
-};
+["▲","▼","⧉","✖"].forEach((t,idx)=>{
+const b=document.createElement("button");
+b.textContent=t;
 
-const down=document.createElement("button");
-down.textContent="▼";
-down.onclick=()=>{
-if(i===items.length-1) return;
-[items[i],items[i+1]]=[items[i+1],items[i]];
-actualizarLista();
-guardarLocal();
-};
+b.onclick=()=>{
+if(idx===0 && i>0)[items[i],items[i-1]]=[items[i-1],items[i]];
+if(idx===1 && i<items.length-1)[items[i],items[i+1]]=[items[i+1],items[i]];
+if(idx===2)items.splice(i+1,0,structuredClone(it));
+if(idx===3)items.splice(i,1);
 
-const copy=document.createElement("button");
-copy.textContent="⧉";
-copy.onclick=()=>{
-items.splice(i+1,0,structuredClone(it));
 actualizarLista();
-guardarLocal();
 };
-
-const del=document.createElement("button");
-del.textContent="✖";
-del.onclick=()=>{
-items.splice(i,1);
-actualizarLista();
-guardarLocal();
-};
-
-botones.append(up,down,copy,del);
+botones.appendChild(b);
+});
 
 div.append(span,botones);
 lista.appendChild(div);
@@ -226,11 +177,10 @@ lista.appendChild(div);
 });
 
 guardarLocal();
-
 }
 
 /* =====================
-PLAY
+PLAY (🔥 FIX CARPETAS)
 ===================== */
 
 function playItem(i){
@@ -238,27 +188,28 @@ function playItem(i){
 currentIndex=i;
 
 const it=items[i];
-
-document.getElementById("nowPlaying").textContent = it.name;
+let file=null;
 
 if(it.type==="file" && it.file){
-
-canal.postMessage({
-type:"playFile",
-file:it.file
-});
-
-}else if(it.url){
-
-canal.postMessage({
-type:"playUrl",
-url:it.url
-});
-
+file=it.file;
+}
+else if(it.type==="folder" && it.files){
+file=it.files[Math.floor(Math.random()*it.files.length)];
+}
+else if(it.url){
+canal.postMessage({type:"playUrl",url:it.url});
+document.getElementById("nowPlaying").textContent=it.name;
+actualizarLista();
+return;
 }
 
-actualizarLista();
+if(!file) return;
 
+document.getElementById("nowPlaying").textContent=file.name;
+
+canal.postMessage({type:"playFile",file});
+
+actualizarLista();
 }
 
 /* =====================
@@ -268,260 +219,109 @@ PREVIEW
 function preview(i){
 
 const it=items[i];
+let file=null;
 
-if(it.file){
+if(it.type==="file") file=it.file;
+else if(it.type==="folder") file=it.files[Math.floor(Math.random()*it.files.length)];
 
-previewVideo.src=URL.createObjectURL(it.file);
+if(!file) return;
 
-previewItemData={
-file:it.file,
-name:it.file.name
-};
+previewVideo.src=URL.createObjectURL(file);
+previewItemData={file,name:file.name};
 
-}
-
-document.getElementById("previewName").textContent=previewItemData.name;
-
+document.getElementById("previewName").textContent=file.name;
 previewVideo.play();
-
 }
 
-/* =====================
-CUE
-===================== */
+/* ===================== */
 
 function mandarAlAire(){
-
-if(!previewItemData) return;
-
-document.getElementById("nowPlaying").textContent =
-previewItemData.name;
-
-canal.postMessage({
-type:"playFile",
-file:previewItemData.file
-});
-
+if(!previewItemData)return;
+canal.postMessage({type:"playFile",file:previewItemData.file});
 }
 
-/* =====================
-AUTOPLAY
-===================== */
+/* ===================== AUTOPLAY ===================== */
 
 canal.onmessage=e=>{
-
 if(e.data.type==="next"){
-
 currentIndex++;
-
-if(currentIndex>=items.length)
-currentIndex=0;
-
+if(currentIndex>=items.length) currentIndex=0;
 playItem(currentIndex);
-
 }
-
 };
 
-/* =====================
-CARGAR VIDEOS
-===================== */
-
-function cargarVideos(){
-files.click();
-}
+/* ===================== CARGAS ===================== */
 
 files.onchange=e=>{
-
-for(const f of e.target.files){
-
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
+[...e.target.files].forEach(f=>{
+items.push({type:"file",name:"🎬 "+f.name,file:f});
 });
-
-}
-
 actualizarLista();
-
 };
-
-/* =====================
-CARPETA
-===================== */
-
-function cargarCarpeta(){
-folder.click();
-}
 
 folder.onchange=e=>{
-
 const files=[...e.target.files];
-
-const name=files[0].webkitRelativePath.split("/")[0];
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:files
-});
-
+items.push({type:"folder",name:"📂 "+files[0].webkitRelativePath.split("/")[0],files});
 actualizarLista();
-
 };
-
-/* =====================
-FX
-===================== */
-
-function cargarFX(){
-fxfiles.click();
-}
 
 fxfiles.onchange=e=>{
-
-for(const f of e.target.files){
-
+[...e.target.files].forEach(f=>{
 const btn=document.createElement("div");
-
 btn.className="fxbtn";
 btn.textContent=f.name;
-
-btn.onclick=()=>{
-canal.postMessage({
-type:"fx",
-file:f
+btn.onclick=()=>canal.postMessage({type:"fx",file:f});
+fxdiv.appendChild(btn);
 });
 };
 
-fxdiv.appendChild(btn);
+/* ===================== GUARDAR JSON ===================== */
 
+function guardarLista(){
+
+const data=items.map(it=>({
+type:it.type,
+name:it.name
+}));
+
+const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="playlist.json";
+a.click();
 }
 
+/* ===================== CARGAR JSON ===================== */
+
+function cargarListaArchivo(){
+loadList.click();
+}
+
+loadList.onchange=e=>{
+const reader=new FileReader();
+reader.onload=ev=>{
+items=JSON.parse(ev.target.result);
+actualizarLista();
+};
+reader.readAsText(e.target.files[0]);
 };
 
-/* =====================
-CONTROLES
-===================== */
+/* ===================== CONTROLES ===================== */
 
 function playerPlay(){canal.postMessage({type:"play"});}
 function playerPause(){canal.postMessage({type:"pause"});}
 function playerStop(){canal.postMessage({type:"stop"});}
 function forward10(){canal.postMessage({type:"forward"});}
 function back10(){canal.postMessage({type:"back"});}
+function setVolume(v){canal.postMessage({type:"volume",value:parseFloat(v)});}
 
-function setVolume(v){
-canal.postMessage({
-type:"volume",
-value:parseFloat(v)
-});
-}
+/* ===================== INIT ===================== */
 
-/* =====================
-GUARDAR / CARGAR ARCHIVO
-===================== */
-
-function guardarLista(){
-
-const data = items.map(it => ({
-type: it.type,
-name: it.name
-}));
-
-const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
-
-const a = document.createElement("a");
-a.href = URL.createObjectURL(blob);
-a.download = "playlist.json";
-a.click();
-
-}
-
-function cargarListaArchivo(){
-loadList.click();
-}
-
-loadList.onchange = e => {
-
-const file = e.target.files[0];
-const reader = new FileReader();
-
-reader.onload = ev => {
-
-const data = JSON.parse(ev.target.result);
-
-items = [];
-
-data.forEach(it => {
-items.push({
-type: it.type,
-name: it.name
-});
-});
-
-actualizarLista();
-
-};
-
-reader.readAsText(file);
-
-};
-
-/* =====================
-ATAJOS TECLADO
-===================== */
-
-document.addEventListener("keydown",e=>{
-
-if(e.target.tagName==="INPUT") return;
-
-switch(e.key){
-
-case " ":
-playerPlay();
-break;
-
-case "p":
-playerPause();
-break;
-
-case "s":
-playerStop();
-break;
-
-case "ArrowRight":
-forward10();
-break;
-
-case "ArrowLeft":
-back10();
-break;
-
-case "n":
-canal.postMessage({type:"next"});
-break;
-
-}
-
-});
-
-/* =====================
-INICIO
-===================== */
-
-window.onload = () => {
+window.onload=()=>{
 cargarLocal();
 actualizarLista();
 };
 
 </script>
-
 </body>
 </html>
-
-
-
-
-
-
