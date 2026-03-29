@@ -75,7 +75,10 @@ ninguno
 </div>
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
+<button onclick="guardarLista()">💾 Guardar Lista</button>
+<button onclick="cargarListaArchivo()">📂 Cargar Lista</button>
 
+<input type="file" id="loadList" accept=".json" hidden>
 <label>
 <input type="checkbox" id="auto" checked>Auto
 </label>
@@ -126,10 +129,32 @@ let currentIndex=-1;
 let previewItemData=null;
 
 const lista=document.getElementById("lista");
-
 const previewVideo=document.getElementById("previewVideo");
-
 const fxdiv=document.getElementById("fx");
+
+/* =====================
+GUARDADO AUTO
+===================== */
+
+function guardarLocal(){
+localStorage.setItem("playlist", JSON.stringify(items));
+localStorage.setItem("currentIndex", currentIndex);
+}
+
+function cargarLocal(){
+
+const data = localStorage.getItem("playlist");
+const index = localStorage.getItem("currentIndex");
+
+if(data){
+items = JSON.parse(data);
+}
+
+if(index){
+currentIndex = parseInt(index);
+}
+
+}
 
 /* =====================
 LISTA
@@ -165,6 +190,7 @@ up.onclick=()=>{
 if(i===0) return;
 [items[i],items[i-1]]=[items[i-1],items[i]];
 actualizarLista();
+guardarLocal();
 };
 
 const down=document.createElement("button");
@@ -173,6 +199,7 @@ down.onclick=()=>{
 if(i===items.length-1) return;
 [items[i],items[i+1]]=[items[i+1],items[i]];
 actualizarLista();
+guardarLocal();
 };
 
 const copy=document.createElement("button");
@@ -180,6 +207,7 @@ copy.textContent="⧉";
 copy.onclick=()=>{
 items.splice(i+1,0,structuredClone(it));
 actualizarLista();
+guardarLocal();
 };
 
 const del=document.createElement("button");
@@ -187,15 +215,17 @@ del.textContent="✖";
 del.onclick=()=>{
 items.splice(i,1);
 actualizarLista();
+guardarLocal();
 };
 
 botones.append(up,down,copy,del);
 
 div.append(span,botones);
-
 lista.appendChild(div);
 
 });
+
+guardarLocal();
 
 }
 
@@ -209,28 +239,20 @@ currentIndex=i;
 
 const it=items[i];
 
-/* MOSTRAR NOMBRE EN PANEL */
-
 document.getElementById("nowPlaying").textContent = it.name;
 
-if(it.type==="file"){
+if(it.type==="file" && it.file){
 
 canal.postMessage({
 type:"playFile",
 file:it.file
 });
 
-}else{
-
-const r=Math.floor(Math.random()*it.files.length);
-
-const f=it.files[r];
-
-document.getElementById("nowPlaying").textContent = f.name;
+}else if(it.url){
 
 canal.postMessage({
-type:"playFile",
-file:f
+type:"playUrl",
+url:it.url
 });
 
 }
@@ -247,28 +269,13 @@ function preview(i){
 
 const it=items[i];
 
-if(it.type==="file"){
+if(it.file){
 
 previewVideo.src=URL.createObjectURL(it.file);
 
 previewItemData={
-type:"file",
 file:it.file,
 name:it.file.name
-};
-
-}else{
-
-const r=Math.floor(Math.random()*it.files.length);
-
-const f=it.files[r];
-
-previewVideo.src=URL.createObjectURL(f);
-
-previewItemData={
-type:"file",
-file:f,
-name:f.name
 };
 
 }
@@ -294,17 +301,6 @@ canal.postMessage({
 type:"playFile",
 file:previewItemData.file
 });
-
-}
-
-/* =====================
-STOP PREVIEW
-===================== */
-
-function stopPreview(){
-
-previewVideo.pause();
-previewVideo.src="";
 
 }
 
@@ -393,12 +389,10 @@ btn.className="fxbtn";
 btn.textContent=f.name;
 
 btn.onclick=()=>{
-
 canal.postMessage({
 type:"fx",
 file:f
 });
-
 };
 
 fxdiv.appendChild(btn);
@@ -406,25 +400,16 @@ fxdiv.appendChild(btn);
 }
 
 };
-function playerPlay(){
-canal.postMessage({type:"play"});
-}
 
-function playerPause(){
-canal.postMessage({type:"pause"});
-}
+/* =====================
+CONTROLES
+===================== */
 
-function playerStop(){
-canal.postMessage({type:"stop"});
-}
-
-function forward10(){
-canal.postMessage({type:"forward"});
-}
-
-function back10(){
-canal.postMessage({type:"back"});
-}
+function playerPlay(){canal.postMessage({type:"play"});}
+function playerPause(){canal.postMessage({type:"pause"});}
+function playerStop(){canal.postMessage({type:"stop"});}
+function forward10(){canal.postMessage({type:"forward"});}
+function back10(){canal.postMessage({type:"back"});}
 
 function setVolume(v){
 canal.postMessage({
@@ -432,7 +417,62 @@ type:"volume",
 value:parseFloat(v)
 });
 }
-  document.addEventListener("keydown",e=>{
+
+/* =====================
+GUARDAR / CARGAR ARCHIVO
+===================== */
+
+function guardarLista(){
+
+const data = items.map(it => ({
+type: it.type,
+name: it.name
+}));
+
+const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+
+const a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "playlist.json";
+a.click();
+
+}
+
+function cargarListaArchivo(){
+loadList.click();
+}
+
+loadList.onchange = e => {
+
+const file = e.target.files[0];
+const reader = new FileReader();
+
+reader.onload = ev => {
+
+const data = JSON.parse(ev.target.result);
+
+items = [];
+
+data.forEach(it => {
+items.push({
+type: it.type,
+name: it.name
+});
+});
+
+actualizarLista();
+
+};
+
+reader.readAsText(file);
+
+};
+
+/* =====================
+ATAJOS TECLADO
+===================== */
+
+document.addEventListener("keydown",e=>{
 
 if(e.target.tagName==="INPUT") return;
 
@@ -465,6 +505,16 @@ break;
 }
 
 });
+
+/* =====================
+INICIO
+===================== */
+
+window.onload = () => {
+cargarLocal();
+actualizarLista();
+};
+
 </script>
 
 </body>
