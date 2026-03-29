@@ -17,22 +17,6 @@ height:100%;
 object-fit:cover;
 background:black;
 }
-
-/* 🔥 NOW PLAYING OVERLAY */
-
-#nowPlaying{
-position:absolute;
-bottom:20px;
-left:20px;
-background:rgba(0,0,0,0.6);
-color:#6cf;
-padding:8px 12px;
-font-family:Segoe UI;
-font-size:16px;
-border-radius:6px;
-opacity:0;
-transition:0.5s;
-}
 </style>
 </head>
 
@@ -41,80 +25,23 @@ transition:0.5s;
 <video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
 
-<div id="nowPlaying"></div>
-
 <script>
 
 const canal = new BroadcastChannel("obs_player");
 
 const main = document.getElementById("main");
 const fx = document.getElementById("fx");
-const nowPlaying = document.getElementById("nowPlaying");
 
 let autoplay = true;
-let lastURL = null;
 
 /* =====================
-   LIMPIAR MEMORIA
-===================== */
-
-function limpiarVideo(){
-
-if(lastURL){
-URL.revokeObjectURL(lastURL);
-lastURL = null;
-}
-
-}
-
-/* =====================
-   NOW PLAYING
-===================== */
-
-function mostrarNowPlaying(text){
-
-nowPlaying.textContent = text;
-
-nowPlaying.style.opacity = 1;
-
-setTimeout(()=>{
-nowPlaying.style.opacity = 0;
-},4000);
-
-}
-
-/* =====================
-   PLAY FILE
+   PLAY VIDEO
 ===================== */
 
 function playFile(file){
 
-limpiarVideo();
-
-const url = URL.createObjectURL(file);
-lastURL = url;
-
-main.src = url;
+main.src = URL.createObjectURL(file);
 main.play();
-
-mostrarNowPlaying(file.name);
-
-}
-
-/* =====================
-   PLAY URL (🔥 NUEVO)
-===================== */
-
-function playUrl(url){
-
-limpiarVideo();
-
-main.src = url;
-main.play();
-
-const name = url.split("/").pop();
-
-mostrarNowPlaying(name);
 
 }
 
@@ -124,9 +51,7 @@ mostrarNowPlaying(name);
 
 function playFX(file){
 
-const url = URL.createObjectURL(file);
-
-fx.src = url;
+fx.src = URL.createObjectURL(file);
 
 fx.style.display="block";
 
@@ -134,7 +59,6 @@ fx.volume = main.volume;
 
 fx.onended=()=>{
 fx.style.display="none";
-URL.revokeObjectURL(url);
 };
 
 fx.play();
@@ -163,8 +87,10 @@ function play(){ main.play(); }
 function pause(){ main.pause(); }
 
 function stop(){
+
 main.pause();
 main.currentTime=0;
+
 }
 
 /* =====================
@@ -179,10 +105,6 @@ switch(d.type){
 
 case "playFile":
 playFile(d.file);
-break;
-
-case "playUrl":
-playUrl(d.url);
 break;
 
 case "fx":
