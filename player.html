@@ -30,13 +30,13 @@ background:black;
 const canal = new BroadcastChannel("obs_player");
 
 const main = document.getElementById("main");
-const fx = document.getElementById("fx"); // ahora será B
+const fx = document.getElementById("fx");
 
-let active = "main"; // cuál está al aire
+let active = "main";
 let autoplay = true;
 
 /* =====================
-PLAY CON CROSSFADE
+CROSSFADER
 ===================== */
 
 function crossfadeTo(file){
@@ -76,7 +76,7 @@ active = (active === "main") ? "fx" : "main";
 }
 
 /* =====================
-PLAY NORMAL (PRIMER VIDEO)
+PLAY
 ===================== */
 
 function playFile(file){
@@ -94,7 +94,51 @@ crossfadeTo(file);
 }
 
 /* =====================
-CUANDO TERMINA
+FX (ARREGLADO)
+===================== */
+
+function playFX(file){
+
+const fxPlayer = document.createElement("video");
+
+fxPlayer.src = URL.createObjectURL(file);
+fxPlayer.style.position="absolute";
+fxPlayer.style.width="100%";
+fxPlayer.style.height="100%";
+fxPlayer.style.objectFit="cover";
+
+fxPlayer.volume = (active==="main"?main.volume:fx.volume);
+
+document.body.appendChild(fxPlayer);
+
+fxPlayer.onended=()=>{
+fxPlayer.remove();
+};
+
+fxPlayer.play();
+
+}
+
+/* =====================
+TIME UPDATE
+===================== */
+
+setInterval(()=>{
+
+let activeVideo = active === "main" ? main : fx;
+
+if(!activeVideo || !activeVideo.duration) return;
+
+canal.postMessage({
+type:"timeUpdate",
+current: activeVideo.currentTime,
+duration: activeVideo.duration
+});
+
+},500);
+
+/* =====================
+END
 ===================== */
 
 main.onended = fx.onended = ()=>{
@@ -118,7 +162,7 @@ main.src=""; fx.src="";
 }
 
 /* =====================
-MENSAJES PANEL
+MENSAJES
 ===================== */
 
 canal.onmessage=e=>{
@@ -129,6 +173,10 @@ switch(d.type){
 
 case "playFile":
 playFile(d.file);
+break;
+
+case "fx":
+playFX(d.file);
 break;
 
 case "play":
@@ -153,12 +201,23 @@ autoplay=d.value;
 break;
 
 case "forward":
-main.currentTime += 10;
+(main.currentTime += 10);
 break;
 
 case "back":
-main.currentTime -= 10;
+(main.currentTime -= 10);
 break;
+
+case "seek":
+
+let activeVideo = active === "main" ? main : fx;
+
+if(activeVideo.duration){
+activeVideo.currentTime = (d.value/100) * activeVideo.duration;
+}
+
+break;
+
 }
 
 };
