@@ -69,10 +69,10 @@ background:black;
 <body>
 
 <h3>Playlist</h3>
+
 <h3>NOW PLAYING</h3>
-<div id="nowPlaying" style="color:#6cf;font-size:14px">
-ninguno
-</div>
+<div id="nowPlaying" style="color:#6cf">ninguno</div>
+
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
 
@@ -85,31 +85,47 @@ ninguno
 <h3>Preview</h3>
 
 <video id="previewVideo" controls></video>
-<div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
-sin preview
-</div>
+<div id="previewName">sin preview</div>
+
 <button onclick="mandarAlAire()">CUE → AIR</button>
 <button onclick="stopPreview()">STOP</button>
 
 <hr>
-<h3>Controles Player</h3>
+
+<h3>Controles</h3>
 
 <button onclick="playerPlay()">▶</button>
 <button onclick="playerPause()">⏸</button>
 <button onclick="playerStop()">⏹</button>
 
-<button onclick="back10()">⏪ 10s</button>
-<button onclick="forward10()">10s ⏩</button>
+<button onclick="back10()">⏪</button>
+<button onclick="forward10()">⏩</button>
+
+<br><br>
+
+<h3>Tiempo</h3>
+
+<span id="currentTime">0:00</span>
+
+<input type="range" id="progress" min="0" max="100" value="0"
+oninput="seekVideo(this.value)">
+
+<span id="duration">0:00</span>
+
+<br>
+
+<button onclick="prevVideo()">⏮</button>
+<button onclick="nextVideo()">⏭</button>
 
 <br><br>
 
 Volumen
 <input type="range" min="0" max="1" step="0.01" value="1"
 oninput="setVolume(this.value)">
+
 <h3>FX</h3>
 
 <button onclick="cargarFX()">Cargar FX</button>
-
 <div id="fx"></div>
 
 <input type="file" id="files" multiple hidden>
@@ -122,166 +138,82 @@ const canal=new BroadcastChannel("obs_player");
 
 let items=[];
 let currentIndex=-1;
-
 let previewItemData=null;
 
 const lista=document.getElementById("lista");
-
 const previewVideo=document.getElementById("previewVideo");
-
 const fxdiv=document.getElementById("fx");
 
-/* =====================
-LISTA
-===================== */
+/* ===================== */
 
-function actualizarLista(){
+function formatTime(t){
+const m=Math.floor(t/60);
+const s=Math.floor(t%60);
+return m+":"+(s<10?"0"+s:s);
+}
 
-lista.innerHTML="";
+/* ===================== */
 
-items.forEach((it,i)=>{
+canal.onmessage=e=>{
 
-const div=document.createElement("div");
-div.className="item";
+if(e.data.type==="next"){
+currentIndex++;
+if(currentIndex>=items.length) currentIndex=0;
+playItem(currentIndex);
+}
 
-if(i===currentIndex)
-div.classList.add("active");
+if(e.data.type==="timeUpdate"){
 
-const span=document.createElement("span");
-span.textContent=it.name;
+document.getElementById("currentTime").textContent = formatTime(e.data.current);
+document.getElementById("duration").textContent = formatTime(e.data.duration);
 
-span.onclick=()=>playItem(i);
-
-span.oncontextmenu=e=>{
-e.preventDefault();
-preview(i);
-};
-
-const botones=document.createElement("div");
-
-const up=document.createElement("button");
-up.textContent="▲";
-up.onclick=()=>{
-if(i===0) return;
-[items[i],items[i-1]]=[items[i-1],items[i]];
-actualizarLista();
-};
-
-const down=document.createElement("button");
-down.textContent="▼";
-down.onclick=()=>{
-if(i===items.length-1) return;
-[items[i],items[i+1]]=[items[i+1],items[i]];
-actualizarLista();
-};
-
-const copy=document.createElement("button");
-copy.textContent="⧉";
-copy.onclick=()=>{
-items.splice(i+1,0,structuredClone(it));
-actualizarLista();
-};
-
-const del=document.createElement("button");
-del.textContent="✖";
-del.onclick=()=>{
-items.splice(i,1);
-actualizarLista();
-};
-
-botones.append(up,down,copy,del);
-
-div.append(span,botones);
-
-lista.appendChild(div);
-
-});
+document.getElementById("progress").value =
+(e.data.current / e.data.duration) * 100;
 
 }
 
-/* =====================
-PLAY
-===================== */
+};
+
+/* ===================== */
 
 function playItem(i){
 
 currentIndex=i;
-
 const it=items[i];
-
-/* MOSTRAR NOMBRE EN PANEL */
 
 document.getElementById("nowPlaying").textContent = it.name;
 
-if(it.type==="file"){
-
 canal.postMessage({
 type:"playFile",
-file:it.file
-});
-
-}else{
-
-const r=Math.floor(Math.random()*it.files.length);
-
-const f=it.files[r];
-
-document.getElementById("nowPlaying").textContent = f.name;
-
-canal.postMessage({
-type:"playFile",
-file:f
+file: it.type==="file" ? it.file :
+it.files[Math.floor(Math.random()*it.files.length)]
 });
 
 }
 
-actualizarLista();
-
-}
-
-/* =====================
-PREVIEW
-===================== */
+/* ===================== */
 
 function preview(i){
 
 const it=items[i];
 
-if(it.type==="file"){
+const file = it.type==="file" ? it.file :
+it.files[Math.floor(Math.random()*it.files.length)];
 
-previewVideo.src=URL.createObjectURL(it.file);
-
-previewItemData={
-type:"file",
-file:it.file,
-name:it.file.name
-};
-
-}else{
-
-const r=Math.floor(Math.random()*it.files.length);
-
-const f=it.files[r];
-
-previewVideo.src=URL.createObjectURL(f);
+previewVideo.src=URL.createObjectURL(file);
 
 previewItemData={
-type:"file",
-file:f,
-name:f.name
+file:file,
+name:file.name
 };
 
-}
-
-document.getElementById("previewName").textContent=previewItemData.name;
+document.getElementById("previewName").textContent=file.name;
 
 previewVideo.play();
 
 }
 
-/* =====================
-CUE
-===================== */
+/* ===================== */
 
 function mandarAlAire(){
 
@@ -295,184 +227,67 @@ type:"playFile",
 file:previewItemData.file
 });
 
-previewVideo.pause();
-
 }
 
-/* =====================
-STOP PREVIEW
-===================== */
+/* ===================== */
 
-function stopPreview(){
-
-previewVideo.pause();
-previewVideo.src="";
-
-}
-
-/* =====================
-AUTOPLAY
-===================== */
-
-canal.onmessage=e=>{
-
-if(e.data.type==="next"){
-
-currentIndex++;
-
-if(currentIndex>=items.length)
-currentIndex=0;
-
-playItem(currentIndex);
-
-}
-
-};
-
-/* =====================
-CARGAR VIDEOS
-===================== */
-
-function cargarVideos(){
-files.click();
-}
-
+function cargarVideos(){ files.click(); }
 files.onchange=e=>{
-
 for(const f of e.target.files){
-
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
-});
-
+items.push({type:"file",name:f.name,file:f});
 }
-
-actualizarLista();
-
 };
 
-/* =====================
-CARPETA
-===================== */
-
-function cargarCarpeta(){
-folder.click();
-}
-
+function cargarCarpeta(){ folder.click(); }
 folder.onchange=e=>{
-
 const files=[...e.target.files];
-
-const name=files[0].webkitRelativePath.split("/")[0];
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:files
-});
-
-actualizarLista();
-
+items.push({type:"folder",name:"carpeta",files:files});
 };
 
-/* =====================
-FX
-===================== */
+/* ===================== */
 
-function cargarFX(){
-fxfiles.click();
-}
+function cargarFX(){ fxfiles.click(); }
 
 fxfiles.onchange=e=>{
-
 for(const f of e.target.files){
 
 const btn=document.createElement("div");
-
 btn.className="fxbtn";
 btn.textContent=f.name;
 
 btn.onclick=()=>{
-
 canal.postMessage({
 type:"fx",
 file:f
 });
-
 };
 
 fxdiv.appendChild(btn);
 
 }
-
 };
-function playerPlay(){
-canal.postMessage({type:"play"});
-}
 
-function playerPause(){
-canal.postMessage({type:"pause"});
-}
+/* ===================== */
 
-function playerStop(){
-canal.postMessage({type:"stop"});
-}
+function playerPlay(){ canal.postMessage({type:"play"}); }
+function playerPause(){ canal.postMessage({type:"pause"}); }
+function playerStop(){ canal.postMessage({type:"stop"}); }
 
-function forward10(){
-canal.postMessage({type:"forward"});
-}
+function forward10(){ canal.postMessage({type:"forward"}); }
+function back10(){ canal.postMessage({type:"back"}); }
 
-function back10(){
-canal.postMessage({type:"back"});
+function nextVideo(){ canal.postMessage({type:"next"}); }
+function prevVideo(){ canal.postMessage({type:"prev"}); }
+
+function seekVideo(v){
+canal.postMessage({type:"seek",value:v});
 }
 
 function setVolume(v){
-canal.postMessage({
-type:"volume",
-value:parseFloat(v)
-});
-}
-  document.addEventListener("keydown",e=>{
-
-if(e.target.tagName==="INPUT") return;
-
-switch(e.key){
-
-case " ":
-playerPlay();
-break;
-
-case "p":
-playerPause();
-break;
-
-case "s":
-playerStop();
-break;
-
-case "ArrowRight":
-forward10();
-break;
-
-case "ArrowLeft":
-back10();
-break;
-
-case "n":
-canal.postMessage({type:"next"});
-break;
-
+canal.postMessage({type:"volume",value:parseFloat(v)});
 }
 
-});
 </script>
 
 </body>
 </html>
-
-
-
-
-
