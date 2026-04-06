@@ -144,7 +144,9 @@ const lista=document.getElementById("lista");
 const previewVideo=document.getElementById("previewVideo");
 const fxdiv=document.getElementById("fx");
 
-/* ===================== */
+/* =====================
+FORMATO TIEMPO
+===================== */
 
 function formatTime(t){
 const m=Math.floor(t/60);
@@ -152,135 +154,10 @@ const s=Math.floor(t%60);
 return m+":"+(s<10?"0"+s:s);
 }
 
-/* ===================== */
+/* =====================
+ACTUALIZAR LISTA (FIX CLAVE)
+===================== */
 
-canal.onmessage=e=>{
-
-if(e.data.type==="next"){
-currentIndex++;
-if(currentIndex>=items.length) currentIndex=0;
-playItem(currentIndex);
-}
-
-if(e.data.type==="timeUpdate"){
-
-document.getElementById("currentTime").textContent = formatTime(e.data.current);
-document.getElementById("duration").textContent = formatTime(e.data.duration);
-
-document.getElementById("progress").value =
-(e.data.current / e.data.duration) * 100;
-
-}
-
-};
-
-/* ===================== */
-
-function playItem(i){
-
-currentIndex=i;
-const it=items[i];
-
-document.getElementById("nowPlaying").textContent = it.name;
-
-canal.postMessage({
-type:"playFile",
-file: it.type==="file" ? it.file :
-it.files[Math.floor(Math.random()*it.files.length)]
-});
-
-}
-
-/* ===================== */
-
-function preview(i){
-
-const it=items[i];
-
-const file = it.type==="file" ? it.file :
-it.files[Math.floor(Math.random()*it.files.length)];
-
-previewVideo.src=URL.createObjectURL(file);
-
-previewItemData={
-file:file,
-name:file.name
-};
-
-document.getElementById("previewName").textContent=file.name;
-
-previewVideo.play();
-
-}
-
-/* ===================== */
-
-function mandarAlAire(){
-
-if(!previewItemData) return;
-
-document.getElementById("nowPlaying").textContent =
-previewItemData.name;
-
-canal.postMessage({
-type:"playFile",
-file:previewItemData.file
-});
-
-}
-
-/* ===================== */
-
-files.onchange=e=>{
-for(const f of e.target.files){
-
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
-});
-
-}
-
-actualizarLista(); // 🔥 ESTA ES LA CLAVE
-};
-
-folder.onchange=e=>{
-
-const files=[...e.target.files];
-
-const name=files[0].webkitRelativePath.split("/")[0];
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:files
-});
-
-actualizarLista(); // 🔥 CLAVE
-};
-/* ===================== */
-
-function cargarFX(){ fxfiles.click(); }
-
-fxfiles.onchange=e=>{
-for(const f of e.target.files){
-
-const btn=document.createElement("div");
-btn.className="fxbtn";
-btn.textContent=f.name;
-
-btn.onclick=()=>{
-canal.postMessage({
-type:"fx",
-file:f
-});
-};
-
-fxdiv.appendChild(btn);
-
-}
-};
 function actualizarLista(){
 
 lista.innerHTML="";
@@ -289,6 +166,9 @@ items.forEach((it,i)=>{
 
 const div=document.createElement("div");
 div.className="item";
+
+if(i===currentIndex)
+div.classList.add("active");
 
 const span=document.createElement("span");
 span.textContent=it.name;
@@ -306,7 +186,205 @@ lista.appendChild(div);
 });
 
 }
-/* ===================== */
+
+/* =====================
+MENSAJES PLAYER
+===================== */
+
+canal.onmessage=e=>{
+
+if(e.data.type==="next"){
+currentIndex++;
+if(currentIndex>=items.length) currentIndex=0;
+playItem(currentIndex);
+}
+
+if(e.data.type==="prev"){
+currentIndex--;
+if(currentIndex<0) currentIndex=items.length-1;
+playItem(currentIndex);
+}
+
+if(e.data.type==="timeUpdate"){
+
+document.getElementById("currentTime").textContent =
+formatTime(e.data.current);
+
+document.getElementById("duration").textContent =
+formatTime(e.data.duration);
+
+document.getElementById("progress").value =
+(e.data.current / e.data.duration) * 100;
+
+}
+
+};
+
+/* =====================
+PLAY
+===================== */
+
+function playItem(i){
+
+currentIndex=i;
+const it=items[i];
+
+let file;
+
+if(it.type==="file"){
+file=it.file;
+}else{
+file=it.files[Math.floor(Math.random()*it.files.length)];
+}
+
+document.getElementById("nowPlaying").textContent = file.name;
+
+canal.postMessage({
+type:"playFile",
+file:file
+});
+
+actualizarLista();
+
+}
+
+/* =====================
+PREVIEW
+===================== */
+
+function preview(i){
+
+const it=items[i];
+
+let file;
+
+if(it.type==="file"){
+file=it.file;
+}else{
+file=it.files[Math.floor(Math.random()*it.files.length)];
+}
+
+previewVideo.src=URL.createObjectURL(file);
+
+previewItemData={
+file:file,
+name:file.name
+};
+
+document.getElementById("previewName").textContent=file.name;
+
+previewVideo.play();
+
+}
+
+/* =====================
+CUE
+===================== */
+
+function mandarAlAire(){
+
+if(!previewItemData) return;
+
+document.getElementById("nowPlaying").textContent =
+previewItemData.name;
+
+canal.postMessage({
+type:"playFile",
+file:previewItemData.file
+});
+
+}
+
+/* =====================
+STOP PREVIEW
+===================== */
+
+function stopPreview(){
+previewVideo.pause();
+previewVideo.src="";
+}
+
+/* =====================
+CARGAR VIDEOS (FIX)
+===================== */
+
+function cargarVideos(){
+files.click();
+}
+
+files.onchange=e=>{
+
+for(const f of e.target.files){
+
+items.push({
+type:"file",
+name:"🎬 "+f.name,
+file:f
+});
+
+}
+
+actualizarLista();
+
+};
+
+/* =====================
+CARGAR CARPETA (FIX)
+===================== */
+
+function cargarCarpeta(){
+folder.click();
+}
+
+folder.onchange=e=>{
+
+const files=[...e.target.files];
+
+const name=files[0].webkitRelativePath.split("/")[0];
+
+items.push({
+type:"folder",
+name:"📂 "+name,
+files:files
+});
+
+actualizarLista();
+
+};
+
+/* =====================
+FX
+===================== */
+
+function cargarFX(){
+fxfiles.click();
+}
+
+fxfiles.onchange=e=>{
+
+for(const f of e.target.files){
+
+const btn=document.createElement("div");
+
+btn.className="fxbtn";
+btn.textContent=f.name;
+
+btn.onclick=()=>{
+canal.postMessage({
+type:"fx",
+file:f
+});
+};
+
+fxdiv.appendChild(btn);
+
+}
+
+};
+
+/* =====================
+CONTROLES
+===================== */
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
 function playerPause(){ canal.postMessage({type:"pause"}); }
@@ -323,7 +401,10 @@ canal.postMessage({type:"seek",value:v});
 }
 
 function setVolume(v){
-canal.postMessage({type:"volume",value:parseFloat(v)});
+canal.postMessage({
+type:"volume",
+value:parseFloat(v)
+});
 }
 
 </script>
