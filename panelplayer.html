@@ -231,19 +231,34 @@ file:previewItemData.file
 
 /* ===================== */
 
-function cargarVideos(){ files.click(); }
 files.onchange=e=>{
 for(const f of e.target.files){
-items.push({type:"file",name:f.name,file:f});
+
+items.push({
+type:"file",
+name:"🎬 "+f.name,
+file:f
+});
+
 }
+
+actualizarLista(); // 🔥 ESTA ES LA CLAVE
 };
 
-function cargarCarpeta(){ folder.click(); }
 folder.onchange=e=>{
-const files=[...e.target.files];
-items.push({type:"folder",name:"carpeta",files:files});
-};
 
+const files=[...e.target.files];
+
+const name=files[0].webkitRelativePath.split("/")[0];
+
+items.push({
+type:"folder",
+name:"📂 "+name,
+files:files
+});
+
+actualizarLista(); // 🔥 CLAVE
+};
 /* ===================== */
 
 function cargarFX(){ fxfiles.click(); }
@@ -266,7 +281,31 @@ fxdiv.appendChild(btn);
 
 }
 };
+function actualizarLista(){
 
+lista.innerHTML="";
+
+items.forEach((it,i)=>{
+
+const div=document.createElement("div");
+div.className="item";
+
+const span=document.createElement("span");
+span.textContent=it.name;
+
+span.onclick=()=>playItem(i);
+
+span.oncontextmenu=e=>{
+e.preventDefault();
+preview(i);
+};
+
+div.appendChild(span);
+lista.appendChild(div);
+
+});
+
+}
 /* ===================== */
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
