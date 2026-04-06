@@ -32,112 +32,70 @@ const canal = new BroadcastChannel("obs_player");
 const main = document.getElementById("main");
 const fx = document.getElementById("fx");
 
-let active = "main";
 let autoplay = true;
 
-/* ===================== */
-
-function getActiveVideo(){
-return active === "main" ? main : fx;
-}
-
-/* ===================== */
-
-function crossfadeTo(file){
-
-let current = getActiveVideo();
-let next = active === "main" ? fx : main;
-
-next.src = URL.createObjectURL(file);
-next.style.display="block";
-next.volume = 0;
-next.play();
-
-let fade = 0;
-
-const interval = setInterval(()=>{
-
-fade += 0.05;
-
-next.volume = fade;
-current.volume = 1 - fade;
-
-if(fade >= 1){
-
-clearInterval(interval);
-
-current.pause();
-current.src="";
-current.style.display="none";
-
-active = (active === "main") ? "fx" : "main";
-
-}
-
-},50);
-
-}
-
-/* ===================== */
+/* =====================
+   PLAY VIDEO
+===================== */
 
 function playFile(file){
 
-if(!main.src && !fx.src){
 main.src = URL.createObjectURL(file);
 main.play();
-active="main";
-return;
-}
-
-crossfadeTo(file);
 
 }
 
-/* ===================== FX */
+/* =====================
+   FX
+===================== */
 
 function playFX(file){
 
-const v=document.createElement("video");
+fx.src = URL.createObjectURL(file);
 
-v.src = URL.createObjectURL(file);
-v.style.position="absolute";
-v.style.width="100%";
-v.style.height="100%";
-v.style.objectFit="cover";
+fx.style.display="block";
 
-v.volume = getActiveVideo().volume;
+fx.volume = main.volume;
 
-document.body.appendChild(v);
+fx.onended=()=>{
+fx.style.display="none";
+};
 
-v.onended=()=>v.remove();
-
-v.play();
+fx.play();
 
 }
 
-/* ===================== TIME */
+/* =====================
+   CUANDO TERMINA
+===================== */
 
-setInterval(()=>{
+main.onended=()=>{
 
-let v = getActiveVideo();
-
-if(!v.duration) return;
+if(!autoplay) return;
 
 canal.postMessage({
-type:"timeUpdate",
-current:v.currentTime,
-duration:v.duration
+type:"next"
 });
 
-},500);
-
-/* ===================== END */
-
-main.onended = fx.onended = ()=>{
-if(autoplay) canal.postMessage({type:"next"});
 };
 
-/* ===================== */
+/* =====================
+   CONTROLES
+===================== */
+
+function play(){ main.play(); }
+function pause(){ main.pause(); }
+
+function stop(){
+
+main.pause();
+main.currentTime=0;
+
+}
+
+/* =====================
+   MENSAJES PANEL
+===================== */
 
 canal.onmessage=e=>{
 
@@ -145,15 +103,24 @@ const d=e.data;
 
 switch(d.type){
 
-case "playFile": playFile(d.file); break;
-case "fx": playFX(d.file); break;
+case "playFile":
+playFile(d.file);
+break;
 
-case "play": main.play(); fx.play(); break;
-case "pause": main.pause(); fx.pause(); break;
+case "fx":
+playFX(d.file);
+break;
+
+case "play":
+play();
+break;
+
+case "pause":
+pause();
+break;
 
 case "stop":
-main.pause(); fx.pause();
-main.src=""; fx.src="";
+stop();
 break;
 
 case "volume":
@@ -161,16 +128,17 @@ main.volume=d.value;
 fx.volume=d.value;
 break;
 
-case "forward": getActiveVideo().currentTime+=10; break;
-case "back": getActiveVideo().currentTime-=10; break;
-
-case "seek":
-let v=getActiveVideo();
-if(v.duration){
-v.currentTime=(d.value/100)*v.duration;
-}
+case "setAutoplay":
+autoplay=d.value;
 break;
 
+case "forward":
+main.currentTime += 10;
+break;
+
+case "back":
+main.currentTime -= 10;
+break;
 }
 
 };
