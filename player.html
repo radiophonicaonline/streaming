@@ -30,71 +30,95 @@ background:black;
 const canal = new BroadcastChannel("obs_player");
 
 const main = document.getElementById("main");
-const fx = document.getElementById("fx");
+const fx = document.getElementById("fx"); // ahora será B
 
+let active = "main"; // cuál está al aire
 let autoplay = true;
 
 /* =====================
-   PLAY VIDEO
+PLAY CON CROSSFADE
+===================== */
+
+function crossfadeTo(file){
+
+let current = active === "main" ? main : fx;
+let next = active === "main" ? fx : main;
+
+next.src = URL.createObjectURL(file);
+next.style.display="block";
+
+next.volume = 0;
+next.play();
+
+let fade = 0;
+
+const interval = setInterval(()=>{
+
+fade += 0.05;
+
+next.volume = fade;
+current.volume = 1 - fade;
+
+if(fade >= 1){
+
+clearInterval(interval);
+
+current.pause();
+current.src="";
+current.style.display="none";
+
+active = (active === "main") ? "fx" : "main";
+
+}
+
+},50);
+
+}
+
+/* =====================
+PLAY NORMAL (PRIMER VIDEO)
 ===================== */
 
 function playFile(file){
 
+if(!main.src && !fx.src){
 main.src = URL.createObjectURL(file);
+main.volume = 1;
 main.play();
+active="main";
+return;
+}
+
+crossfadeTo(file);
 
 }
 
 /* =====================
-   FX
+CUANDO TERMINA
 ===================== */
 
-function playFX(file){
-
-fx.src = URL.createObjectURL(file);
-
-fx.style.display="block";
-
-fx.volume = main.volume;
-
-fx.onended=()=>{
-fx.style.display="none";
-};
-
-fx.play();
-
-}
-
-/* =====================
-   CUANDO TERMINA
-===================== */
-
-main.onended=()=>{
+main.onended = fx.onended = ()=>{
 
 if(!autoplay) return;
 
-canal.postMessage({
-type:"next"
-});
+canal.postMessage({ type:"next" });
 
 };
 
 /* =====================
-   CONTROLES
+CONTROLES
 ===================== */
 
-function play(){ main.play(); }
-function pause(){ main.pause(); }
+function play(){ main.play(); fx.play(); }
+function pause(){ main.pause(); fx.pause(); }
 
 function stop(){
-
-main.pause();
-main.currentTime=0;
-
+main.pause(); fx.pause();
+main.src=""; fx.src="";
 }
 
 /* =====================
-   MENSAJES PANEL
+MENSAJES PANEL
 ===================== */
 
 canal.onmessage=e=>{
@@ -105,10 +129,6 @@ switch(d.type){
 
 case "playFile":
 playFile(d.file);
-break;
-
-case "fx":
-playFX(d.file);
 break;
 
 case "play":
