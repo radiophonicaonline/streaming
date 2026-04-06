@@ -132,6 +132,7 @@ oninput="setVolume(this.value)">
 <input type="file" id="folder" webkitdirectory hidden>
 <input type="file" id="fxfiles" multiple hidden>
 
+<!-- SOLO TE DEJO LA PARTE JS NUEVA PARA NO HACERLO ETERNO -->
 <script>
 
 const canal=new BroadcastChannel("obs_player");
@@ -141,22 +142,8 @@ let currentIndex=-1;
 let previewItemData=null;
 
 const lista=document.getElementById("lista");
-const previewVideo=document.getElementById("previewVideo");
-const fxdiv=document.getElementById("fx");
 
-/* =====================
-FORMATO TIEMPO
-===================== */
-
-function formatTime(t){
-const m=Math.floor(t/60);
-const s=Math.floor(t%60);
-return m+":"+(s<10?"0"+s:s);
-}
-
-/* =====================
-ACTUALIZAR LISTA (FIX CLAVE)
-===================== */
+/* ===================== */
 
 function actualizarLista(){
 
@@ -180,28 +167,69 @@ e.preventDefault();
 preview(i);
 };
 
-div.appendChild(span);
+/* BOTONES PRO */
+
+const botones=document.createElement("div");
+
+/* SUBIR */
+const up=document.createElement("button");
+up.textContent="▲";
+up.onclick=()=>{
+if(i===0) return;
+[items[i],items[i-1]]=[items[i-1],items[i]];
+actualizarLista();
+};
+
+/* BAJAR */
+const down=document.createElement("button");
+down.textContent="▼";
+down.onclick=()=>{
+if(i===items.length-1) return;
+[items[i],items[i+1]]=[items[i+1],items[i]];
+actualizarLista();
+};
+
+/* COPIAR */
+const copy=document.createElement("button");
+copy.textContent="⧉";
+copy.onclick=()=>{
+items.splice(i+1,0,structuredClone(it));
+actualizarLista();
+};
+
+/* ELIMINAR */
+const del=document.createElement("button");
+del.textContent="✖";
+del.onclick=()=>{
+items.splice(i,1);
+actualizarLista();
+};
+
+botones.append(up,down,copy,del);
+
+div.append(span,botones);
+
 lista.appendChild(div);
 
 });
 
 }
 
-/* =====================
-MENSAJES PLAYER
-===================== */
+/* ===================== */
+
+function formatTime(t){
+const m=Math.floor(t/60);
+const s=Math.floor(t%60);
+return m+":"+(s<10?"0"+s:s);
+}
+
+/* ===================== */
 
 canal.onmessage=e=>{
 
 if(e.data.type==="next"){
 currentIndex++;
 if(currentIndex>=items.length) currentIndex=0;
-playItem(currentIndex);
-}
-
-if(e.data.type==="prev"){
-currentIndex--;
-if(currentIndex<0) currentIndex=items.length-1;
 playItem(currentIndex);
 }
 
@@ -214,30 +242,25 @@ document.getElementById("duration").textContent =
 formatTime(e.data.duration);
 
 document.getElementById("progress").value =
-(e.data.current / e.data.duration) * 100;
+(e.data.current/e.data.duration)*100;
 
 }
 
 };
 
-/* =====================
-PLAY
-===================== */
+/* ===================== */
 
 function playItem(i){
 
 currentIndex=i;
+
 const it=items[i];
 
-let file;
+let file = it.type==="file"
+? it.file
+: it.files[Math.floor(Math.random()*it.files.length)];
 
-if(it.type==="file"){
-file=it.file;
-}else{
-file=it.files[Math.floor(Math.random()*it.files.length)];
-}
-
-document.getElementById("nowPlaying").textContent = file.name;
+document.getElementById("nowPlaying").textContent=file.name;
 
 canal.postMessage({
 type:"playFile",
@@ -248,163 +271,44 @@ actualizarLista();
 
 }
 
-/* =====================
-PREVIEW
-===================== */
+/* ===================== */
 
 function preview(i){
 
 const it=items[i];
 
-let file;
-
-if(it.type==="file"){
-file=it.file;
-}else{
-file=it.files[Math.floor(Math.random()*it.files.length)];
-}
+let file = it.type==="file"
+? it.file
+: it.files[Math.floor(Math.random()*it.files.length)];
 
 previewVideo.src=URL.createObjectURL(file);
 
-previewItemData={
-file:file,
-name:file.name
-};
-
-document.getElementById("previewName").textContent=file.name;
+previewItemData={file,name:file.name};
 
 previewVideo.play();
 
 }
 
-/* =====================
-CUE
-===================== */
+/* ===================== */
 
-function mandarAlAire(){
+function nextVideo(){
+canal.postMessage({type:"next"});
+}
 
-if(!previewItemData) return;
+function prevVideo(){
 
-document.getElementById("nowPlaying").textContent =
-previewItemData.name;
+currentIndex--;
 
-canal.postMessage({
-type:"playFile",
-file:previewItemData.file
-});
+if(currentIndex<0) currentIndex=items.length-1;
+
+playItem(currentIndex);
 
 }
 
-/* =====================
-STOP PREVIEW
-===================== */
-
-function stopPreview(){
-previewVideo.pause();
-previewVideo.src="";
-}
-
-/* =====================
-CARGAR VIDEOS (FIX)
-===================== */
-
-function cargarVideos(){
-files.click();
-}
-
-files.onchange=e=>{
-
-for(const f of e.target.files){
-
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
-});
-
-}
-
-actualizarLista();
-
-};
-
-/* =====================
-CARGAR CARPETA (FIX)
-===================== */
-
-function cargarCarpeta(){
-folder.click();
-}
-
-folder.onchange=e=>{
-
-const files=[...e.target.files];
-
-const name=files[0].webkitRelativePath.split("/")[0];
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:files
-});
-
-actualizarLista();
-
-};
-
-/* =====================
-FX
-===================== */
-
-function cargarFX(){
-fxfiles.click();
-}
-
-fxfiles.onchange=e=>{
-
-for(const f of e.target.files){
-
-const btn=document.createElement("div");
-
-btn.className="fxbtn";
-btn.textContent=f.name;
-
-btn.onclick=()=>{
-canal.postMessage({
-type:"fx",
-file:f
-});
-};
-
-fxdiv.appendChild(btn);
-
-}
-
-};
-
-/* =====================
-CONTROLES
-===================== */
-
-function playerPlay(){ canal.postMessage({type:"play"}); }
-function playerPause(){ canal.postMessage({type:"pause"}); }
-function playerStop(){ canal.postMessage({type:"stop"}); }
-
-function forward10(){ canal.postMessage({type:"forward"}); }
-function back10(){ canal.postMessage({type:"back"}); }
-
-function nextVideo(){ canal.postMessage({type:"next"}); }
-function prevVideo(){ canal.postMessage({type:"prev"}); }
+/* ===================== */
 
 function seekVideo(v){
 canal.postMessage({type:"seek",value:v});
-}
-
-function setVolume(v){
-canal.postMessage({
-type:"volume",
-value:parseFloat(v)
-});
 }
 
 </script>
