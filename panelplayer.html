@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 
 <style>
-
 body{
 background:#0b0b0b;
 color:#eee;
@@ -62,7 +61,6 @@ cursor:pointer;
 width:100%;
 background:black;
 }
-
 </style>
 </head>
 
@@ -73,6 +71,7 @@ background:black;
 <div id="nowPlaying" style="color:#6cf;font-size:14px">
 ninguno
 </div>
+
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
 
@@ -88,10 +87,12 @@ ninguno
 <div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
 sin preview
 </div>
+
 <button onclick="mandarAlAire()">CUE → AIR</button>
 <button onclick="stopPreview()">STOP</button>
 
 <hr>
+
 <h3>Controles Player</h3>
 
 <button onclick="playerPlay()">▶</button>
@@ -106,10 +107,10 @@ sin preview
 Volumen
 <input type="range" min="0" max="1" step="0.01" value="1"
 oninput="setVolume(this.value)">
+
 <h3>FX</h3>
 
 <button onclick="cargarFX()">Cargar FX</button>
-
 <div id="fx"></div>
 
 <input type="file" id="files" multiple hidden>
@@ -122,21 +123,20 @@ const canal=new BroadcastChannel("obs_player");
 
 let items=[];
 let currentIndex=-1;
-
 let previewItemData=null;
 
 const lista=document.getElementById("lista");
-
 const previewVideo=document.getElementById("previewVideo");
-
 const fxdiv=document.getElementById("fx");
 
-/* =====================
-LISTA
-===================== */
+// 🔥 FIX IMPORTANTE (esto faltaba)
+const files=document.getElementById("files");
+const folder=document.getElementById("folder");
+const fxfiles=document.getElementById("fxfiles");
+
+/* ===================== LISTA ===================== */
 
 function actualizarLista(){
-
 lista.innerHTML="";
 
 items.forEach((it,i)=>{
@@ -144,8 +144,7 @@ items.forEach((it,i)=>{
 const div=document.createElement("div");
 div.className="item";
 
-if(i===currentIndex)
-div.classList.add("active");
+if(i===currentIndex) div.classList.add("active");
 
 const span=document.createElement("span");
 span.textContent=it.name;
@@ -190,29 +189,24 @@ actualizarLista();
 };
 
 botones.append(up,down,copy,del);
-
 div.append(span,botones);
-
 lista.appendChild(div);
 
 });
-
 }
 
-/* =====================
-PLAY
-===================== */
+/* ===================== PLAY ===================== */
 
 function playItem(i){
 
-currentIndex=i;
+if(items.length===0) return;
 
+currentIndex=i;
 const it=items[i];
 
-/* MOSTRAR NOMBRE EN PANEL */
-document.getElementById("nowPlaying").textContent = it.name;
-
 if(it.type==="file"){
+
+document.getElementById("nowPlaying").textContent = it.name;
 
 canal.postMessage({
 type:"playFile",
@@ -221,11 +215,9 @@ file:it.file
 
 }else{
 
-/* ===== SHUFFLE INTELIGENTE ===== */
-
+// 🔀 SHUFFLE INTELIGENTE
 if(!it.shuffleList || it.shuffleList.length===0){
 
-// crear lista mezclada nueva
 it.shuffleList=[...it.files];
 
 for(let j=it.shuffleList.length-1;j>0;j--){
@@ -233,17 +225,13 @@ const k=Math.floor(Math.random()*(j+1));
 [it.shuffleList[j],it.shuffleList[k]]=[it.shuffleList[k],it.shuffleList[j]];
 }
 
-// índice interno
 it.shuffleIndex=0;
-
 }
 
 const f=it.shuffleList[it.shuffleIndex];
 
-// avanzar índice
 it.shuffleIndex++;
 
-// si termina, resetear para nuevo ciclo
 if(it.shuffleIndex>=it.shuffleList.length){
 it.shuffleList=null;
 }
@@ -254,16 +242,12 @@ canal.postMessage({
 type:"playFile",
 file:f
 });
-
 }
 
 actualizarLista();
-
 }
 
-/* =====================
-PREVIEW
-===================== */
+/* ===================== PREVIEW ===================== */
 
 function preview(i){
 
@@ -274,7 +258,6 @@ if(it.type==="file"){
 previewVideo.src=URL.createObjectURL(it.file);
 
 previewItemData={
-type:"file",
 file:it.file,
 name:it.file.name
 };
@@ -286,165 +269,112 @@ const f=it.files[Math.floor(Math.random()*it.files.length)];
 previewVideo.src=URL.createObjectURL(f);
 
 previewItemData={
-type:"file",
 file:f,
 name:f.name
 };
-
 }
 
 document.getElementById("previewName").textContent=previewItemData.name;
-
 previewVideo.play();
-
 }
 
-/* =====================
-CUE
-===================== */
+/* ===================== CUE ===================== */
 
 function mandarAlAire(){
-
 if(!previewItemData) return;
 
-document.getElementById("nowPlaying").textContent =
-previewItemData.name;
+document.getElementById("nowPlaying").textContent = previewItemData.name;
 
 canal.postMessage({
 type:"playFile",
 file:previewItemData.file
 });
-
 }
 
-/* =====================
-STOP PREVIEW
-===================== */
+/* ===================== STOP PREVIEW ===================== */
 
 function stopPreview(){
-
 previewVideo.pause();
 previewVideo.src="";
-
 }
 
-/* =====================
-AUTOPLAY
-===================== */
+/* ===================== AUTOPLAY ===================== */
 
 canal.onmessage=e=>{
 
 if(e.data.type==="next"){
 
-currentIndex++;
+if(items.length===0) return;
 
-if(currentIndex>=items.length)
-currentIndex=0;
+currentIndex++;
+if(currentIndex>=items.length) currentIndex=0;
 
 playItem(currentIndex);
-
 }
-
 };
 
-/* =====================
-CARGAR VIDEOS
-===================== */
+/* ===================== CARGA ===================== */
 
-function cargarVideos(){
-files.click();
-}
+function cargarVideos(){ files.click(); }
 
 files.onchange=e=>{
-
 for(const f of e.target.files){
-
 items.push({
 type:"file",
 name:"🎬 "+f.name,
 file:f
 });
-
 }
-
 actualizarLista();
-
 };
 
-/* =====================
-CARPETA
-===================== */
-
-function cargarCarpeta(){
-folder.click();
-}
+function cargarCarpeta(){ folder.click(); }
 
 folder.onchange=e=>{
+const fileList=[...e.target.files];
 
-const files=[...e.target.files];
+if(fileList.length===0) return;
 
-const name=files[0].webkitRelativePath.split("/")[0];
+const name=fileList[0].webkitRelativePath.split("/")[0];
 
 items.push({
 type:"folder",
 name:"📂 "+name,
-files:files
+files:fileList
 });
 
 actualizarLista();
-
 };
 
-/* =====================
-FX
-===================== */
+/* ===================== FX ===================== */
 
-function cargarFX(){
-fxfiles.click();
-}
+function cargarFX(){ fxfiles.click(); }
 
 fxfiles.onchange=e=>{
-
 for(const f of e.target.files){
 
 const btn=document.createElement("div");
-
 btn.className="fxbtn";
 btn.textContent=f.name;
 
 btn.onclick=()=>{
-
 canal.postMessage({
 type:"fx",
 file:f
 });
-
 };
 
 fxdiv.appendChild(btn);
-
 }
-
 };
-function playerPlay(){
-canal.postMessage({type:"play"});
-}
 
-function playerPause(){
-canal.postMessage({type:"pause"});
-}
+/* ===================== CONTROLES ===================== */
 
-function playerStop(){
-canal.postMessage({type:"stop"});
-}
-
-function forward10(){
-canal.postMessage({type:"forward"});
-}
-
-function back10(){
-canal.postMessage({type:"back"});
-}
+function playerPlay(){ canal.postMessage({type:"play"}); }
+function playerPause(){ canal.postMessage({type:"pause"}); }
+function playerStop(){ canal.postMessage({type:"stop"}); }
+function forward10(){ canal.postMessage({type:"forward"}); }
+function back10(){ canal.postMessage({type:"back"}); }
 
 function setVolume(v){
 canal.postMessage({
@@ -452,7 +382,10 @@ type:"volume",
 value:parseFloat(v)
 });
 }
-  document.addEventListener("keydown",e=>{
+
+/* ===================== TECLADO ===================== */
+
+document.addEventListener("keydown",e=>{
 
 if(e.target.tagName==="INPUT") return;
 
@@ -489,7 +422,3 @@ break;
 
 </body>
 </html>
-
-
-
-
