@@ -210,7 +210,6 @@ currentIndex=i;
 const it=items[i];
 
 /* MOSTRAR NOMBRE EN PANEL */
-
 document.getElementById("nowPlaying").textContent = it.name;
 
 if(it.type==="file"){
@@ -222,9 +221,32 @@ file:it.file
 
 }else{
 
-const r=Math.floor(Math.random()*it.files.length);
+/* ===== SHUFFLE INTELIGENTE ===== */
 
-const f=it.files[r];
+if(!it.shuffleList || it.shuffleList.length===0){
+
+// crear lista mezclada nueva
+it.shuffleList=[...it.files];
+
+for(let j=it.shuffleList.length-1;j>0;j--){
+const k=Math.floor(Math.random()*(j+1));
+[it.shuffleList[j],it.shuffleList[k]]=[it.shuffleList[k],it.shuffleList[j]];
+}
+
+// índice interno
+it.shuffleIndex=0;
+
+}
+
+const f=it.shuffleList[it.shuffleIndex];
+
+// avanzar índice
+it.shuffleIndex++;
+
+// si termina, resetear para nuevo ciclo
+if(it.shuffleIndex>=it.shuffleList.length){
+it.shuffleList=null;
+}
 
 document.getElementById("nowPlaying").textContent = f.name;
 
@@ -259,9 +281,7 @@ name:it.file.name
 
 }else{
 
-const r=Math.floor(Math.random()*it.files.length);
-
-const f=it.files[r];
+const f=it.files[Math.floor(Math.random()*it.files.length)];
 
 previewVideo.src=URL.createObjectURL(f);
 
