@@ -20,9 +20,7 @@ margin:2px;
 cursor:pointer;
 }
 
-button:hover{
-background:#444;
-}
+button:hover{ background:#444; }
 
 #lista{
 height:260px;
@@ -46,9 +44,7 @@ text-overflow:ellipsis;
 white-space:nowrap;
 }
 
-.active{
-background:#184a8b;
-}
+.active{ background:#184a8b; }
 
 .fxbtn{
 background:#7a0d0d;
@@ -61,12 +57,21 @@ cursor:pointer;
 width:100%;
 background:black;
 }
+
+#previewLista{
+border:1px solid #333;
+padding:5px;
+max-height:150px;
+overflow:auto;
+margin-top:5px;
+}
 </style>
 </head>
 
 <body>
 
 <h3>Playlist</h3>
+
 <h3>NOW PLAYING</h3>
 <div id="nowPlaying" style="color:#6cf;font-size:14px">
 ninguno
@@ -84,12 +89,17 @@ ninguno
 <h3>Preview</h3>
 
 <video id="previewVideo" controls></video>
+
 <div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
 sin preview
 </div>
 
 <button onclick="mandarAlAire()">CUE → AIR</button>
 <button onclick="stopPreview()">STOP</button>
+
+<!-- 🆕 LISTA AUXILIAR -->
+<h3>Preview List</h3>
+<div id="previewLista"></div>
 
 <hr>
 
@@ -123,20 +133,26 @@ const canal=new BroadcastChannel("obs_player");
 
 let items=[];
 let currentIndex=-1;
+
 let previewItemData=null;
 
+/* 🆕 LISTA AUXILIAR */
+let previewList=[];
+
 const lista=document.getElementById("lista");
+const previewLista=document.getElementById("previewLista");
+
 const previewVideo=document.getElementById("previewVideo");
 const fxdiv=document.getElementById("fx");
 
-// 🔥 FIX IMPORTANTE (esto faltaba)
 const files=document.getElementById("files");
 const folder=document.getElementById("folder");
 const fxfiles=document.getElementById("fxfiles");
 
-/* ===================== LISTA ===================== */
+/* ===================== LISTA PRINCIPAL ===================== */
 
 function actualizarLista(){
+
 lista.innerHTML="";
 
 items.forEach((it,i)=>{
@@ -144,19 +160,43 @@ items.forEach((it,i)=>{
 const div=document.createElement("div");
 div.className="item";
 
-if(i===currentIndex) div.classList.add("active");
+if(i===currentIndex)
+div.classList.add("active");
 
 const span=document.createElement("span");
 span.textContent=it.name;
 
 span.onclick=()=>playItem(i);
 
+/* 👉 CLICK DERECHO = PREVIEW (SE MANTIENE) */
 span.oncontextmenu=e=>{
 e.preventDefault();
 preview(i);
 };
 
 const botones=document.createElement("div");
+
+/* 🆕 AGREGAR A PREVIEW LIST */
+const addPreview=document.createElement("button");
+addPreview.textContent="➕";
+addPreview.onclick=()=>{
+
+if(it.type==="file"){
+previewList.push({
+file:it.file,
+name:it.file.name
+});
+}else{
+const f=it.files[Math.floor(Math.random()*it.files.length)];
+previewList.push({
+file:f,
+name:f.name
+});
+}
+
+actualizarPreviewLista();
+
+};
 
 const up=document.createElement("button");
 up.textContent="▲";
@@ -188,11 +228,13 @@ items.splice(i,1);
 actualizarLista();
 };
 
-botones.append(up,down,copy,del);
+botones.append(addPreview,up,down,copy,del);
+
 div.append(span,botones);
 lista.appendChild(div);
 
 });
+
 }
 
 /* ===================== PLAY ===================== */
@@ -202,6 +244,7 @@ function playItem(i){
 if(items.length===0) return;
 
 currentIndex=i;
+
 const it=items[i];
 
 if(it.type==="file"){
@@ -215,7 +258,6 @@ file:it.file
 
 }else{
 
-// 🔀 SHUFFLE INTELIGENTE
 if(!it.shuffleList || it.shuffleList.length===0){
 
 it.shuffleList=[...it.files];
@@ -242,9 +284,11 @@ canal.postMessage({
 type:"playFile",
 file:f
 });
+
 }
 
 actualizarLista();
+
 }
 
 /* ===================== PREVIEW ===================== */
@@ -272,48 +316,83 @@ previewItemData={
 file:f,
 name:f.name
 };
+
 }
 
 document.getElementById("previewName").textContent=previewItemData.name;
 previewVideo.play();
+
+}
+
+/* ===================== PREVIEW LIST ===================== */
+
+function actualizarPreviewLista(){
+
+previewLista.innerHTML="";
+
+previewList.forEach((it,i)=>{
+
+const div=document.createElement("div");
+div.className="item";
+
+const span=document.createElement("span");
+span.textContent=it.name;
+
+span.onclick=()=>{
+
+previewVideo.src=URL.createObjectURL(it.file);
+previewVideo.play();
+
+previewItemData=it;
+document.getElementById("previewName").textContent=it.name;
+
+};
+
+const del=document.createElement("button");
+del.textContent="✖";
+del.onclick=()=>{
+previewList.splice(i,1);
+actualizarPreviewLista();
+};
+
+div.append(span,del);
+previewLista.appendChild(div);
+
+});
+
 }
 
 /* ===================== CUE ===================== */
 
 function mandarAlAire(){
+
 if(!previewItemData) return;
 
-document.getElementById("nowPlaying").textContent = previewItemData.name;
+document.getElementById("nowPlaying").textContent =
+previewItemData.name;
 
 canal.postMessage({
 type:"playFile",
 file:previewItemData.file
 });
+
 }
 
-/* ===================== STOP PREVIEW ===================== */
+/* ===================== RESTO ===================== */
 
 function stopPreview(){
 previewVideo.pause();
 previewVideo.src="";
 }
 
-/* ===================== AUTOPLAY ===================== */
-
 canal.onmessage=e=>{
-
 if(e.data.type==="next"){
-
 if(items.length===0) return;
-
 currentIndex++;
 if(currentIndex>=items.length) currentIndex=0;
-
 playItem(currentIndex);
 }
 };
-
-/* ===================== CARGA ===================== */
 
 function cargarVideos(){ files.click(); }
 
@@ -332,7 +411,6 @@ function cargarCarpeta(){ folder.click(); }
 
 folder.onchange=e=>{
 const fileList=[...e.target.files];
-
 if(fileList.length===0) return;
 
 const name=fileList[0].webkitRelativePath.split("/")[0];
@@ -346,29 +424,19 @@ files:fileList
 actualizarLista();
 };
 
-/* ===================== FX ===================== */
-
 function cargarFX(){ fxfiles.click(); }
 
 fxfiles.onchange=e=>{
 for(const f of e.target.files){
-
 const btn=document.createElement("div");
 btn.className="fxbtn";
 btn.textContent=f.name;
-
 btn.onclick=()=>{
-canal.postMessage({
-type:"fx",
-file:f
-});
+canal.postMessage({type:"fx",file:f});
 };
-
 fxdiv.appendChild(btn);
 }
 };
-
-/* ===================== CONTROLES ===================== */
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
 function playerPause(){ canal.postMessage({type:"pause"}); }
@@ -383,41 +451,6 @@ value:parseFloat(v)
 });
 }
 
-/* ===================== TECLADO ===================== */
-
-document.addEventListener("keydown",e=>{
-
-if(e.target.tagName==="INPUT") return;
-
-switch(e.key){
-
-case " ":
-playerPlay();
-break;
-
-case "p":
-playerPause();
-break;
-
-case "s":
-playerStop();
-break;
-
-case "ArrowRight":
-forward10();
-break;
-
-case "ArrowLeft":
-back10();
-break;
-
-case "n":
-canal.postMessage({type:"next"});
-break;
-
-}
-
-});
 </script>
 
 </body>
