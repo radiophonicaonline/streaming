@@ -46,13 +46,6 @@ white-space:nowrap;
 
 .active{ background:#184a8b; }
 
-.fxbtn{
-background:#7a0d0d;
-padding:5px;
-margin:3px;
-cursor:pointer;
-}
-
 #previewVideo{
 width:100%;
 background:black;
@@ -79,6 +72,7 @@ ninguno
 
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
+<button onclick="borrarLista()">🗑 Limpiar lista</button>
 
 <label>
 <input type="checkbox" id="auto" checked>Auto
@@ -97,7 +91,12 @@ sin preview
 <button onclick="mandarAlAire()">CUE → AIR</button>
 <button onclick="stopPreview()">STOP</button>
 
-<!-- 🆕 LISTA AUXILIAR -->
+<br><br>
+
+<!-- 🔥 NUEVOS BOTONES -->
+<button onclick="agregarPreviewArchivo()">➕ Archivo Preview</button>
+<button onclick="agregarPreviewCarpeta()">📂 Carpeta Preview</button>
+
 <h3>Preview List</h3>
 <div id="previewLista"></div>
 
@@ -118,14 +117,11 @@ Volumen
 <input type="range" min="0" max="1" step="0.01" value="1"
 oninput="setVolume(this.value)">
 
-<h3>FX</h3>
-
-<button onclick="cargarFX()">Cargar FX</button>
-<div id="fx"></div>
-
 <input type="file" id="files" multiple hidden>
 <input type="file" id="folder" webkitdirectory hidden>
-<input type="file" id="fxfiles" multiple hidden>
+
+<input type="file" id="previewFiles" multiple hidden>
+<input type="file" id="previewFolder" webkitdirectory hidden>
 
 <script>
 
@@ -135,21 +131,28 @@ let items=[];
 let currentIndex=-1;
 
 let previewItemData=null;
-
-/* 🆕 LISTA AUXILIAR */
 let previewList=[];
 
 const lista=document.getElementById("lista");
 const previewLista=document.getElementById("previewLista");
 
 const previewVideo=document.getElementById("previewVideo");
-const fxdiv=document.getElementById("fx");
 
 const files=document.getElementById("files");
 const folder=document.getElementById("folder");
-const fxfiles=document.getElementById("fxfiles");
 
-/* ===================== LISTA PRINCIPAL ===================== */
+const previewFiles=document.getElementById("previewFiles");
+const previewFolder=document.getElementById("previewFolder");
+
+/* ===================== BORRAR LISTA ===================== */
+
+function borrarLista(){
+items=[];
+currentIndex=-1;
+actualizarLista();
+}
+
+/* ===================== LISTA ===================== */
 
 function actualizarLista(){
 
@@ -168,57 +171,9 @@ span.textContent=it.name;
 
 span.onclick=()=>playItem(i);
 
-/* 👉 CLICK DERECHO = PREVIEW (SE MANTIENE) */
 span.oncontextmenu=e=>{
 e.preventDefault();
 preview(i);
-};
-
-const botones=document.createElement("div");
-
-/* 🆕 AGREGAR A PREVIEW LIST */
-const addPreview=document.createElement("button");
-addPreview.textContent="➕";
-addPreview.onclick=()=>{
-
-if(it.type==="file"){
-previewList.push({
-file:it.file,
-name:it.file.name
-});
-}else{
-const f=it.files[Math.floor(Math.random()*it.files.length)];
-previewList.push({
-file:f,
-name:f.name
-});
-}
-
-actualizarPreviewLista();
-
-};
-
-const up=document.createElement("button");
-up.textContent="▲";
-up.onclick=()=>{
-if(i===0) return;
-[items[i],items[i-1]]=[items[i-1],items[i]];
-actualizarLista();
-};
-
-const down=document.createElement("button");
-down.textContent="▼";
-down.onclick=()=>{
-if(i===items.length-1) return;
-[items[i],items[i+1]]=[items[i+1],items[i]];
-actualizarLista();
-};
-
-const copy=document.createElement("button");
-copy.textContent="⧉";
-copy.onclick=()=>{
-items.splice(i+1,0,structuredClone(it));
-actualizarLista();
 };
 
 const del=document.createElement("button");
@@ -228,9 +183,7 @@ items.splice(i,1);
 actualizarLista();
 };
 
-botones.append(addPreview,up,down,copy,del);
-
-div.append(span,botones);
+div.append(span,del);
 lista.appendChild(div);
 
 });
@@ -247,8 +200,6 @@ currentIndex=i;
 
 const it=items[i];
 
-if(it.type==="file"){
-
 document.getElementById("nowPlaying").textContent = it.name;
 
 canal.postMessage({
@@ -256,39 +207,7 @@ type:"playFile",
 file:it.file
 });
 
-}else{
-
-if(!it.shuffleList || it.shuffleList.length===0){
-
-it.shuffleList=[...it.files];
-
-for(let j=it.shuffleList.length-1;j>0;j--){
-const k=Math.floor(Math.random()*(j+1));
-[it.shuffleList[j],it.shuffleList[k]]=[it.shuffleList[k],it.shuffleList[j]];
-}
-
-it.shuffleIndex=0;
-}
-
-const f=it.shuffleList[it.shuffleIndex];
-
-it.shuffleIndex++;
-
-if(it.shuffleIndex>=it.shuffleList.length){
-it.shuffleList=null;
-}
-
-document.getElementById("nowPlaying").textContent = f.name;
-
-canal.postMessage({
-type:"playFile",
-file:f
-});
-
-}
-
 actualizarLista();
-
 }
 
 /* ===================== PREVIEW ===================== */
@@ -297,31 +216,12 @@ function preview(i){
 
 const it=items[i];
 
-if(it.type==="file"){
-
 previewVideo.src=URL.createObjectURL(it.file);
 
-previewItemData={
-file:it.file,
-name:it.file.name
-};
+previewItemData=it;
 
-}else{
-
-const f=it.files[Math.floor(Math.random()*it.files.length)];
-
-previewVideo.src=URL.createObjectURL(f);
-
-previewItemData={
-file:f,
-name:f.name
-};
-
-}
-
-document.getElementById("previewName").textContent=previewItemData.name;
+document.getElementById("previewName").textContent=it.name;
 previewVideo.play();
-
 }
 
 /* ===================== PREVIEW LIST ===================== */
@@ -339,13 +239,9 @@ const span=document.createElement("span");
 span.textContent=it.name;
 
 span.onclick=()=>{
-
 previewVideo.src=URL.createObjectURL(it.file);
 previewVideo.play();
-
 previewItemData=it;
-document.getElementById("previewName").textContent=it.name;
-
 };
 
 const del=document.createElement("button");
@@ -361,6 +257,30 @@ previewLista.appendChild(div);
 });
 
 }
+
+/* ===================== AGREGAR A PREVIEW ===================== */
+
+function agregarPreviewArchivo(){
+previewFiles.click();
+}
+
+previewFiles.onchange=e=>{
+for(const f of e.target.files){
+previewList.push({file:f,name:f.name});
+}
+actualizarPreviewLista();
+};
+
+function agregarPreviewCarpeta(){
+previewFolder.click();
+}
+
+previewFolder.onchange=e=>{
+for(const f of e.target.files){
+previewList.push({file:f,name:f.name});
+}
+actualizarPreviewLista();
+};
 
 /* ===================== CUE ===================== */
 
@@ -385,58 +305,16 @@ previewVideo.pause();
 previewVideo.src="";
 }
 
-canal.onmessage=e=>{
-if(e.data.type==="next"){
-if(items.length===0) return;
-currentIndex++;
-if(currentIndex>=items.length) currentIndex=0;
-playItem(currentIndex);
-}
-};
-
 function cargarVideos(){ files.click(); }
 
 files.onchange=e=>{
 for(const f of e.target.files){
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
-});
+items.push({file:f,name:f.name});
 }
 actualizarLista();
 };
 
 function cargarCarpeta(){ folder.click(); }
-
-folder.onchange=e=>{
-const fileList=[...e.target.files];
-if(fileList.length===0) return;
-
-const name=fileList[0].webkitRelativePath.split("/")[0];
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:fileList
-});
-
-actualizarLista();
-};
-
-function cargarFX(){ fxfiles.click(); }
-
-fxfiles.onchange=e=>{
-for(const f of e.target.files){
-const btn=document.createElement("div");
-btn.className="fxbtn";
-btn.textContent=f.name;
-btn.onclick=()=>{
-canal.postMessage({type:"fx",file:f});
-};
-fxdiv.appendChild(btn);
-}
-};
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
 function playerPause(){ canal.postMessage({type:"pause"}); }
