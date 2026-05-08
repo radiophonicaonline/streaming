@@ -10,44 +10,12 @@ background:black;
 overflow:hidden;
 }
 
-/* VIDEO ABAJO */
 video{
 position:absolute;
 width:100%;
 height:100%;
 object-fit:cover;
 background:black;
-z-index:1;
-}
-
-/* 🔥 PROGRESS ARRIBA */
-#progressContainer{
-position:absolute;
-bottom:0;
-left:0;
-width:100%;
-height:6px;
-background:#222;
-z-index:9999;
-cursor:pointer;
-}
-
-#progressBar{
-height:100%;
-width:0%;
-background:#4caf50;
-}
-
-#timeLabel{
-position:absolute;
-bottom:10px;
-right:10px;
-color:#fff;
-font-size:13px;
-z-index:9999;
-background:rgba(0,0,0,0.6);
-padding:3px 6px;
-border-radius:4px;
 }
 </style>
 </head>
@@ -57,12 +25,6 @@ border-radius:4px;
 <video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
 
-<div id="progressContainer">
-  <div id="progressBar"></div>
-</div>
-
-<div id="timeLabel">0:00 / 0:00</div>
-
 <script>
 
 const canal = new BroadcastChannel("obs_player");
@@ -70,82 +32,96 @@ const canal = new BroadcastChannel("obs_player");
 const main = document.getElementById("main");
 const fx = document.getElementById("fx");
 
-const progressBar = document.getElementById("progressBar");
-const timeLabel = document.getElementById("timeLabel");
-const progressContainer = document.getElementById("progressContainer");
-
 let autoplay = true;
 
-/* PLAY */
+/* =====================
+   PLAY VIDEO
+===================== */
+
 function playFile(file){
+
 main.src = URL.createObjectURL(file);
 main.play();
+
 }
 
-/* FX */
+/* =====================
+   FX
+===================== */
+
 function playFX(file){
+
 fx.src = URL.createObjectURL(file);
+
 fx.style.display="block";
+
 fx.volume = main.volume;
 
-fx.onended=()=> fx.style.display="none";
+fx.onended=()=>{
+fx.style.display="none";
+};
 
 fx.play();
+
 }
 
-/* 🔥 PROGRESS FIX */
-main.ontimeupdate = () => {
+/* =====================
+   CUANDO TERMINA
+===================== */
 
-if(!main.duration || isNaN(main.duration)) return;
-
-const percent = (main.currentTime / main.duration) * 100;
-progressBar.style.width = percent + "%";
-
-timeLabel.textContent =
-formatTime(main.currentTime) + " / " + formatTime(main.duration);
-};
-
-function formatTime(t){
-const m = Math.floor(t/60);
-const s = Math.floor(t%60);
-return m + ":" + (s<10?"0":"") + s;
-}
-
-/* CLICK SEEK */
-progressContainer.onclick = (e) => {
-
-const rect = progressContainer.getBoundingClientRect();
-const x = e.clientX - rect.left;
-const percent = x / rect.width;
-
-if(main.duration){
-main.currentTime = percent * main.duration;
-}
-};
-
-/* FIN VIDEO */
 main.onended=()=>{
+
 if(!autoplay) return;
-canal.postMessage({ type:"next" });
+
+canal.postMessage({
+type:"next"
+});
+
 };
 
-/* CONTROLES */
+/* =====================
+   CONTROLES
+===================== */
+
 function play(){ main.play(); }
 function pause(){ main.pause(); }
-function stop(){ main.pause(); main.currentTime=0; }
 
-/* MENSAJES */
+function stop(){
+
+main.pause();
+main.currentTime=0;
+
+}
+
+/* =====================
+   MENSAJES PANEL
+===================== */
+
 canal.onmessage=e=>{
 
 const d=e.data;
 
 switch(d.type){
 
-case "playFile": playFile(d.file); break;
-case "fx": playFX(d.file); break;
-case "play": play(); break;
-case "pause": pause(); break;
-case "stop": stop(); break;
+case "playFile":
+playFile(d.file);
+break;
+
+case "fx":
+playFX(d.file);
+break;
+
+case "play":
+play();
+break;
+
+case "pause":
+pause();
+break;
+
+case "stop":
+stop();
+break;
 
 case "volume":
 main.volume=d.value;
