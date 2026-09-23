@@ -240,11 +240,14 @@ const iframe = document.getElementById("iframePlayer");
 
 get(ref(db, "urlReproductor")).then((snap) => {
   if (snap.exists()) {
-    iframe.src = snap.val();
-    registrarRadiovidente();
+    const url = snap.val();
+    console.log("URL reproductor:", url);
+    iframe.src = url;
   } else {
     console.warn("No se encontró la URL del reproductor en Firebase.");
   }
+}).catch((error) => {
+  console.error("Error cargando reproductor:", error);
 });
 
 let urlCancion = "";
