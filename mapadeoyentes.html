@@ -1,121 +1,549 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
 <meta charset="UTF-8">
+
 <title>Mapa de Oyentes en Vivo</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet/dist/leaflet.css"
+/>
+
 <style>
-  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-  #container { display: flex; flex-wrap: wrap; }
-  #map { flex: 2; height: 500px; min-width: 300px; }
-  #stats { flex: 1; padding: 10px; background: #f9f9f9; border-left: 1px solid #ccc; }
-  h2 { text-align: center; margin-top: 10px; }
-  h3 { margin-top: 0; }
-  ul { list-style: none; padding: 0; }
-  li { padding: 5px; border-bottom: 1px solid #ddd; }
+
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  #container {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  #map {
+    flex: 2;
+    height: 500px;
+    min-width: 300px;
+  }
+
+  #stats {
+    flex: 1;
+    padding: 10px;
+    background: #f9f9f9;
+    border-left: 1px solid #ccc;
+  }
+
+  h2 {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  h3 {
+    margin-top: 0;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .estado {
+    font-size: 13px;
+    color: #666;
+  }
+
 </style>
+
 </head>
+
+
 <body>
 
 
 <div id="container">
+
+
+  <!-- MAPA -->
+
   <div id="map"></div>
+
+
+  <!-- ESTADÍSTICAS -->
+
   <div id="stats">
+
     <h3>Oyentes en Tiempo Real por Región</h3>
+
     <ul id="regionListTiempoReal"></ul>
-    <p>Total conectados ahora: <span id="totalTiempoReal">0</span></p>
+
+    <p>
+      Total conectados ahora:
+      <strong>
+        <span id="totalTiempoReal">0</span>
+      </strong>
+    </p>
+
+    <p class="estado">
+      Se consideran activos los dispositivos
+      detectados durante los últimos 90 segundos.
+    </p>
+
 
     <h3>Oyentes Diarios por Región</h3>
+
     <ul id="regionListDiario"></ul>
-    <p>Total diario: <span id="totalDiario">0</span></p>
+
+    <p>
+      Total diario:
+      <span id="totalDiario">0</span>
+    </p>
+
   </div>
+
+
 </div>
 
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+
+// ======================================================
+// 🔥 FIREBASE
+// ======================================================
+
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+
+
+import {
+  getDatabase,
+  ref,
+  onValue
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+
 import L from "https://cdn.skypack.dev/leaflet";
 
-// 🔹 Configuración Firebase
+
+// ======================================================
+// 🔥 CONFIGURACIÓN FIREBASE
+// ======================================================
+
 const firebaseConfig = {
+
   apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
-  authDomain: "contador-de-personas-5f8aa.firebaseapp.com",
-  databaseURL: "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
-  projectId: "contador-de-personas-5f8aa",
-  storageBucket: "contador-de-personas-5f8aa.appspot.com",
-  messagingSenderId: "1063230344919",
-  appId: "1:1063230344919:web:ed86a937ba176dddb1aa92"
+
+  authDomain:
+    "contador-de-personas-5f8aa.firebaseapp.com",
+
+  databaseURL:
+    "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
+
+  projectId:
+    "contador-de-personas-5f8aa",
+
+  storageBucket:
+    "contador-de-personas-5f8aa.appspot.com",
+
+  messagingSenderId:
+    "1063230344919",
+
+  appId:
+    "1:1063230344919:web:ed86a937ba176dddb1aa92"
+
 };
+
+
+// ======================================================
+// 🔥 INICIALIZAR
+// ======================================================
+
 const app = initializeApp(firebaseConfig);
+
 const db = getDatabase(app);
 
-// 🔹 Crear mapa
-const map = L.map('map').setView([0, 0], 2);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18
-}).addTo(map);
+
+// ======================================================
+// 🗺️ CREAR MAPA
+// ======================================================
+
+const map = L.map("map").setView([-33.45, -70.66], 5);
+
+
+L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom: 18,
+
+    attribution:
+      "&copy; OpenStreetMap"
+  }
+).addTo(map);
+
+
+// ======================================================
+// VARIABLES
+// ======================================================
 
 let markers = {};
 
-// --- Oyentes en tiempo real ---
-onValue(ref(db, "conexiones"), (snapshot) => {
-  const data = snapshot.val() || {};
-  
+let conexionesActuales = {};
+
+
+// ======================================================
+// ⏱️ CONFIGURACIÓN DE PRESENCIA
+//
+// Heartbeat JS = 30 segundos
+// Tiempo máximo permitido = 90 segundos
+// ======================================================
+
+const TIEMPO_ACTIVO = 90 * 1000;
+
+
+// ======================================================
+// 📡 ESCUCHAR FIREBASE
+// ======================================================
+
+onValue(
+  ref(db, "conexiones"),
+
+  snapshot => {
+
+    conexionesActuales = snapshot.val() || {};
+
+    actualizarMapa();
+
+  }
+);
+
+
+// ======================================================
+// 🗺️ ACTUALIZAR MAPA
+// ======================================================
+
+function actualizarMapa() {
+
+
+  // --------------------------------------------------
   // Limpiar marcadores anteriores
-  Object.values(markers).forEach(m => map.removeLayer(m));
+  // --------------------------------------------------
+
+  Object.values(markers).forEach(marker => {
+
+    map.removeLayer(marker);
+
+  });
+
   markers = {};
 
-  let regionCount = {};
+
+  // --------------------------------------------------
+  // Variables
+  // --------------------------------------------------
+
+  const ahora = Date.now();
+
+  const regionCount = {};
+
   let total = 0;
 
-  for (let id in data) {
-    const conn = data[id];
-    if (conn.ubicacion) {
-      total++;
-      const { lat, lon, city, region, country } = conn.ubicacion;
 
-      const marker = L.marker([lat, lon])
-        .addTo(map)
-        .bindPopup(`
-📍 ${city}, ${region}, ${country} <br>
-🖥 ${conn.dispositivo || "Desconocido"} <br>
-🌐 ${conn.pagina || "N/A"}
-`)
-      markers[id] = marker;
+  // --------------------------------------------------
+  // Revisar conexiones
+  // --------------------------------------------------
 
-      if (region) {
-        regionCount[region] = (regionCount[region] || 0) + 1;
-      }
+  for (const id in conexionesActuales) {
+
+
+    const conn = conexionesActuales[id];
+
+
+    // ----------------------------------------------
+    // IGNORAR REGISTROS ANTIGUOS
+    // QUE NO TENGAN TIMESTAMP
+    // ----------------------------------------------
+
+    if (!conn.timestamp) {
+
+      continue;
+
     }
+
+
+    // ----------------------------------------------
+    // CALCULAR ANTIGÜEDAD
+    // ----------------------------------------------
+
+    const antiguedad =
+      ahora - Number(conn.timestamp);
+
+
+    // ----------------------------------------------
+    // SI TIENE MÁS DE 90 SEGUNDOS
+    // NO ESTÁ CONECTADO
+    // ----------------------------------------------
+
+    if (
+      !Number.isFinite(antiguedad) ||
+      antiguedad < 0 ||
+      antiguedad > TIEMPO_ACTIVO
+    ) {
+
+      continue;
+
+    }
+
+
+    // ----------------------------------------------
+    // NECESITAMOS UBICACIÓN
+    // ----------------------------------------------
+
+    if (!conn.ubicacion) {
+
+      continue;
+
+    }
+
+
+    const {
+      lat,
+      lon,
+      city,
+      region,
+      country
+    } = conn.ubicacion;
+
+
+    // ----------------------------------------------
+    // VALIDAR COORDENADAS
+    // ----------------------------------------------
+
+    const latitud = Number(lat);
+
+    const longitud = Number(lon);
+
+
+    if (
+      !Number.isFinite(latitud) ||
+      !Number.isFinite(longitud)
+    ) {
+
+      continue;
+
+    }
+
+
+    // ----------------------------------------------
+    // ESTE DISPOSITIVO ESTÁ ACTIVO
+    // ----------------------------------------------
+
+    total++;
+
+
+    // ----------------------------------------------
+    // CREAR MARCADOR
+    // ----------------------------------------------
+
+    const marker = L.marker([
+      latitud,
+      longitud
+    ])
+
+    .addTo(map)
+
+    .bindPopup(`
+
+      📍 ${city || "Desconocido"},
+      ${region || "Desconocida"},
+      ${country || "Desconocido"}
+
+      <br><br>
+
+      🖥 ${conn.dispositivo || "Desconocido"}
+
+      <br>
+
+      🌐 ${conn.pagina || "N/A"}
+
+      <br>
+
+      🟢 Activo ahora
+
+    `);
+
+
+    markers[id] = marker;
+
+
+    // ----------------------------------------------
+    // CONTADOR POR REGIÓN
+    // ----------------------------------------------
+
+    const nombreRegion =
+      region || "Desconocida";
+
+
+    regionCount[nombreRegion] =
+      (regionCount[nombreRegion] || 0) + 1;
+
   }
 
-  mostrarLista(regionCount, "regionListTiempoReal");
-  document.getElementById("totalTiempoReal").textContent = total;
-});
 
-// --- Oyentes diarios ---
-const hoy = new Date().toISOString().split("T")[0];
-onValue(ref(db, `conexiones_diarias/${hoy}`), (snapshot) => {
-  const data = snapshot.val() || {};
-  let total = 0;
-  for (let region in data) total += data[region];
-  mostrarLista(data, "regionListDiario");
-  document.getElementById("totalDiario").textContent = total;
-});
+  // ==================================================
+  // MOSTRAR RESULTADOS
+  // ==================================================
 
-// --- Función para mostrar listas ordenadas ---
-function mostrarLista(obj, elementoId) {
-  const sorted = Object.entries(obj).sort((a, b) => b[1] - a[1]);
-  const ul = document.getElementById(elementoId);
-  ul.innerHTML = "";
-  sorted.forEach(([region, count]) => {
-    const li = document.createElement("li");
-    li.textContent = `${region}: ${count} oyente(s)`;
-    ul.appendChild(li);
-  });
+  mostrarLista(
+    regionCount,
+    "regionListTiempoReal"
+  );
+
+
+  document
+    .getElementById("totalTiempoReal")
+    .textContent = total;
+
 }
+
+
+// ======================================================
+// 🔄 REVISIÓN AUTOMÁTICA
+//
+// Aunque Firebase no produzca ningún evento,
+// recalculamos cada 15 segundos.
+//
+// Así una conexión vencida desaparece del mapa.
+// ======================================================
+
+setInterval(() => {
+
+  actualizarMapa();
+
+}, 15000);
+
+
+// ======================================================
+// 📊 OYENTES DIARIOS
+// ======================================================
+
+const hoy =
+  new Date()
+    .toISOString()
+    .split("T")[0];
+
+
+onValue(
+  ref(
+    db,
+    `conexiones_diarias/${hoy}`
+  ),
+
+  snapshot => {
+
+    const data =
+      snapshot.val() || {};
+
+    let total = 0;
+
+
+    for (const region in data) {
+
+      total += Number(data[region]) || 0;
+
+    }
+
+
+    mostrarLista(
+      data,
+      "regionListDiario"
+    );
+
+
+    document
+      .getElementById("totalDiario")
+      .textContent = total;
+
+  }
+);
+
+
+// ======================================================
+// 📋 MOSTRAR LISTA POR REGIONES
+// ======================================================
+
+function mostrarLista(
+  obj,
+  elementoId
+) {
+
+
+  const sorted =
+    Object.entries(obj)
+      .sort(
+        (a, b) =>
+          Number(b[1]) - Number(a[1])
+      );
+
+
+  const ul =
+    document.getElementById(elementoId);
+
+
+  ul.innerHTML = "";
+
+
+  // Si no hay nadie conectado
+
+  if (sorted.length === 0) {
+
+    const li =
+      document.createElement("li");
+
+    li.textContent =
+      "Sin oyentes activos";
+
+    ul.appendChild(li);
+
+    return;
+
+  }
+
+
+  // Mostrar regiones
+
+  sorted.forEach(
+    ([region, count]) => {
+
+      const li =
+        document.createElement("li");
+
+      li.textContent =
+        `${region}: ${count} oyente(s)`;
+
+      ul.appendChild(li);
+
+    }
+  );
+
+}
+
+
 </script>
 
+
 </body>
+
 </html>
