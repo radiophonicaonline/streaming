@@ -12,14 +12,11 @@
 
   <title>Mapa de Oyentes - Radiophonica</title>
 
-
   <!-- LEAFLET -->
-
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
-
 
   <style>
 
@@ -27,219 +24,151 @@
       box-sizing: border-box;
     }
 
-
     body {
-
       margin: 0;
-
       background: #111;
-
       color: white;
-
-      font-family:
-        Arial,
-        sans-serif;
-
+      font-family: Arial, sans-serif;
     }
-
 
     /* =========================================
        CABECERA
     ========================================= */
 
     #cabecera {
-
       background: #181818;
-
       padding: 18px 15px;
-
       text-align: center;
-
-      border-bottom:
-        1px solid #333;
-
+      border-bottom: 1px solid #333;
     }
-
 
     #cabecera h1 {
-
       margin: 0 0 12px 0;
-
       font-size: 25px;
-
     }
-
 
     #resumen {
-
       display: flex;
-
       justify-content: center;
-
       flex-wrap: wrap;
-
       gap: 10px;
-
     }
-
 
     .tarjeta {
-
       background: #242424;
-
       border-radius: 10px;
-
       padding: 10px 16px;
-
       min-width: 150px;
-
       font-size: 14px;
-
     }
-
 
     .tarjeta strong {
-
       display: block;
-
       font-size: 22px;
-
       margin-top: 4px;
-
     }
-
 
     /* =========================================
        MAPA
     ========================================= */
 
     #map {
-
       width: 100%;
-
       height: 65vh;
-
       min-height: 430px;
-
     }
-
 
     /* =========================================
        LEYENDA
     ========================================= */
 
     #leyenda {
-
       background: #181818;
-
       padding: 12px;
-
       text-align: center;
-
       font-size: 14px;
-
-      border-top:
-        1px solid #333;
-
+      border-top: 1px solid #333;
     }
-
 
     .leyenda-item {
-
       display: inline-block;
-
       margin: 5px 10px;
-
     }
-
 
     .punto {
-
       width: 12px;
-
       height: 12px;
-
       border-radius: 50%;
-
       display: inline-block;
-
       margin-right: 5px;
-
     }
 
-
-    .web {
+    .punto-web {
       background: #3388ff;
     }
 
-
-    .principal {
+    .punto-oyente {
       background: #20c997;
     }
 
-
-    .vertical {
-      background: #ff4d6d;
+    .punto-mixto {
+      background: #ffb020;
     }
 
-
     /* =========================================
-       ESTADÍSTICAS DIARIAS
+       ESTADÍSTICAS
     ========================================= */
 
     #estadisticas {
-
       padding: 20px;
-
       background: #111;
-
     }
-
 
     #estadisticas h2 {
-
       margin-top: 0;
-
       text-align: center;
-
     }
-
 
     #lista-regiones {
-
       max-width: 700px;
-
       margin: auto;
-
       background: #1d1d1d;
-
       border-radius: 10px;
-
       padding: 15px;
-
     }
-
 
     .region {
-
       display: flex;
-
       justify-content: space-between;
-
       padding: 8px 5px;
-
-      border-bottom:
-        1px solid #333;
-
+      border-bottom: 1px solid #333;
     }
-
 
     .region:last-child {
-
       border-bottom: none;
-
     }
 
+    /* =========================================
+       MARCADOR AGRUPADO
+    ========================================= */
+
+    .marcador-cantidad {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 3px solid white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+      box-shadow: 0 0 10px rgba(0,0,0,.65);
+    }
+
+    /* =========================================
+       MÓVIL
+    ========================================= */
 
     @media (max-width: 600px) {
 
@@ -247,27 +176,18 @@
         font-size: 21px;
       }
 
-
       .tarjeta {
-
         min-width: 135px;
-
         padding: 8px 10px;
-
       }
-
 
       .tarjeta strong {
         font-size: 19px;
       }
 
-
       #map {
-
         height: 60vh;
-
         min-height: 380px;
-
       }
 
     }
@@ -275,7 +195,6 @@
   </style>
 
 </head>
-
 
 <body>
 
@@ -290,58 +209,31 @@
       🌎 Radiophonica en vivo
     </h1>
 
-
     <div id="resumen">
 
-
       <div class="tarjeta">
-
         👥 En la web
-
-        <strong id="total-web">
-          0
-        </strong>
-
+        <strong id="total-web">0</strong>
       </div>
 
-
       <div class="tarjeta">
-
         🎧 Escuchando ahora
-
-        <strong id="total-oyentes">
-          0
-        </strong>
-
+        <strong id="total-oyentes">0</strong>
       </div>
 
-
       <div class="tarjeta">
-
         📺 Principal
-
-        <strong id="total-principal">
-          0
-        </strong>
-
+        <strong id="total-principal">0</strong>
       </div>
-
 
       <div class="tarjeta">
-
         📱 Vertical
-
-        <strong id="total-vertical">
-          0
-        </strong>
-
+        <strong id="total-vertical">0</strong>
       </div>
-
 
     </div>
 
   </div>
-
 
 
   <!-- =========================================
@@ -351,7 +243,6 @@
   <div id="map"></div>
 
 
-
   <!-- =========================================
        LEYENDA
   ========================================= -->
@@ -359,37 +250,25 @@
   <div id="leyenda">
 
     <span class="leyenda-item">
-
-      <span class="punto web"></span>
-
-      Visitante web
-
+      <span class="punto punto-web"></span>
+      Visitantes web
     </span>
 
-
     <span class="leyenda-item">
-
-      <span class="punto principal"></span>
-
-      Oyente Principal
-
+      <span class="punto punto-oyente"></span>
+      Oyentes
     </span>
 
-
     <span class="leyenda-item">
-
-      <span class="punto vertical"></span>
-
-      Oyente Vertical
-
+      <span class="punto punto-mixto"></span>
+      Web + oyentes
     </span>
 
   </div>
 
 
-
   <!-- =========================================
-       ESTADÍSTICAS DEL DÍA
+       ESTADÍSTICAS DIARIAS
   ========================================= -->
 
   <div id="estadisticas">
@@ -399,13 +278,10 @@
     </h2>
 
     <div id="lista-regiones">
-
       Cargando estadísticas...
-
     </div>
 
   </div>
-
 
 
   <!-- =========================================
@@ -417,41 +293,30 @@
   </script>
 
 
-
   <!-- =========================================
        FIREBASE
   ========================================= -->
 
   <script type="module">
 
-
     import {
-
       initializeApp
-
     }
-
     from
-
     "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 
 
     import {
-
       getDatabase,
       ref,
       onValue
-
     }
-
     from
-
     "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 
-
     /* =========================================
-       CONFIGURACIÓN FIREBASE
+       FIREBASE CONFIG
     ========================================= */
 
     const firebaseConfig = {
@@ -481,14 +346,11 @@
 
 
     const app =
-      initializeApp(
-        firebaseConfig
-      );
+      initializeApp(firebaseConfig);
 
 
     const db =
       getDatabase(app);
-
 
 
     /* =========================================
@@ -496,205 +358,149 @@
     ========================================= */
 
     const map =
-      L.map(
-        "map"
-      ).setView(
-        [-20, -60],
-        3
-      );
+      L.map("map")
+        .setView(
+          [-20, -60],
+          3
+        );
 
 
     L.tileLayer(
-
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-
       {
-
         maxZoom: 19,
-
-        attribution:
-          "&copy; OpenStreetMap"
-
+        attribution: "&copy; OpenStreetMap"
       }
-
     ).addTo(map);
 
 
+    const capaMarcadores =
+      L.layerGroup()
+        .addTo(map);
+
 
     /* =========================================
-       VARIABLES
+       TIEMPOS
     ========================================= */
+
+    /*
+       Una conexión se considera activa
+       si su último heartbeat tiene
+       menos de 90 segundos.
+    */
 
     const TIEMPO_ACTIVO =
       90 * 1000;
 
+
+    /*
+       Permitimos hasta 2 minutos hacia
+       el futuro para evitar problemas
+       por diferencias de reloj entre
+       PC, móvil y navegador.
+    */
+
+    const TOLERANCIA_RELOJ =
+      120 * 1000;
+
+
+    /* =========================================
+       DATOS FIREBASE
+    ========================================= */
 
     let conexionesWeb = {};
 
     let oyentesEnVivo = {};
 
 
-    const marcadores =
-      L.layerGroup()
-        .addTo(map);
-
-
-
     /* =========================================
-       COLORES DE MARCADORES
+       COMPROBAR SI ESTÁ ACTIVO
     ========================================= */
 
-    function crearIcono(color) {
+    function estaActivo(registro) {
 
-      return L.divIcon({
-
-        className: "",
-
-        html:
-          `
-          <div
-            style="
-              width:18px;
-              height:18px;
-              background:${color};
-              border:3px solid white;
-              border-radius:50%;
-              box-shadow:0 0 8px rgba(0,0,0,.7);
-            "
-          ></div>
-          `,
-
-        iconSize:
-          [18,18],
-
-        iconAnchor:
-          [9,9]
-
-      });
-
-    }
-
-
-    const iconoWeb =
-      crearIcono(
-        "#3388ff"
-      );
-
-
-    const iconoPrincipal =
-      crearIcono(
-        "#20c997"
-      );
-
-
-    const iconoVertical =
-      crearIcono(
-        "#ff4d6d"
-      );
-
-
-
-    /* =========================================
-       VALIDAR CONEXIÓN ACTIVA
-    ========================================= */
-
-    function estaActivo(conexion) {
-
-      if (!conexion) {
+      if (!registro) {
         return false;
       }
 
 
       const timestamp =
-        Number(
-          conexion.timestamp
-        );
+        Number(registro.timestamp);
 
 
-      if (
-        !Number.isFinite(timestamp)
-      ) {
-
+      if (!Number.isFinite(timestamp)) {
         return false;
-
       }
 
 
-      const antiguedad =
-        Date.now() -
-        timestamp;
+      const diferencia =
+        Date.now() - timestamp;
 
+
+      /*
+         Puede tener hasta 90 segundos
+         de antigüedad.
+
+         También puede estar hasta
+         120 segundos en el futuro
+         por diferencias de reloj.
+      */
 
       return (
-
-        antiguedad >= 0 &&
-
-        antiguedad <=
-          TIEMPO_ACTIVO
-
+        diferencia <= TIEMPO_ACTIVO &&
+        diferencia >= -TOLERANCIA_RELOJ
       );
 
     }
 
 
-
     /* =========================================
-       VALIDAR UBICACIÓN
+       UBICACIÓN
     ========================================= */
 
-    function obtenerUbicacion(conexion) {
+    function obtenerUbicacion(registro) {
 
       if (
-        !conexion ||
-        !conexion.ubicacion
+        !registro ||
+        !registro.ubicacion
       ) {
-
         return null;
-
       }
 
 
-      const ubicacion =
-        conexion.ubicacion;
+      const u =
+        registro.ubicacion;
+
+
+      /*
+         IMPORTANTE:
+         primero verificamos null
+         antes de convertir a Number.
+      */
+
+      if (
+        u.lat === null ||
+        u.lat === undefined ||
+        u.lon === null ||
+        u.lon === undefined
+      ) {
+        return null;
+      }
 
 
       const lat =
-        Number(
-          ubicacion.lat
-        );
+        Number(u.lat);
 
 
       const lon =
-        Number(
-          ubicacion.lon
-        );
+        Number(u.lon);
 
 
       if (
         !Number.isFinite(lat) ||
         !Number.isFinite(lon)
       ) {
-
         return null;
-
-      }
-
-
-      /*
-      Evitamos interpretar null como 0.
-
-      Si todavía se está obteniendo
-      la ubicación, no ponemos el
-      marcador en África por accidente.
-      */
-
-      if (
-        ubicacion.lat === null ||
-        ubicacion.lon === null
-      ) {
-
-        return null;
-
       }
 
 
@@ -704,15 +510,15 @@
         lon,
 
         city:
-          ubicacion.city ||
+          u.city ||
           "Ciudad desconocida",
 
         region:
-          ubicacion.region ||
+          u.region ||
           "Región desconocida",
 
         country:
-          ubicacion.country ||
+          u.country ||
           "País desconocido"
 
       };
@@ -720,44 +526,73 @@
     }
 
 
-
     /* =========================================
-       ESCAPAR TEXTO
+       ESCAPAR HTML
     ========================================= */
 
-    function escapar(texto) {
+    function escapar(valor) {
 
-      return String(
-        texto ?? ""
-      )
-
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
+      return String(valor ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 
     }
 
+
+    /* =========================================
+       CREAR CLAVE DE UBICACIÓN
+    ========================================= */
+
+    function crearClaveUbicacion(ubicacion) {
+
+      /*
+         Agrupamos principalmente por
+         ciudad + región + país.
+
+         Esto evita que PC y móvil
+         conectados al mismo Wi-Fi
+         queden uno encima del otro.
+      */
+
+      return [
+        ubicacion.city,
+        ubicacion.region,
+        ubicacion.country
+      ]
+      .join("|")
+      .toLowerCase();
+
+    }
+
+
+    /* =========================================
+       CREAR GRUPO
+    ========================================= */
+
+    function crearGrupo(ubicacion) {
+
+      return {
+
+        ubicacion,
+
+        web: 0,
+
+        principal: 0,
+
+        vertical: 0,
+
+        dispositivosWeb: [],
+
+        dispositivosOyentes: [],
+
+        paginas: []
+
+      };
+
+    }
 
 
     /* =========================================
@@ -766,262 +601,176 @@
 
     function actualizarMapa() {
 
-
-      marcadores.clearLayers();
+      capaMarcadores.clearLayers();
 
 
       let totalWeb =
         0;
 
-
       let totalOyentes =
         0;
 
-
       let totalPrincipal =
         0;
-
 
       let totalVertical =
         0;
 
 
-
-      /* =====================================
-         VISITANTES DE LA WEB
-      ===================================== */
-
-      for (
-        const conexion
-        of
-        Object.values(conexionesWeb)
-      ) {
-
-
-        if (
-          !estaActivo(conexion)
-        ) {
-
-          continue;
-
-        }
-
-
-        totalWeb++;
-
-
-        const ubicacion =
-          obtenerUbicacion(
-            conexion
-          );
-
-
-        if (!ubicacion) {
-
-          continue;
-
-        }
-
-
-        const pagina =
-          conexion.pagina ||
-          "/";
-
-
-        const dispositivo =
-          conexion.dispositivo ||
-          "Desconocido";
-
-
-        L.marker(
-
-          [
-            ubicacion.lat,
-            ubicacion.lon
-          ],
-
-          {
-            icon:
-              iconoWeb
-          }
-
-        )
-
-        .bindPopup(
-
-          `
-          <strong>
-            👥 Visitante web
-          </strong>
-
-          <br><br>
-
-          📍
-          ${escapar(ubicacion.city)},
-          ${escapar(ubicacion.country)}
-
-          <br>
-
-          🗺️
-          ${escapar(ubicacion.region)}
-
-          <br>
-
-          💻
-          ${escapar(dispositivo)}
-
-          <br>
-
-          🌐
-          ${escapar(pagina)}
-          `
-
-        )
-
-        .addTo(
-          marcadores
-        );
-
-      }
-
+      const grupos = {};
 
 
       /* =====================================
-         OYENTES REALES
+         VISITANTES WEB
       ===================================== */
 
-      for (
-        const oyente
-        of
-        Object.values(oyentesEnVivo)
-      ) {
+      Object.values(
+        conexionesWeb
+      ).forEach(
+        conexion => {
 
-
-        if (
-          !estaActivo(oyente)
-        ) {
-
-          continue;
-
-        }
-
-
-        totalOyentes++;
-
-
-        const tipo =
-          oyente.tipo ||
-          "principal";
-
-
-        if (
-          tipo === "vertical"
-        ) {
-
-          totalVertical++;
-
-        }
-
-        else {
-
-          totalPrincipal++;
-
-        }
-
-
-        const ubicacion =
-          obtenerUbicacion(
-            oyente
-          );
-
-
-        if (!ubicacion) {
-
-          continue;
-
-        }
-
-
-        const dispositivo =
-          oyente.dispositivo ||
-          "Desconocido";
-
-
-        const esVertical =
-          tipo === "vertical";
-
-
-        const icono =
-          esVertical
-            ? iconoVertical
-            : iconoPrincipal;
-
-
-        const nombreReproductor =
-          esVertical
-            ? "Vertical"
-            : "Principal";
-
-
-        const emoji =
-          esVertical
-            ? "📱"
-            : "📺";
-
-
-        L.marker(
-
-          [
-            ubicacion.lat,
-            ubicacion.lon
-          ],
-
-          {
-            icon
+          if (!estaActivo(conexion)) {
+            return;
           }
 
-        )
 
-        .bindPopup(
+          totalWeb++;
 
-          `
-          <strong>
-            🎧 Oyente en vivo
-          </strong>
 
-          <br><br>
+          const ubicacion =
+            obtenerUbicacion(conexion);
 
-          ${emoji}
-          Reproductor:
-          <strong>
-            ${nombreReproductor}
-          </strong>
 
-          <br>
+          if (!ubicacion) {
+            return;
+          }
 
-          📍
-          ${escapar(ubicacion.city)},
-          ${escapar(ubicacion.country)}
 
-          <br>
+          const clave =
+            crearClaveUbicacion(
+              ubicacion
+            );
 
-          🗺️
-          ${escapar(ubicacion.region)}
 
-          <br>
+          if (!grupos[clave]) {
 
-          💻
-          ${escapar(dispositivo)}
-          `
+            grupos[clave] =
+              crearGrupo(
+                ubicacion
+              );
 
-        )
+          }
 
-        .addTo(
-          marcadores
-        );
 
-      }
+          grupos[clave].web++;
 
+
+          const dispositivo =
+            conexion.dispositivo ||
+            "Desconocido";
+
+
+          grupos[clave]
+            .dispositivosWeb
+            .push(
+              dispositivo
+            );
+
+
+          if (conexion.pagina) {
+
+            grupos[clave]
+              .paginas
+              .push(
+                conexion.pagina
+              );
+
+          }
+
+        }
+      );
+
+
+      /* =====================================
+         OYENTES
+      ===================================== */
+
+      Object.values(
+        oyentesEnVivo
+      ).forEach(
+        oyente => {
+
+          if (!estaActivo(oyente)) {
+            return;
+          }
+
+
+          totalOyentes++;
+
+
+          const tipo =
+            oyente.tipo ||
+            "principal";
+
+
+          if (tipo === "vertical") {
+
+            totalVertical++;
+
+          }
+          else {
+
+            totalPrincipal++;
+
+          }
+
+
+          const ubicacion =
+            obtenerUbicacion(oyente);
+
+
+          if (!ubicacion) {
+            return;
+          }
+
+
+          const clave =
+            crearClaveUbicacion(
+              ubicacion
+            );
+
+
+          if (!grupos[clave]) {
+
+            grupos[clave] =
+              crearGrupo(
+                ubicacion
+              );
+
+          }
+
+
+          if (tipo === "vertical") {
+
+            grupos[clave].vertical++;
+
+          }
+          else {
+
+            grupos[clave].principal++;
+
+          }
+
+
+          grupos[clave]
+            .dispositivosOyentes
+            .push(
+              oyente.dispositivo ||
+              "Desconocido"
+            );
+
+        }
+      );
 
 
       /* =====================================
@@ -1059,13 +808,266 @@
         .textContent =
           totalVertical;
 
+
+      /* =====================================
+         CREAR MARCADORES AGRUPADOS
+      ===================================== */
+
+      Object.values(
+        grupos
+      ).forEach(
+        grupo => {
+
+
+          const totalEscuchando =
+            grupo.principal +
+            grupo.vertical;
+
+
+          const totalLugar =
+            grupo.web +
+            totalEscuchando;
+
+
+          /*
+             COLOR
+
+             Azul:
+             solo visitantes web
+
+             Verde:
+             solo oyentes
+
+             Naranja:
+             visitantes + oyentes
+          */
+
+          let color =
+            "#3388ff";
+
+
+          if (
+            grupo.web > 0 &&
+            totalEscuchando > 0
+          ) {
+
+            color =
+              "#ffb020";
+
+          }
+          else if (
+            totalEscuchando > 0
+          ) {
+
+            color =
+              "#20c997";
+
+          }
+
+
+          const icono =
+            L.divIcon({
+
+              className: "",
+
+              html:
+                `
+                <div
+                  class="marcador-cantidad"
+                  style="
+                    background:${color};
+                  "
+                >
+                  ${totalLugar}
+                </div>
+                `,
+
+              iconSize:
+                [34,34],
+
+              iconAnchor:
+                [17,17],
+
+              popupAnchor:
+                [0,-18]
+
+            });
+
+
+          /* =================================
+             DISPOSITIVOS
+          ================================= */
+
+          const dispositivosWeb =
+            [
+              ...new Set(
+                grupo.dispositivosWeb
+              )
+            ];
+
+
+          const dispositivosOyentes =
+            [
+              ...new Set(
+                grupo.dispositivosOyentes
+              )
+            ];
+
+
+          let textoDispositivosWeb =
+            "—";
+
+
+          if (
+            dispositivosWeb.length > 0
+          ) {
+
+            textoDispositivosWeb =
+              dispositivosWeb
+                .map(
+                  d =>
+                    escapar(d)
+                )
+                .join(", ");
+
+          }
+
+
+          let textoDispositivosOyentes =
+            "—";
+
+
+          if (
+            dispositivosOyentes.length > 0
+          ) {
+
+            textoDispositivosOyentes =
+              dispositivosOyentes
+                .map(
+                  d =>
+                    escapar(d)
+                )
+                .join(", ");
+
+          }
+
+
+          /* =================================
+             POPUP
+          ================================= */
+
+          const popup =
+            `
+
+            <div
+              style="
+                min-width:220px;
+                line-height:1.6;
+              "
+            >
+
+              <strong
+                style="
+                  font-size:16px;
+                "
+              >
+                📍
+                ${escapar(
+                  grupo.ubicacion.city
+                )}
+              </strong>
+
+              <br>
+
+              ${escapar(
+                grupo.ubicacion.region
+              )},
+              ${escapar(
+                grupo.ubicacion.country
+              )}
+
+              <hr>
+
+              👥
+              <strong>
+                En la web:
+              </strong>
+
+              ${grupo.web}
+
+              <br>
+
+              🎧
+              <strong>
+                Escuchando:
+              </strong>
+
+              ${totalEscuchando}
+
+              <br><br>
+
+              📺 Principal:
+              <strong>
+                ${grupo.principal}
+              </strong>
+
+              <br>
+
+              📱 Vertical:
+              <strong>
+                ${grupo.vertical}
+              </strong>
+
+              <hr>
+
+              💻
+              <strong>
+                Web:
+              </strong>
+
+              ${textoDispositivosWeb}
+
+              <br>
+
+              🎧
+              <strong>
+                Oyentes:
+              </strong>
+
+              ${textoDispositivosOyentes}
+
+            </div>
+
+            `;
+
+
+          L.marker(
+
+            [
+              grupo.ubicacion.lat,
+              grupo.ubicacion.lon
+            ],
+
+            {
+              icon: icono
+            }
+
+          )
+          .bindPopup(
+            popup
+          )
+          .addTo(
+            capaMarcadores
+          );
+
+        }
+      );
+
     }
 
 
-
     /* =========================================
-       FIREBASE:
-       PERSONAS EN LA WEB
+       FIREBASE - VISITANTES WEB
     ========================================= */
 
     const conexionesRef =
@@ -1086,17 +1088,28 @@
           {};
 
 
+        /*
+           ACTUALIZACIÓN INMEDIATA
+        */
+
         actualizarMapa();
+
+      },
+
+      error => {
+
+        console.error(
+          "Error leyendo conexiones:",
+          error
+        );
 
       }
 
     );
 
 
-
     /* =========================================
-       FIREBASE:
-       OYENTES REALES
+       FIREBASE - OYENTES
     ========================================= */
 
     const oyentesRef =
@@ -1117,30 +1130,45 @@
           {};
 
 
+        /*
+           ACTUALIZACIÓN INMEDIATA
+        */
+
         actualizarMapa();
+
+      },
+
+      error => {
+
+        console.error(
+          "Error leyendo oyentes:",
+          error
+        );
 
       }
 
     );
 
 
-
     /* =========================================
-       RECALCULAR CADA 15 SEGUNDOS
+       LIMPIEZA VISUAL
+
+       Cada 10 segundos volvemos a comprobar
+       los timestamps.
+
+       Firebase actualiza inmediatamente,
+       pero esto permite que desaparezcan
+       registros cuyo heartbeat quedó viejo.
     ========================================= */
 
     setInterval(
-
       actualizarMapa,
-
-      15000
-
+      10000
     );
 
 
-
     /* =========================================
-       ESTADÍSTICAS DIARIAS
+       FECHA LOCAL
     ========================================= */
 
     function obtenerFechaLocal() {
@@ -1156,7 +1184,8 @@
       const month =
         String(
           ahora.getMonth() + 1
-        ).padStart(
+        )
+        .padStart(
           2,
           "0"
         );
@@ -1165,7 +1194,8 @@
       const day =
         String(
           ahora.getDate()
-        ).padStart(
+        )
+        .padStart(
           2,
           "0"
         );
@@ -1181,6 +1211,10 @@
 
     }
 
+
+    /* =========================================
+       ESTADÍSTICAS DIARIAS
+    ========================================= */
 
     const fechaHoy =
       obtenerFechaLocal();
@@ -1202,7 +1236,6 @@
       diarioRef,
 
       snapshot => {
-
 
         const datos =
           snapshot.val() ||
@@ -1226,12 +1259,9 @@
 
 
         regiones.sort(
-
           (a,b) =>
-
             Number(b[1] || 0) -
             Number(a[1] || 0)
-
         );
 
 
@@ -1239,7 +1269,7 @@
           regiones.length === 0
         ) {
 
-          lista.innerHTML =
+          lista.textContent =
             "Todavía no hay visitas registradas hoy.";
 
           return;
@@ -1251,69 +1281,64 @@
           0;
 
 
-        for (
-          const [
-            region,
-            cantidad
-          ]
-          of regiones
-        ) {
+        regiones.forEach(
+          ([region, cantidad]) => {
+
+            const numero =
+              Number(cantidad) ||
+              0;
 
 
-          const numero =
-            Number(cantidad) ||
-            0;
+            totalDia +=
+              numero;
 
 
-          totalDia +=
-            numero;
+            const fila =
+              document.createElement(
+                "div"
+              );
 
 
-          const fila =
-            document.createElement(
-              "div"
+            fila.className =
+              "region";
+
+
+            const nombre =
+              document.createElement(
+                "span"
+              );
+
+
+            nombre.textContent =
+              region;
+
+
+            const total =
+              document.createElement(
+                "strong"
+              );
+
+
+            total.textContent =
+              numero;
+
+
+            fila.appendChild(
+              nombre
             );
 
 
-          fila.className =
-            "region";
-
-
-          const nombre =
-            document.createElement(
-              "span"
+            fila.appendChild(
+              total
             );
 
 
-          nombre.textContent =
-            region;
-
-
-          const total =
-            document.createElement(
-              "strong"
+            lista.appendChild(
+              fila
             );
 
-
-          total.textContent =
-            numero;
-
-
-          fila.appendChild(
-            nombre
-          );
-
-
-          fila.appendChild(
-            total
-          );
-
-
-          lista.appendChild(
-            fila
-          );
-
-        }
+          }
+        );
 
 
         const filaTotal =
@@ -1332,8 +1357,19 @@
           );
 
 
-        textoTotal.innerHTML =
-          "<strong>Total de hoy</strong>";
+        const strong =
+          document.createElement(
+            "strong"
+          );
+
+
+        strong.textContent =
+          "Total de hoy";
+
+
+        textoTotal.appendChild(
+          strong
+        );
 
 
         const numeroTotal =
@@ -1360,13 +1396,21 @@
           filaTotal
         );
 
+      },
+
+      error => {
+
+        console.error(
+          "Error leyendo estadísticas:",
+          error
+        );
+
       }
 
     );
 
 
   </script>
-
 
 </body>
 
