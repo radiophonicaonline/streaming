@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
@@ -7,62 +8,125 @@
 
 <title>Mapa de Oyentes en Vivo</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
 
 <link
   rel="stylesheet"
   href="https://unpkg.com/leaflet/dist/leaflet.css"
 />
 
+
 <style>
 
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-  }
+body {
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  margin: 0;
+  padding: 0;
+
+}
+
+
+#container {
+
+  display: flex;
+  flex-wrap: wrap;
+
+}
+
+
+#map {
+
+  flex: 2;
+
+  height: 500px;
+
+  min-width: 300px;
+
+}
+
+
+#stats {
+
+  flex: 1;
+
+  padding: 10px;
+
+  background: #f9f9f9;
+
+  border-left:
+    1px solid #ccc;
+
+}
+
+
+h3 {
+
+  margin-top: 0;
+
+}
+
+
+ul {
+
+  list-style: none;
+
+  padding: 0;
+
+}
+
+
+li {
+
+  padding: 7px 5px;
+
+  border-bottom:
+    1px solid #ddd;
+
+}
+
+
+.estado {
+
+  font-size: 13px;
+
+  color: #666;
+
+}
+
+
+@media
+(max-width: 700px) {
 
   #container {
-    display: flex;
-    flex-wrap: wrap;
+
+    display: block;
+
   }
+
 
   #map {
-    flex: 2;
-    height: 500px;
-    min-width: 300px;
+
+    width: 100%;
+
+    height: 400px;
+
   }
+
 
   #stats {
-    flex: 1;
-    padding: 10px;
-    background: #f9f9f9;
-    border-left: 1px solid #ccc;
+
+    border-left: none;
+
   }
 
-  h2 {
-    text-align: center;
-    margin-top: 10px;
-  }
-
-  h3 {
-    margin-top: 0;
-  }
-
-  ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  li {
-    padding: 5px;
-    border-bottom: 1px solid #ddd;
-  }
-
-  .estado {
-    font-size: 13px;
-    color: #666;
-  }
+}
 
 </style>
 
@@ -75,76 +139,107 @@
 <div id="container">
 
 
-  <!-- MAPA -->
-
-  <div id="map"></div>
+<div id="map"></div>
 
 
-  <!-- ESTADÍSTICAS -->
-
-  <div id="stats">
-
-    <h3>Oyentes en Tiempo Real por Región</h3>
-
-    <ul id="regionListTiempoReal"></ul>
-
-    <p>
-      Total conectados ahora:
-      <strong>
-        <span id="totalTiempoReal">0</span>
-      </strong>
-    </p>
-
-    <p class="estado">
-      Se consideran activos los dispositivos
-      detectados durante los últimos 90 segundos.
-    </p>
+<div id="stats">
 
 
-    <h3>Oyentes Diarios por Región</h3>
+<h3>
+Oyentes en Tiempo Real por Región
+</h3>
 
-    <ul id="regionListDiario"></ul>
 
-    <p>
-      Total diario:
-      <span id="totalDiario">0</span>
-    </p>
+<ul
+  id="regionListTiempoReal">
+</ul>
 
-  </div>
+
+<p>
+
+Total conectados ahora:
+
+<strong>
+<span id="totalTiempoReal">
+0
+</span>
+</strong>
+
+</p>
+
+
+<p class="estado">
+
+🟢 Se consideran activos los dispositivos
+detectados durante los últimos 90 segundos.
+
+</p>
+
+
+<h3>
+Oyentes Diarios por Región
+</h3>
+
+
+<ul
+  id="regionListDiario">
+</ul>
+
+
+<p>
+
+Total diario:
+
+<strong>
+<span id="totalDiario">
+0
+</span>
+</strong>
+
+</p>
 
 
 </div>
+
+</div>
+
 
 
 <script type="module">
 
 
-// ======================================================
-// 🔥 FIREBASE
-// ======================================================
-
 import {
   initializeApp
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+}
+from
+"https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 
 
 import {
+
   getDatabase,
   ref,
   onValue
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+}
+from
+"https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 
-import L from "https://cdn.skypack.dev/leaflet";
+import L
+from
+"https://cdn.skypack.dev/leaflet";
+
 
 
 // ======================================================
-// 🔥 CONFIGURACIÓN FIREBASE
+// FIREBASE
 // ======================================================
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
+  apiKey:
+    "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
 
   authDomain:
     "contador-de-personas-5f8aa.firebaseapp.com",
@@ -167,137 +262,149 @@ const firebaseConfig = {
 };
 
 
+const app =
+  initializeApp(firebaseConfig);
+
+
+const db =
+  getDatabase(app);
+
+
+
 // ======================================================
-// 🔥 INICIALIZAR
+// MAPA
 // ======================================================
 
-const app = initializeApp(firebaseConfig);
-
-const db = getDatabase(app);
-
-
-// ======================================================
-// 🗺️ CREAR MAPA
-// ======================================================
-
-const map = L.map("map").setView([-33.45, -70.66], 5);
+const map =
+  L.map("map")
+   .setView(
+     [-33.45, -70.66],
+     5
+   );
 
 
 L.tileLayer(
+
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
   {
+
     maxZoom: 18,
 
     attribution:
       "&copy; OpenStreetMap"
+
   }
+
 ).addTo(map);
 
 
-// ======================================================
-// VARIABLES
-// ======================================================
 
 let markers = {};
 
 let conexionesActuales = {};
 
 
-// ======================================================
-// ⏱️ CONFIGURACIÓN DE PRESENCIA
-//
-// Heartbeat JS = 30 segundos
-// Tiempo máximo permitido = 90 segundos
-// ======================================================
+// 90 segundos
 
-const TIEMPO_ACTIVO = 90 * 1000;
+const TIEMPO_ACTIVO =
+  90 * 1000;
+
 
 
 // ======================================================
-// 📡 ESCUCHAR FIREBASE
+// FIREBASE EN TIEMPO REAL
 // ======================================================
 
 onValue(
+
   ref(db, "conexiones"),
 
   snapshot => {
 
-    conexionesActuales = snapshot.val() || {};
+    conexionesActuales =
+      snapshot.val() || {};
 
     actualizarMapa();
 
   }
+
 );
 
 
+
 // ======================================================
-// 🗺️ ACTUALIZAR MAPA
+// ACTUALIZAR MAPA
 // ======================================================
 
 function actualizarMapa() {
 
 
-  // --------------------------------------------------
-  // Limpiar marcadores anteriores
-  // --------------------------------------------------
+  // Quitar marcadores anteriores
 
-  Object.values(markers).forEach(marker => {
+  Object.values(markers)
+    .forEach(marker => {
 
-    map.removeLayer(marker);
+      map.removeLayer(marker);
 
-  });
+    });
+
 
   markers = {};
 
 
-  // --------------------------------------------------
-  // Variables
-  // --------------------------------------------------
+  const ahora =
+    Date.now();
 
-  const ahora = Date.now();
 
-  const regionCount = {};
+  const regiones = {};
+
 
   let total = 0;
 
 
-  // --------------------------------------------------
-  // Revisar conexiones
-  // --------------------------------------------------
-
-  for (const id in conexionesActuales) {
+  let posiciones = [];
 
 
-    const conn = conexionesActuales[id];
+  // ==================================================
+  // RECORRER CONEXIONES
+  // ==================================================
+
+  for (
+    const [id, conn]
+    of Object.entries(conexionesActuales)
+  ) {
+
+
+    if (!conn) continue;
 
 
     // ----------------------------------------------
-    // IGNORAR REGISTROS ANTIGUOS
-    // QUE NO TENGAN TIMESTAMP
+    // TIMESTAMP
     // ----------------------------------------------
 
-    if (!conn.timestamp) {
+    const timestamp =
+      Number(conn.timestamp);
+
+
+    if (
+      !Number.isFinite(timestamp)
+    ) {
 
       continue;
 
     }
 
 
-    // ----------------------------------------------
-    // CALCULAR ANTIGÜEDAD
-    // ----------------------------------------------
-
     const antiguedad =
-      ahora - Number(conn.timestamp);
+      ahora - timestamp;
 
 
     // ----------------------------------------------
-    // SI TIENE MÁS DE 90 SEGUNDOS
-    // NO ESTÁ CONECTADO
+    // MÁS DE 90 SEGUNDOS = INACTIVO
     // ----------------------------------------------
 
     if (
-      !Number.isFinite(antiguedad) ||
       antiguedad < 0 ||
       antiguedad > TIEMPO_ACTIVO
     ) {
@@ -308,7 +415,7 @@ function actualizarMapa() {
 
 
     // ----------------------------------------------
-    // NECESITAMOS UBICACIÓN
+    // UBICACIÓN
     // ----------------------------------------------
 
     if (!conn.ubicacion) {
@@ -318,27 +425,21 @@ function actualizarMapa() {
     }
 
 
-    const {
-      lat,
-      lon,
-      city,
-      region,
-      country
-    } = conn.ubicacion;
+    const ubicacion =
+      conn.ubicacion;
 
 
-    // ----------------------------------------------
-    // VALIDAR COORDENADAS
-    // ----------------------------------------------
+    const lat =
+      Number(ubicacion.lat);
 
-    const latitud = Number(lat);
 
-    const longitud = Number(lon);
+    const lon =
+      Number(ubicacion.lon);
 
 
     if (
-      !Number.isFinite(latitud) ||
-      !Number.isFinite(longitud)
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon)
     ) {
 
       continue;
@@ -347,96 +448,146 @@ function actualizarMapa() {
 
 
     // ----------------------------------------------
-    // ESTE DISPOSITIVO ESTÁ ACTIVO
+    // CONEXIÓN VÁLIDA
     // ----------------------------------------------
 
     total++;
 
 
-    // ----------------------------------------------
-    // CREAR MARCADOR
-    // ----------------------------------------------
-
-    const marker = L.marker([
-      latitud,
-      longitud
-    ])
-
-    .addTo(map)
-
-    .bindPopup(`
-
-      📍 ${city || "Desconocido"},
-      ${region || "Desconocida"},
-      ${country || "Desconocido"}
-
-      <br><br>
-
-      🖥 ${conn.dispositivo || "Desconocido"}
-
-      <br>
-
-      🌐 ${conn.pagina || "N/A"}
-
-      <br>
-
-      🟢 Activo ahora
-
-    `);
+    posiciones.push(
+      [lat, lon]
+    );
 
 
-    markers[id] = marker;
+    const region =
+      ubicacion.region ||
+      "Desconocida";
+
+
+    regiones[region] =
+      (regiones[region] || 0) + 1;
 
 
     // ----------------------------------------------
-    // CONTADOR POR REGIÓN
+    // MARCADOR
     // ----------------------------------------------
 
-    const nombreRegion =
-      region || "Desconocida";
+    const marker =
+      L.marker(
+        [lat, lon]
+      )
+
+      .addTo(map)
+
+      .bindPopup(`
+
+        📍
+        ${ubicacion.city || "Desconocida"},
+        ${region},
+        ${ubicacion.country || "Desconocido"}
+
+        <br><br>
+
+        ${conn.dispositivo || "Dispositivo desconocido"}
+
+        <br>
+
+        🌐
+        ${conn.pagina || "/"}
+
+        <br><br>
+
+        🟢 Activo ahora
+
+      `);
 
 
-    regionCount[nombreRegion] =
-      (regionCount[nombreRegion] || 0) + 1;
+    markers[id] =
+      marker;
 
   }
 
 
+
   // ==================================================
-  // MOSTRAR RESULTADOS
+  // CONTADORES
   // ==================================================
 
   mostrarLista(
-    regionCount,
-    "regionListTiempoReal"
+
+    regiones,
+
+    "regionListTiempoReal",
+
+    "Sin oyentes activos"
+
   );
 
 
   document
-    .getElementById("totalTiempoReal")
-    .textContent = total;
+    .getElementById(
+      "totalTiempoReal"
+    )
+    .textContent =
+      total;
+
+
+
+  // ==================================================
+  // AJUSTAR MAPA A LOS OYENTES
+  // ==================================================
+
+  if (
+    posiciones.length === 1
+  ) {
+
+    map.setView(
+      posiciones[0],
+      10
+    );
+
+  }
+
+
+  if (
+    posiciones.length > 1
+  ) {
+
+    map.fitBounds(
+      posiciones,
+      {
+
+        padding:
+          [40, 40]
+
+      }
+    );
+
+  }
 
 }
 
 
+
 // ======================================================
-// 🔄 REVISIÓN AUTOMÁTICA
+// REVISIÓN AUTOMÁTICA
 //
-// Aunque Firebase no produzca ningún evento,
-// recalculamos cada 15 segundos.
-//
-// Así una conexión vencida desaparece del mapa.
+// Esto hace que una conexión vencida desaparezca
+// aunque Firebase no genere otro evento.
 // ======================================================
 
-setInterval(() => {
+setInterval(
 
-  actualizarMapa();
+  actualizarMapa,
 
-}, 15000);
+  15000
+
+);
+
 
 
 // ======================================================
-// 📊 OYENTES DIARIOS
+// OYENTES DIARIOS
 // ======================================================
 
 const hoy =
@@ -446,6 +597,7 @@ const hoy =
 
 
 onValue(
+
   ref(
     db,
     `conexiones_diarias/${hoy}`
@@ -453,85 +605,116 @@ onValue(
 
   snapshot => {
 
+
     const data =
       snapshot.val() || {};
 
-    let total = 0;
+
+    let total =
+      0;
 
 
-    for (const region in data) {
+    for (
+      const valor
+      of Object.values(data)
+    ) {
 
-      total += Number(data[region]) || 0;
+      total +=
+        Number(valor) || 0;
 
     }
 
 
     mostrarLista(
+
       data,
-      "regionListDiario"
+
+      "regionListDiario",
+
+      "Sin oyentes registrados hoy"
+
     );
 
 
     document
-      .getElementById("totalDiario")
-      .textContent = total;
+      .getElementById(
+        "totalDiario"
+      )
+      .textContent =
+        total;
 
   }
+
 );
 
 
+
 // ======================================================
-// 📋 MOSTRAR LISTA POR REGIONES
+// MOSTRAR LISTAS
 // ======================================================
 
 function mostrarLista(
-  obj,
-  elementoId
+  datos,
+  elementoId,
+  mensajeVacio
 ) {
 
 
-  const sorted =
-    Object.entries(obj)
-      .sort(
-        (a, b) =>
-          Number(b[1]) - Number(a[1])
+  const ul =
+    document.getElementById(
+      elementoId
+    );
+
+
+  ul.innerHTML =
+    "";
+
+
+  const elementos =
+    Object.entries(datos)
+
+    .sort(
+      (a, b) =>
+        Number(b[1]) -
+        Number(a[1])
+    );
+
+
+  if (
+    elementos.length === 0
+  ) {
+
+    const li =
+      document.createElement(
+        "li"
       );
 
 
-  const ul =
-    document.getElementById(elementoId);
-
-
-  ul.innerHTML = "";
-
-
-  // Si no hay nadie conectado
-
-  if (sorted.length === 0) {
-
-    const li =
-      document.createElement("li");
-
     li.textContent =
-      "Sin oyentes activos";
+      mensajeVacio;
+
 
     ul.appendChild(li);
+
 
     return;
 
   }
 
 
-  // Mostrar regiones
+  elementos.forEach(
+    ([region, cantidad]) => {
 
-  sorted.forEach(
-    ([region, count]) => {
 
       const li =
-        document.createElement("li");
+        document.createElement(
+          "li"
+        );
+
 
       li.textContent =
-        `${region}: ${count} oyente(s)`;
+        `${region}: ${cantidad} oyente(s)`;
+
 
       ul.appendChild(li);
 
