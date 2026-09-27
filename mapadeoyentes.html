@@ -1,134 +1,278 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
 <head>
 
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-<title>Mapa de Oyentes en Vivo</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
-
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet/dist/leaflet.css"
-/>
+  <title>Mapa de Oyentes - Radiophonica</title>
 
 
-<style>
+  <!-- LEAFLET -->
 
-body {
-
-  font-family:
-    Arial,
-    sans-serif;
-
-  margin: 0;
-  padding: 0;
-
-}
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
 
 
-#container {
+  <style>
 
-  display: flex;
-  flex-wrap: wrap;
-
-}
-
-
-#map {
-
-  flex: 2;
-
-  height: 500px;
-
-  min-width: 300px;
-
-}
+    * {
+      box-sizing: border-box;
+    }
 
 
-#stats {
+    body {
 
-  flex: 1;
+      margin: 0;
 
-  padding: 10px;
+      background: #111;
 
-  background: #f9f9f9;
+      color: white;
 
-  border-left:
-    1px solid #ccc;
+      font-family:
+        Arial,
+        sans-serif;
 
-}
-
-
-h3 {
-
-  margin-top: 0;
-
-}
+    }
 
 
-ul {
+    /* =========================================
+       CABECERA
+    ========================================= */
 
-  list-style: none;
+    #cabecera {
 
-  padding: 0;
+      background: #181818;
 
-}
+      padding: 18px 15px;
 
+      text-align: center;
 
-li {
+      border-bottom:
+        1px solid #333;
 
-  padding: 7px 5px;
-
-  border-bottom:
-    1px solid #ddd;
-
-}
-
-
-.estado {
-
-  font-size: 13px;
-
-  color: #666;
-
-}
+    }
 
 
-@media
-(max-width: 700px) {
+    #cabecera h1 {
 
-  #container {
+      margin: 0 0 12px 0;
 
-    display: block;
+      font-size: 25px;
 
-  }
-
-
-  #map {
-
-    width: 100%;
-
-    height: 400px;
-
-  }
+    }
 
 
-  #stats {
+    #resumen {
 
-    border-left: none;
+      display: flex;
 
-  }
+      justify-content: center;
 
-}
+      flex-wrap: wrap;
 
-</style>
+      gap: 10px;
+
+    }
+
+
+    .tarjeta {
+
+      background: #242424;
+
+      border-radius: 10px;
+
+      padding: 10px 16px;
+
+      min-width: 150px;
+
+      font-size: 14px;
+
+    }
+
+
+    .tarjeta strong {
+
+      display: block;
+
+      font-size: 22px;
+
+      margin-top: 4px;
+
+    }
+
+
+    /* =========================================
+       MAPA
+    ========================================= */
+
+    #map {
+
+      width: 100%;
+
+      height: 65vh;
+
+      min-height: 430px;
+
+    }
+
+
+    /* =========================================
+       LEYENDA
+    ========================================= */
+
+    #leyenda {
+
+      background: #181818;
+
+      padding: 12px;
+
+      text-align: center;
+
+      font-size: 14px;
+
+      border-top:
+        1px solid #333;
+
+    }
+
+
+    .leyenda-item {
+
+      display: inline-block;
+
+      margin: 5px 10px;
+
+    }
+
+
+    .punto {
+
+      width: 12px;
+
+      height: 12px;
+
+      border-radius: 50%;
+
+      display: inline-block;
+
+      margin-right: 5px;
+
+    }
+
+
+    .web {
+      background: #3388ff;
+    }
+
+
+    .principal {
+      background: #20c997;
+    }
+
+
+    .vertical {
+      background: #ff4d6d;
+    }
+
+
+    /* =========================================
+       ESTADÍSTICAS DIARIAS
+    ========================================= */
+
+    #estadisticas {
+
+      padding: 20px;
+
+      background: #111;
+
+    }
+
+
+    #estadisticas h2 {
+
+      margin-top: 0;
+
+      text-align: center;
+
+    }
+
+
+    #lista-regiones {
+
+      max-width: 700px;
+
+      margin: auto;
+
+      background: #1d1d1d;
+
+      border-radius: 10px;
+
+      padding: 15px;
+
+    }
+
+
+    .region {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      padding: 8px 5px;
+
+      border-bottom:
+        1px solid #333;
+
+    }
+
+
+    .region:last-child {
+
+      border-bottom: none;
+
+    }
+
+
+    @media (max-width: 600px) {
+
+      #cabecera h1 {
+        font-size: 21px;
+      }
+
+
+      .tarjeta {
+
+        min-width: 135px;
+
+        padding: 8px 10px;
+
+      }
+
+
+      .tarjeta strong {
+        font-size: 19px;
+      }
+
+
+      #map {
+
+        height: 60vh;
+
+        min-height: 380px;
+
+      }
+
+    }
+
+  </style>
 
 </head>
 
@@ -136,595 +280,1092 @@ li {
 <body>
 
 
-<div id="container">
+  <!-- =========================================
+       CABECERA
+  ========================================= -->
 
+  <div id="cabecera">
 
-<div id="map"></div>
+    <h1>
+      🌎 Radiophonica en vivo
+    </h1>
 
 
-<div id="stats">
+    <div id="resumen">
 
 
-<h3>
-Oyentes en Tiempo Real por Región
-</h3>
+      <div class="tarjeta">
 
+        👥 En la web
 
-<ul
-  id="regionListTiempoReal">
-</ul>
+        <strong id="total-web">
+          0
+        </strong>
 
+      </div>
 
-<p>
 
-Total conectados ahora:
+      <div class="tarjeta">
 
-<strong>
-<span id="totalTiempoReal">
-0
-</span>
-</strong>
+        🎧 Escuchando ahora
 
-</p>
+        <strong id="total-oyentes">
+          0
+        </strong>
 
+      </div>
 
-<p class="estado">
 
-🟢 Se consideran activos los dispositivos
-detectados durante los últimos 90 segundos.
+      <div class="tarjeta">
 
-</p>
+        📺 Principal
 
+        <strong id="total-principal">
+          0
+        </strong>
 
-<h3>
-Oyentes Diarios por Región
-</h3>
+      </div>
 
 
-<ul
-  id="regionListDiario">
-</ul>
+      <div class="tarjeta">
 
+        📱 Vertical
 
-<p>
+        <strong id="total-vertical">
+          0
+        </strong>
 
-Total diario:
+      </div>
 
-<strong>
-<span id="totalDiario">
-0
-</span>
-</strong>
 
-</p>
+    </div>
 
+  </div>
 
-</div>
 
-</div>
 
+  <!-- =========================================
+       MAPA
+  ========================================= -->
 
+  <div id="map"></div>
 
-<script type="module">
 
 
-import {
-  initializeApp
-}
-from
-"https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  <!-- =========================================
+       LEYENDA
+  ========================================= -->
 
+  <div id="leyenda">
 
-import {
+    <span class="leyenda-item">
 
-  getDatabase,
-  ref,
-  onValue
+      <span class="punto web"></span>
 
-}
-from
-"https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+      Visitante web
 
+    </span>
 
-import L
-from
-"https://cdn.skypack.dev/leaflet";
 
+    <span class="leyenda-item">
 
+      <span class="punto principal"></span>
 
-// ======================================================
-// FIREBASE
-// ======================================================
+      Oyente Principal
 
-const firebaseConfig = {
+    </span>
 
-  apiKey:
-    "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
 
-  authDomain:
-    "contador-de-personas-5f8aa.firebaseapp.com",
+    <span class="leyenda-item">
 
-  databaseURL:
-    "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
+      <span class="punto vertical"></span>
 
-  projectId:
-    "contador-de-personas-5f8aa",
+      Oyente Vertical
 
-  storageBucket:
-    "contador-de-personas-5f8aa.appspot.com",
+    </span>
 
-  messagingSenderId:
-    "1063230344919",
+  </div>
 
-  appId:
-    "1:1063230344919:web:ed86a937ba176dddb1aa92"
 
-};
 
+  <!-- =========================================
+       ESTADÍSTICAS DEL DÍA
+  ========================================= -->
 
-const app =
-  initializeApp(firebaseConfig);
+  <div id="estadisticas">
 
+    <h2>
+      📊 Visitas de hoy por región
+    </h2>
 
-const db =
-  getDatabase(app);
+    <div id="lista-regiones">
 
+      Cargando estadísticas...
 
+    </div>
 
-// ======================================================
-// MAPA
-// ======================================================
+  </div>
 
-const map =
-  L.map("map")
-   .setView(
-     [-33.45, -70.66],
-     5
-   );
 
 
-L.tileLayer(
+  <!-- =========================================
+       LEAFLET
+  ========================================= -->
 
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
 
-  {
 
-    maxZoom: 18,
 
-    attribution:
-      "&copy; OpenStreetMap"
+  <!-- =========================================
+       FIREBASE
+  ========================================= -->
 
-  }
+  <script type="module">
 
-).addTo(map);
 
+    import {
 
-
-let markers = {};
-
-let conexionesActuales = {};
-
-
-// 90 segundos
-
-const TIEMPO_ACTIVO =
-  90 * 1000;
-
-
-
-// ======================================================
-// FIREBASE EN TIEMPO REAL
-// ======================================================
-
-onValue(
-
-  ref(db, "conexiones"),
-
-  snapshot => {
-
-    conexionesActuales =
-      snapshot.val() || {};
-
-    actualizarMapa();
-
-  }
-
-);
-
-
-
-// ======================================================
-// ACTUALIZAR MAPA
-// ======================================================
-
-function actualizarMapa() {
-
-
-  // Quitar marcadores anteriores
-
-  Object.values(markers)
-    .forEach(marker => {
-
-      map.removeLayer(marker);
-
-    });
-
-
-  markers = {};
-
-
-  const ahora =
-    Date.now();
-
-
-  const regiones = {};
-
-
-  let total = 0;
-
-
-  let posiciones = [];
-
-
-  // ==================================================
-  // RECORRER CONEXIONES
-  // ==================================================
-
-  for (
-    const [id, conn]
-    of Object.entries(conexionesActuales)
-  ) {
-
-
-    if (!conn) continue;
-
-
-    // ----------------------------------------------
-    // TIMESTAMP
-    // ----------------------------------------------
-
-    const timestamp =
-      Number(conn.timestamp);
-
-
-    if (
-      !Number.isFinite(timestamp)
-    ) {
-
-      continue;
+      initializeApp
 
     }
 
+    from
 
-    const antiguedad =
-      ahora - timestamp;
+    "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 
 
-    // ----------------------------------------------
-    // MÁS DE 90 SEGUNDOS = INACTIVO
-    // ----------------------------------------------
+    import {
 
-    if (
-      antiguedad < 0 ||
-      antiguedad > TIEMPO_ACTIVO
-    ) {
-
-      continue;
+      getDatabase,
+      ref,
+      onValue
 
     }
 
+    from
 
-    // ----------------------------------------------
-    // UBICACIÓN
-    // ----------------------------------------------
+    "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    if (!conn.ubicacion) {
 
-      continue;
 
-    }
+    /* =========================================
+       CONFIGURACIÓN FIREBASE
+    ========================================= */
 
+    const firebaseConfig = {
 
-    const ubicacion =
-      conn.ubicacion;
+      apiKey:
+        "AIzaSyAC-9LQSlelDVx27wd2DPxisi4M-lRwtrk",
 
+      authDomain:
+        "contador-de-personas-5f8aa.firebaseapp.com",
 
-    const lat =
-      Number(ubicacion.lat);
+      databaseURL:
+        "https://contador-de-personas-5f8aa-default-rtdb.firebaseio.com",
 
+      projectId:
+        "contador-de-personas-5f8aa",
 
-    const lon =
-      Number(ubicacion.lon);
+      storageBucket:
+        "contador-de-personas-5f8aa.appspot.com",
 
+      messagingSenderId:
+        "1063230344919",
 
-    if (
-      !Number.isFinite(lat) ||
-      !Number.isFinite(lon)
-    ) {
+      appId:
+        "1:1063230344919:web:ed86a937ba176dddb1aa92"
 
-      continue;
+    };
 
-    }
 
-
-    // ----------------------------------------------
-    // CONEXIÓN VÁLIDA
-    // ----------------------------------------------
-
-    total++;
-
-
-    posiciones.push(
-      [lat, lon]
-    );
-
-
-    const region =
-      ubicacion.region ||
-      "Desconocida";
-
-
-    regiones[region] =
-      (regiones[region] || 0) + 1;
-
-
-    // ----------------------------------------------
-    // MARCADOR
-    // ----------------------------------------------
-
-    const marker =
-      L.marker(
-        [lat, lon]
-      )
-
-      .addTo(map)
-
-      .bindPopup(`
-
-        📍
-        ${ubicacion.city || "Desconocida"},
-        ${region},
-        ${ubicacion.country || "Desconocido"}
-
-        <br><br>
-
-        ${conn.dispositivo || "Dispositivo desconocido"}
-
-        <br>
-
-        🌐
-        ${conn.pagina || "/"}
-
-        <br><br>
-
-        🟢 Activo ahora
-
-      `);
-
-
-    markers[id] =
-      marker;
-
-  }
-
-
-
-  // ==================================================
-  // CONTADORES
-  // ==================================================
-
-  mostrarLista(
-
-    regiones,
-
-    "regionListTiempoReal",
-
-    "Sin oyentes activos"
-
-  );
-
-
-  document
-    .getElementById(
-      "totalTiempoReal"
-    )
-    .textContent =
-      total;
-
-
-
-  // ==================================================
-  // AJUSTAR MAPA A LOS OYENTES
-  // ==================================================
-
-  if (
-    posiciones.length === 1
-  ) {
-
-    map.setView(
-      posiciones[0],
-      10
-    );
-
-  }
-
-
-  if (
-    posiciones.length > 1
-  ) {
-
-    map.fitBounds(
-      posiciones,
-      {
-
-        padding:
-          [40, 40]
-
-      }
-    );
-
-  }
-
-}
-
-
-
-// ======================================================
-// REVISIÓN AUTOMÁTICA
-//
-// Esto hace que una conexión vencida desaparezca
-// aunque Firebase no genere otro evento.
-// ======================================================
-
-setInterval(
-
-  actualizarMapa,
-
-  15000
-
-);
-
-
-
-// ======================================================
-// OYENTES DIARIOS
-// ======================================================
-
-const hoy =
-  new Date()
-    .toISOString()
-    .split("T")[0];
-
-
-onValue(
-
-  ref(
-    db,
-    `conexiones_diarias/${hoy}`
-  ),
-
-  snapshot => {
-
-
-    const data =
-      snapshot.val() || {};
-
-
-    let total =
-      0;
-
-
-    for (
-      const valor
-      of Object.values(data)
-    ) {
-
-      total +=
-        Number(valor) || 0;
-
-    }
-
-
-    mostrarLista(
-
-      data,
-
-      "regionListDiario",
-
-      "Sin oyentes registrados hoy"
-
-    );
-
-
-    document
-      .getElementById(
-        "totalDiario"
-      )
-      .textContent =
-        total;
-
-  }
-
-);
-
-
-
-// ======================================================
-// MOSTRAR LISTAS
-// ======================================================
-
-function mostrarLista(
-  datos,
-  elementoId,
-  mensajeVacio
-) {
-
-
-  const ul =
-    document.getElementById(
-      elementoId
-    );
-
-
-  ul.innerHTML =
-    "";
-
-
-  const elementos =
-    Object.entries(datos)
-
-    .sort(
-      (a, b) =>
-        Number(b[1]) -
-        Number(a[1])
-    );
-
-
-  if (
-    elementos.length === 0
-  ) {
-
-    const li =
-      document.createElement(
-        "li"
+    const app =
+      initializeApp(
+        firebaseConfig
       );
 
 
-    li.textContent =
-      mensajeVacio;
+    const db =
+      getDatabase(app);
 
 
-    ul.appendChild(li);
+
+    /* =========================================
+       MAPA
+    ========================================= */
+
+    const map =
+      L.map(
+        "map"
+      ).setView(
+        [-20, -60],
+        3
+      );
 
 
-    return;
+    L.tileLayer(
 
-  }
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
+      {
+
+        maxZoom: 19,
+
+        attribution:
+          "&copy; OpenStreetMap"
+
+      }
+
+    ).addTo(map);
 
 
-  elementos.forEach(
-    ([region, cantidad]) => {
+
+    /* =========================================
+       VARIABLES
+    ========================================= */
+
+    const TIEMPO_ACTIVO =
+      90 * 1000;
 
 
-      const li =
-        document.createElement(
-          "li"
+    let conexionesWeb = {};
+
+    let oyentesEnVivo = {};
+
+
+    const marcadores =
+      L.layerGroup()
+        .addTo(map);
+
+
+
+    /* =========================================
+       COLORES DE MARCADORES
+    ========================================= */
+
+    function crearIcono(color) {
+
+      return L.divIcon({
+
+        className: "",
+
+        html:
+          `
+          <div
+            style="
+              width:18px;
+              height:18px;
+              background:${color};
+              border:3px solid white;
+              border-radius:50%;
+              box-shadow:0 0 8px rgba(0,0,0,.7);
+            "
+          ></div>
+          `,
+
+        iconSize:
+          [18,18],
+
+        iconAnchor:
+          [9,9]
+
+      });
+
+    }
+
+
+    const iconoWeb =
+      crearIcono(
+        "#3388ff"
+      );
+
+
+    const iconoPrincipal =
+      crearIcono(
+        "#20c997"
+      );
+
+
+    const iconoVertical =
+      crearIcono(
+        "#ff4d6d"
+      );
+
+
+
+    /* =========================================
+       VALIDAR CONEXIÓN ACTIVA
+    ========================================= */
+
+    function estaActivo(conexion) {
+
+      if (!conexion) {
+        return false;
+      }
+
+
+      const timestamp =
+        Number(
+          conexion.timestamp
         );
 
 
-      li.textContent =
-        `${region}: ${cantidad} oyente(s)`;
+      if (
+        !Number.isFinite(timestamp)
+      ) {
+
+        return false;
+
+      }
 
 
-      ul.appendChild(li);
+      const antiguedad =
+        Date.now() -
+        timestamp;
+
+
+      return (
+
+        antiguedad >= 0 &&
+
+        antiguedad <=
+          TIEMPO_ACTIVO
+
+      );
 
     }
-  );
-
-}
 
 
-</script>
+
+    /* =========================================
+       VALIDAR UBICACIÓN
+    ========================================= */
+
+    function obtenerUbicacion(conexion) {
+
+      if (
+        !conexion ||
+        !conexion.ubicacion
+      ) {
+
+        return null;
+
+      }
+
+
+      const ubicacion =
+        conexion.ubicacion;
+
+
+      const lat =
+        Number(
+          ubicacion.lat
+        );
+
+
+      const lon =
+        Number(
+          ubicacion.lon
+        );
+
+
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lon)
+      ) {
+
+        return null;
+
+      }
+
+
+      /*
+      Evitamos interpretar null como 0.
+
+      Si todavía se está obteniendo
+      la ubicación, no ponemos el
+      marcador en África por accidente.
+      */
+
+      if (
+        ubicacion.lat === null ||
+        ubicacion.lon === null
+      ) {
+
+        return null;
+
+      }
+
+
+      return {
+
+        lat,
+        lon,
+
+        city:
+          ubicacion.city ||
+          "Ciudad desconocida",
+
+        region:
+          ubicacion.region ||
+          "Región desconocida",
+
+        country:
+          ubicacion.country ||
+          "País desconocido"
+
+      };
+
+    }
+
+
+
+    /* =========================================
+       ESCAPAR TEXTO
+    ========================================= */
+
+    function escapar(texto) {
+
+      return String(
+        texto ?? ""
+      )
+
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
+
+    }
+
+
+
+    /* =========================================
+       ACTUALIZAR MAPA
+    ========================================= */
+
+    function actualizarMapa() {
+
+
+      marcadores.clearLayers();
+
+
+      let totalWeb =
+        0;
+
+
+      let totalOyentes =
+        0;
+
+
+      let totalPrincipal =
+        0;
+
+
+      let totalVertical =
+        0;
+
+
+
+      /* =====================================
+         VISITANTES DE LA WEB
+      ===================================== */
+
+      for (
+        const conexion
+        of
+        Object.values(conexionesWeb)
+      ) {
+
+
+        if (
+          !estaActivo(conexion)
+        ) {
+
+          continue;
+
+        }
+
+
+        totalWeb++;
+
+
+        const ubicacion =
+          obtenerUbicacion(
+            conexion
+          );
+
+
+        if (!ubicacion) {
+
+          continue;
+
+        }
+
+
+        const pagina =
+          conexion.pagina ||
+          "/";
+
+
+        const dispositivo =
+          conexion.dispositivo ||
+          "Desconocido";
+
+
+        L.marker(
+
+          [
+            ubicacion.lat,
+            ubicacion.lon
+          ],
+
+          {
+            icon:
+              iconoWeb
+          }
+
+        )
+
+        .bindPopup(
+
+          `
+          <strong>
+            👥 Visitante web
+          </strong>
+
+          <br><br>
+
+          📍
+          ${escapar(ubicacion.city)},
+          ${escapar(ubicacion.country)}
+
+          <br>
+
+          🗺️
+          ${escapar(ubicacion.region)}
+
+          <br>
+
+          💻
+          ${escapar(dispositivo)}
+
+          <br>
+
+          🌐
+          ${escapar(pagina)}
+          `
+
+        )
+
+        .addTo(
+          marcadores
+        );
+
+      }
+
+
+
+      /* =====================================
+         OYENTES REALES
+      ===================================== */
+
+      for (
+        const oyente
+        of
+        Object.values(oyentesEnVivo)
+      ) {
+
+
+        if (
+          !estaActivo(oyente)
+        ) {
+
+          continue;
+
+        }
+
+
+        totalOyentes++;
+
+
+        const tipo =
+          oyente.tipo ||
+          "principal";
+
+
+        if (
+          tipo === "vertical"
+        ) {
+
+          totalVertical++;
+
+        }
+
+        else {
+
+          totalPrincipal++;
+
+        }
+
+
+        const ubicacion =
+          obtenerUbicacion(
+            oyente
+          );
+
+
+        if (!ubicacion) {
+
+          continue;
+
+        }
+
+
+        const dispositivo =
+          oyente.dispositivo ||
+          "Desconocido";
+
+
+        const esVertical =
+          tipo === "vertical";
+
+
+        const icono =
+          esVertical
+            ? iconoVertical
+            : iconoPrincipal;
+
+
+        const nombreReproductor =
+          esVertical
+            ? "Vertical"
+            : "Principal";
+
+
+        const emoji =
+          esVertical
+            ? "📱"
+            : "📺";
+
+
+        L.marker(
+
+          [
+            ubicacion.lat,
+            ubicacion.lon
+          ],
+
+          {
+            icon
+          }
+
+        )
+
+        .bindPopup(
+
+          `
+          <strong>
+            🎧 Oyente en vivo
+          </strong>
+
+          <br><br>
+
+          ${emoji}
+          Reproductor:
+          <strong>
+            ${nombreReproductor}
+          </strong>
+
+          <br>
+
+          📍
+          ${escapar(ubicacion.city)},
+          ${escapar(ubicacion.country)}
+
+          <br>
+
+          🗺️
+          ${escapar(ubicacion.region)}
+
+          <br>
+
+          💻
+          ${escapar(dispositivo)}
+          `
+
+        )
+
+        .addTo(
+          marcadores
+        );
+
+      }
+
+
+
+      /* =====================================
+         ACTUALIZAR CONTADORES
+      ===================================== */
+
+      document
+        .getElementById(
+          "total-web"
+        )
+        .textContent =
+          totalWeb;
+
+
+      document
+        .getElementById(
+          "total-oyentes"
+        )
+        .textContent =
+          totalOyentes;
+
+
+      document
+        .getElementById(
+          "total-principal"
+        )
+        .textContent =
+          totalPrincipal;
+
+
+      document
+        .getElementById(
+          "total-vertical"
+        )
+        .textContent =
+          totalVertical;
+
+    }
+
+
+
+    /* =========================================
+       FIREBASE:
+       PERSONAS EN LA WEB
+    ========================================= */
+
+    const conexionesRef =
+      ref(
+        db,
+        "conexiones"
+      );
+
+
+    onValue(
+
+      conexionesRef,
+
+      snapshot => {
+
+        conexionesWeb =
+          snapshot.val() ||
+          {};
+
+
+        actualizarMapa();
+
+      }
+
+    );
+
+
+
+    /* =========================================
+       FIREBASE:
+       OYENTES REALES
+    ========================================= */
+
+    const oyentesRef =
+      ref(
+        db,
+        "oyentes_en_vivo"
+      );
+
+
+    onValue(
+
+      oyentesRef,
+
+      snapshot => {
+
+        oyentesEnVivo =
+          snapshot.val() ||
+          {};
+
+
+        actualizarMapa();
+
+      }
+
+    );
+
+
+
+    /* =========================================
+       RECALCULAR CADA 15 SEGUNDOS
+    ========================================= */
+
+    setInterval(
+
+      actualizarMapa,
+
+      15000
+
+    );
+
+
+
+    /* =========================================
+       ESTADÍSTICAS DIARIAS
+    ========================================= */
+
+    function obtenerFechaLocal() {
+
+      const ahora =
+        new Date();
+
+
+      const year =
+        ahora.getFullYear();
+
+
+      const month =
+        String(
+          ahora.getMonth() + 1
+        ).padStart(
+          2,
+          "0"
+        );
+
+
+      const day =
+        String(
+          ahora.getDate()
+        ).padStart(
+          2,
+          "0"
+        );
+
+
+      return (
+        year +
+        "-" +
+        month +
+        "-" +
+        day
+      );
+
+    }
+
+
+    const fechaHoy =
+      obtenerFechaLocal();
+
+
+    const diarioRef =
+      ref(
+
+        db,
+
+        "conexiones_diarias/" +
+        fechaHoy
+
+      );
+
+
+    onValue(
+
+      diarioRef,
+
+      snapshot => {
+
+
+        const datos =
+          snapshot.val() ||
+          {};
+
+
+        const lista =
+          document.getElementById(
+            "lista-regiones"
+          );
+
+
+        lista.innerHTML =
+          "";
+
+
+        const regiones =
+          Object.entries(
+            datos
+          );
+
+
+        regiones.sort(
+
+          (a,b) =>
+
+            Number(b[1] || 0) -
+            Number(a[1] || 0)
+
+        );
+
+
+        if (
+          regiones.length === 0
+        ) {
+
+          lista.innerHTML =
+            "Todavía no hay visitas registradas hoy.";
+
+          return;
+
+        }
+
+
+        let totalDia =
+          0;
+
+
+        for (
+          const [
+            region,
+            cantidad
+          ]
+          of regiones
+        ) {
+
+
+          const numero =
+            Number(cantidad) ||
+            0;
+
+
+          totalDia +=
+            numero;
+
+
+          const fila =
+            document.createElement(
+              "div"
+            );
+
+
+          fila.className =
+            "region";
+
+
+          const nombre =
+            document.createElement(
+              "span"
+            );
+
+
+          nombre.textContent =
+            region;
+
+
+          const total =
+            document.createElement(
+              "strong"
+            );
+
+
+          total.textContent =
+            numero;
+
+
+          fila.appendChild(
+            nombre
+          );
+
+
+          fila.appendChild(
+            total
+          );
+
+
+          lista.appendChild(
+            fila
+          );
+
+        }
+
+
+        const filaTotal =
+          document.createElement(
+            "div"
+          );
+
+
+        filaTotal.className =
+          "region";
+
+
+        const textoTotal =
+          document.createElement(
+            "span"
+          );
+
+
+        textoTotal.innerHTML =
+          "<strong>Total de hoy</strong>";
+
+
+        const numeroTotal =
+          document.createElement(
+            "strong"
+          );
+
+
+        numeroTotal.textContent =
+          totalDia;
+
+
+        filaTotal.appendChild(
+          textoTotal
+        );
+
+
+        filaTotal.appendChild(
+          numeroTotal
+        );
+
+
+        lista.appendChild(
+          filaTotal
+        );
+
+      }
+
+    );
+
+
+  </script>
 
 
 </body>
