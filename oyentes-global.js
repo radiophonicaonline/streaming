@@ -1,4 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+
 import {
   getDatabase,
   ref,
@@ -10,7 +11,7 @@ import {
 
 
 // ======================================================
-// 🔥 CONFIGURACIÓN FIREBASE
+// FIREBASE
 // ======================================================
 
 const firebaseConfig = {
@@ -24,43 +25,58 @@ const firebaseConfig = {
 };
 
 
-// ======================================================
-// 🔥 INICIALIZAR FIREBASE
-// ======================================================
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 
 // ======================================================
-// 🔑 ID ÚNICO DEL NAVEGADOR
-// Se mantiene en localStorage.
+// ID ÚNICO DEL DISPOSITIVO / NAVEGADOR
 // ======================================================
 
 let conexionId = localStorage.getItem("conexionId");
 
 if (!conexionId) {
-  conexionId = "user_" + Math.random().toString(36).substring(2, 11);
+
+  if (window.crypto && crypto.randomUUID) {
+
+    conexionId = "user_" + crypto.randomUUID();
+
+  } else {
+
+    conexionId =
+      "user_" +
+      Date.now().toString(36) +
+      Math.random().toString(36).substring(2, 10);
+
+  }
+
   localStorage.setItem("conexionId", conexionId);
 }
 
-const conexionRef = ref(db, "conexiones/" + conexionId);
+
+const conexionRef =
+  ref(db, `conexiones/${conexionId}`);
 
 
 // ======================================================
-// 📱 DETECTAR TIPO DE DISPOSITIVO
+// DETECTAR DISPOSITIVO
 // ======================================================
 
 function detectarDispositivo() {
 
-  const ua = navigator.userAgent.toLowerCase();
+  const ua =
+    navigator.userAgent.toLowerCase();
 
-  if (/tablet|ipad/.test(ua)) {
+  if (/ipad|tablet/.test(ua)) {
+
     return "📱 Tablet";
+
   }
 
   if (/mobile|iphone|android/.test(ua)) {
+
     return "📱 Móvil";
+
   }
 
   return "💻 PC";
@@ -68,102 +84,182 @@ function detectarDispositivo() {
 
 
 // ======================================================
-// 🌎 OBTENER UBICACIÓN APROXIMADA POR IP
+// UBICACIÓN APROXIMADA POR IP
 //
-// IMPORTANTE:
-// Esto NO utiliza GPS.
-// NO solicita permiso de ubicación al usuario.
+// NO USA GPS.
+// NO PIDE PERMISO DE UBICACIÓN.
 // ======================================================
 
 fetch("https://ipapi.co/json/")
-  .then(res => {
 
-    if (!res.ok) {
-      throw new Error("No fue posible obtener la ubicación por IP");
+  .then(response => {
+
+    if (!response.ok) {
+
+      throw new Error(
+        "No se pudo obtener la ubicación por IP."
+      );
+
     }
 
-    return res.json();
+    return response.json();
+
   })
 
   .then(data => {
 
+
     const ubicacion = {
-      lat: data.latitude,
-      lon: data.longitude,
-      city: data.city || "Desconocido",
-      region: data.region || "Desconocida",
-      country: data.country_name || "Desconocido"
+
+      lat:
+        data.latitude ?? null,
+
+      lon:
+        data.longitude ?? null,
+
+      city:
+        data.city || "Desconocida",
+
+      region:
+        data.region || "Desconocida",
+
+      country:
+        data.country_name || "Desconocido"
+
     };
 
 
     // ==================================================
-    // 🟢 REGISTRAR CONEXIÓN ACTUAL
+    // REGISTRAR CONEXIÓN
     // ==================================================
 
-    set(conexionRef, {
+    return set(
+      conexionRef,
+      {
 
-      timestamp: Date.now(),
+        timestamp:
+          Date.now(),
 
-      ubicacion: ubicacion,
+        ubicacion,
 
-      dispositivo: detectarDispositivo(),
+        dispositivo:
+          detectarDispositivo(),
 
-      pagina: window.location.pathname
+        pagina:
+          window.location.pathname
 
-    });
+      }
+    )
 
-
-    // ==================================================
-    // 🔴 ELIMINAR CUANDO FIREBASE DETECTE DESCONEXIÓN
-    // ==================================================
-
-    onDisconnect(conexionRef).remove();
-
-
-    // ==================================================
-    // ❤️ HEARTBEAT
-    //
-    // Cada 30 segundos actualizamos el timestamp.
-    //
-    // Esto demuestra que el navegador continúa
-    // conectado.
-    // ==================================================
-
-    const HEARTBEAT_INTERVAL = 30000;
-
-    setInterval(() => {
-
-      update(conexionRef, {
-
-        timestamp: Date.now(),
-
-        pagina: window.location.pathname,
-
-        dispositivo: detectarDispositivo()
-
-      });
-
-    }, HEARTBEAT_INTERVAL);
+    .then(() => {
 
 
-    // ==================================================
-    // 📊 CONTEO DIARIO
-    //
-    // Se mantiene el comportamiento que ya tenías.
-    // Más adelante podemos convertirlo en usuarios
-    // únicos diarios si queremos.
-    // ==================================================
+      // ================================================
+      // ELIMINAR SI FIREBASE DETECTA DESCONEXIÓN
+      // ================================================
 
-    const hoy = new Date().toISOString().split("T")[0];
+      onDisconnect(
+        conexionRef
+      ).remove();
 
-    const regionRef = ref(
-      db,
-      `conexiones_diarias/${hoy}/${data.region || "Desconocida"}`
-    );
 
-    runTransaction(regionRef, current => {
+      // ================================================
+      // HEARTBEAT
+      //
+      // Actualizar cada 30 segundos.
+      // ================================================
 
-      return (current || 0) + 1;
+      setInterval(() => {
+
+        update(
+          conexionRef,
+          {
+
+            timestamp:
+              Date.now(),
+
+            pagina:
+              window.location.pathname,
+
+            dispositivo:
+              detectarDispositivo()
+
+          }
+        )
+
+        .catch(error => {
+
+          console.error(
+            "Error actualizando heartbeat:",
+            error
+          );
+
+        });
+
+      }, 30000);
+
+
+      // ================================================
+      // CONTEO DIARIO
+      // ================================================
+
+      const hoy =
+        new Date()
+          .toISOString()
+          .split("T")[0];
+
+
+      // Evitar sumar varias veces al mismo dispositivo
+      // durante el mismo día.
+
+      const claveDia =
+        `oyente_diario_${hoy}`;
+
+
+      if (
+        !localStorage.getItem(claveDia)
+      ) {
+
+        const region =
+          ubicacion.region ||
+          "Desconocida";
+
+
+        const regionRef =
+          ref(
+            db,
+            `conexiones_diarias/${hoy}/${region}`
+          );
+
+
+        runTransaction(
+          regionRef,
+          current => {
+
+            return (current || 0) + 1;
+
+          }
+        )
+
+        .then(() => {
+
+          localStorage.setItem(
+            claveDia,
+            "1"
+          );
+
+        })
+
+        .catch(error => {
+
+          console.error(
+            "Error actualizando conteo diario:",
+            error
+          );
+
+        });
+
+      }
 
     });
 
@@ -172,7 +268,7 @@ fetch("https://ipapi.co/json/")
   .catch(error => {
 
     console.error(
-      "Error registrando oyente:",
+      "Error en sistema de oyentes:",
       error
     );
 
