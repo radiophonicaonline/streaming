@@ -51,155 +51,107 @@ push(visitasRef, true);
 
 // =====================================================
 // PERSONAS CONECTADAS
+//
+// El registro de presencia ahora lo controla
+// exclusivamente oyentes-global.js
 // =====================================================
 
-const conexionesRef = ref(db, "conexiones");
-const miConexion = push(conexionesRef);
-
-set(miConexion, true);
-
-sessionStorage.setItem("conexionId", miConexion.key);
-
-
-// =====================================================
-// UBICACIÓN
-// =====================================================
-
-function guardarUbicacion(ubicacion) {
-
-  set(
-    ref(db, `conexiones/${miConexion.key}/ubicacion`),
-    ubicacion
-  );
-
-  const fechaHoy = new Date().toISOString().split("T")[0];
-
-  const regionRef = ref(
-    db,
-    `conexiones_diarias/${fechaHoy}/${ubicacion.region || "Desconocida"}`
-  );
-
-  get(regionRef).then((snap) => {
-
-    const actual = snap.val() || 0;
-
-    set(regionRef, actual + 1);
-
-  });
-
-}
-
-
-if ("geolocation" in navigator) {
-
-  navigator.geolocation.getCurrentPosition(
-
-    (pos) => {
-
-      const ubicacion = {
-
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        city: "Desconocida",
-        region: "Desconocida",
-        country: "Desconocido"
-
-      };
-
-
-      fetch("https://ipapi.co/json/")
-
-        .then(res => res.json())
-
-        .then(data => {
-
-          ubicacion.city =
-            data.city || ubicacion.city;
-
-          ubicacion.region =
-            data.region || ubicacion.region;
-
-          ubicacion.country =
-            data.country_name || ubicacion.country;
-
-          guardarUbicacion(ubicacion);
-
-        })
-
-        .catch(() => {
-
-          guardarUbicacion(ubicacion);
-
-        });
-
-    },
-
-
-    () => {
-
-      fetch("https://ipapi.co/json/")
-
-        .then(res => res.json())
-
-        .then(data => {
-
-          guardarUbicacion({
-
-            lat: data.latitude,
-            lon: data.longitude,
-            city: data.city,
-            region: data.region,
-            country: data.country_name
-
-          });
-
-        })
-
-        .catch(err => {
-
-          console.error(
-            "Error obteniendo ubicación:",
-            err
-          );
-
-        });
-
-    },
-
-    {
-      enableHighAccuracy: true,
-      timeout: 5000
-    }
-
-  );
-
-}
-
-
-// =====================================================
-// ELIMINAR CONEXIÓN AL SALIR
-// =====================================================
-
-onDisconnect(miConexion).remove();
+const conexionesRef =
+  ref(db, "conexiones");
 
 
 // =====================================================
 // CONTADOR EN PANTALLA
+//
+// Sólo contamos conexiones con heartbeat reciente.
 // =====================================================
 
-onValue(conexionesRef, (snap) => {
+let conexionesParaContador = {};
+
+const TIEMPO_ACTIVO_CONTADOR =
+  90 * 1000;
+
+
+function actualizarContadorRadiovidentes() {
 
   const contador =
     document.getElementById("contador");
 
-  if (contador) {
 
-    contador.innerText =
-      `👀 Hay ${snap.size} Radiovidente(s) viendo esta página.`;
+  if (!contador) return;
+
+
+  const ahora =
+    Date.now();
+
+
+  let totalActivos = 0;
+
+
+  for (
+    const conexion
+    of Object.values(conexionesParaContador)
+  ) {
+
+    if (!conexion) continue;
+
+
+    const timestamp =
+      Number(conexion.timestamp);
+
+
+    if (
+      !Number.isFinite(timestamp)
+    ) {
+
+      continue;
+
+    }
+
+
+    const antiguedad =
+      ahora - timestamp;
+
+
+    if (
+      antiguedad >= 0 &&
+      antiguedad <= TIEMPO_ACTIVO_CONTADOR
+    ) {
+
+      totalActivos++;
+
+    }
 
   }
 
-});
+
+  contador.innerText =
+    `👀 Hay ${totalActivos} Radiovidente(s) viendo esta página.`;
+
+}
+
+
+// Escuchar cambios de Firebase
+
+onValue(
+  conexionesRef,
+  snapshot => {
+
+    conexionesParaContador =
+      snapshot.val() || {};
+
+    actualizarContadorRadiovidentes();
+
+  }
+);
+
+
+// Recalcular aunque Firebase no produzca cambios.
+
+setInterval(
+  actualizarContadorRadiovidentes,
+  15000
+);
 
 
 // =====================================================
