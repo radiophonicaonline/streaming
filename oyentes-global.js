@@ -25,37 +25,43 @@ const firebaseConfig = {
 };
 
 
+// ======================================================
+// INICIALIZAR FIREBASE
+// ======================================================
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 
 // ======================================================
-// ID ÚNICO DEL DISPOSITIVO / NAVEGADOR
+// ID ÚNICO DEL NAVEGADOR
 // ======================================================
 
 let conexionId = localStorage.getItem("conexionId");
 
 if (!conexionId) {
 
-  if (window.crypto && crypto.randomUUID) {
+  conexionId =
+    "user_" +
+    Date.now().toString(36) +
+    "_" +
+    Math.random()
+      .toString(36)
+      .substring(2, 10);
 
-    conexionId = "user_" + crypto.randomUUID();
+  localStorage.setItem(
+    "conexionId",
+    conexionId
+  );
 
-  } else {
-
-    conexionId =
-      "user_" +
-      Date.now().toString(36) +
-      Math.random().toString(36).substring(2, 10);
-
-  }
-
-  localStorage.setItem("conexionId", conexionId);
 }
 
 
 const conexionRef =
-  ref(db, `conexiones/${conexionId}`);
+  ref(
+    db,
+    "conexiones/" + conexionId
+  );
 
 
 // ======================================================
@@ -67,209 +73,301 @@ function detectarDispositivo() {
   const ua =
     navigator.userAgent.toLowerCase();
 
-  if (/ipad|tablet/.test(ua)) {
+
+  if (
+    /ipad|tablet/.test(ua)
+  ) {
 
     return "📱 Tablet";
 
   }
 
-  if (/mobile|iphone|android/.test(ua)) {
+
+  if (
+    /mobile|iphone|android/.test(ua)
+  ) {
 
     return "📱 Móvil";
 
   }
 
+
   return "💻 PC";
+
 }
 
 
 // ======================================================
-// UBICACIÓN APROXIMADA POR IP
+// 1. CREAR CONEXIÓN INMEDIATAMENTE
+//
+// IMPORTANTE:
+// Ya NO esperamos a ipapi.
+// ======================================================
+
+set(
+  conexionRef,
+  {
+
+    timestamp:
+      Date.now(),
+
+    dispositivo:
+      detectarDispositivo(),
+
+    pagina:
+      window.location.pathname,
+
+    ubicacion: {
+
+      lat: null,
+
+      lon: null,
+
+      city:
+        "Obteniendo ubicación...",
+
+      region:
+        "Desconocida",
+
+      country:
+        "Desconocido"
+
+    }
+
+  }
+)
+
+.then(() => {
+
+  console.log(
+    "🟢 Oyente registrado:",
+    conexionId
+  );
+
+
+  // ====================================================
+  // ELIMINAR AL DESCONECTARSE
+  // ====================================================
+
+  return onDisconnect(
+    conexionRef
+  ).remove();
+
+})
+
+.then(() => {
+
+  console.log(
+    "🟢 onDisconnect configurado"
+  );
+
+})
+
+.catch(error => {
+
+  console.error(
+    "🔴 ERROR registrando conexión:",
+    error
+  );
+
+});
+
+
+// ======================================================
+// 2. HEARTBEAT
+//
+// Actualiza cada 30 segundos.
+// ======================================================
+
+setInterval(() => {
+
+  update(
+    conexionRef,
+    {
+
+      timestamp:
+        Date.now(),
+
+      dispositivo:
+        detectarDispositivo(),
+
+      pagina:
+        window.location.pathname
+
+    }
+  )
+
+  .catch(error => {
+
+    console.error(
+      "🔴 Error heartbeat:",
+      error
+    );
+
+  });
+
+}, 30000);
+
+
+// ======================================================
+// 3. UBICACIÓN APROXIMADA POR IP
 //
 // NO USA GPS.
-// NO PIDE PERMISO DE UBICACIÓN.
+// NO PIDE PERMISO.
 // ======================================================
 
 fetch("https://ipapi.co/json/")
 
-  .then(response => {
+.then(response => {
 
-    if (!response.ok) {
+  if (!response.ok) {
 
-      throw new Error(
-        "No se pudo obtener la ubicación por IP."
-      );
+    throw new Error(
+      "Respuesta IPAPI: " +
+      response.status
+    );
+
+  }
+
+  return response.json();
+
+})
+
+.then(data => {
+
+
+  const lat =
+    Number(data.latitude);
+
+
+  const lon =
+    Number(data.longitude);
+
+
+  const ubicacion = {
+
+    lat:
+      Number.isFinite(lat)
+        ? lat
+        : null,
+
+    lon:
+      Number.isFinite(lon)
+        ? lon
+        : null,
+
+    city:
+      data.city ||
+      "Desconocida",
+
+    region:
+      data.region ||
+      "Desconocida",
+
+    country:
+      data.country_name ||
+      "Desconocido"
+
+  };
+
+
+  // ====================================================
+  // AGREGAR UBICACIÓN A LA CONEXIÓN
+  // ====================================================
+
+  return update(
+    conexionRef,
+    {
+
+      ubicacion,
+
+      timestamp:
+        Date.now()
+
+    }
+  )
+
+  .then(() => {
+
+    console.log(
+      "🌎 Ubicación obtenida:",
+      ubicacion
+    );
+
+
+    // ==================================================
+    // CONTADOR DIARIO
+    // ==================================================
+
+    const hoy =
+      new Date()
+        .toISOString()
+        .split("T")[0];
+
+
+    const claveDia =
+      "oyente_diario_" + hoy;
+
+
+    // Sólo contar una vez al día
+    // por navegador.
+
+    if (
+      localStorage.getItem(
+        claveDia
+      )
+    ) {
+
+      return;
 
     }
 
-    return response.json();
 
-  })
-
-  .then(data => {
-
-
-    const ubicacion = {
-
-      lat:
-        data.latitude ?? null,
-
-      lon:
-        data.longitude ?? null,
-
-      city:
-        data.city || "Desconocida",
-
-      region:
-        data.region || "Desconocida",
-
-      country:
-        data.country_name || "Desconocido"
-
-    };
+    const region =
+      ubicacion.region ||
+      "Desconocida";
 
 
-    // ==================================================
-    // REGISTRAR CONEXIÓN
-    // ==================================================
+    const regionRef =
+      ref(
+        db,
+        `conexiones_diarias/${hoy}/${region}`
+      );
 
-    return set(
-      conexionRef,
-      {
 
-        timestamp:
-          Date.now(),
+    return runTransaction(
+      regionRef,
+      current => {
 
-        ubicacion,
-
-        dispositivo:
-          detectarDispositivo(),
-
-        pagina:
-          window.location.pathname
+        return (
+          Number(current) || 0
+        ) + 1;
 
       }
     )
 
     .then(() => {
 
-
-      // ================================================
-      // ELIMINAR SI FIREBASE DETECTA DESCONEXIÓN
-      // ================================================
-
-      onDisconnect(
-        conexionRef
-      ).remove();
-
-
-      // ================================================
-      // HEARTBEAT
-      //
-      // Actualizar cada 30 segundos.
-      // ================================================
-
-      setInterval(() => {
-
-        update(
-          conexionRef,
-          {
-
-            timestamp:
-              Date.now(),
-
-            pagina:
-              window.location.pathname,
-
-            dispositivo:
-              detectarDispositivo()
-
-          }
-        )
-
-        .catch(error => {
-
-          console.error(
-            "Error actualizando heartbeat:",
-            error
-          );
-
-        });
-
-      }, 30000);
-
-
-      // ================================================
-      // CONTEO DIARIO
-      // ================================================
-
-      const hoy =
-        new Date()
-          .toISOString()
-          .split("T")[0];
-
-
-      // Evitar sumar varias veces al mismo dispositivo
-      // durante el mismo día.
-
-      const claveDia =
-        `oyente_diario_${hoy}`;
-
-
-      if (
-        !localStorage.getItem(claveDia)
-      ) {
-
-        const region =
-          ubicacion.region ||
-          "Desconocida";
-
-
-        const regionRef =
-          ref(
-            db,
-            `conexiones_diarias/${hoy}/${region}`
-          );
-
-
-        runTransaction(
-          regionRef,
-          current => {
-
-            return (current || 0) + 1;
-
-          }
-        )
-
-        .then(() => {
-
-          localStorage.setItem(
-            claveDia,
-            "1"
-          );
-
-        })
-
-        .catch(error => {
-
-          console.error(
-            "Error actualizando conteo diario:",
-            error
-          );
-
-        });
-
-      }
+      localStorage.setItem(
+        claveDia,
+        "1"
+      );
 
     });
 
-  })
-
-  .catch(error => {
-
-    console.error(
-      "Error en sistema de oyentes:",
-      error
-    );
-
   });
+
+})
+
+.catch(error => {
+
+  // IMPORTANTE:
+  // Si falla la ubicación,
+  // NO eliminamos la conexión.
+
+  console.warn(
+    "🟠 No se pudo obtener ubicación:",
+    error
+  );
+
+});
