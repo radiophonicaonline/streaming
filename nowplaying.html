@@ -42,10 +42,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent
   border:1px solid color-mix(in srgb,var(--np-accent) 65%,transparent);
   color:#75d9f5;font-size:25px;font-weight:700;letter-spacing:-2px;
 }
+#npArtwork img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit;}
+#npArtwork.has-logo{padding:3px;box-sizing:border-box;background:rgba(255,255,255,.06);}
 #npInfo{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px;}
 #npLabel{color:var(--np-accent);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
 #npTitle{color:#fff;font-size:clamp(14px,1.6vw,19px);font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.45);}
-#npSubtitle{color:rgba(235,244,249,.66);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;}
+#npSubtitle{display:none;}
 #npAccent{width:3px;height:34px;flex:0 0 3px;border-radius:3px;background:linear-gradient(to bottom,#70e0f7,#2685ad);}
 
 /* Positions */
@@ -86,15 +88,61 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent
 #nowPlayingOverlay[data-style="ticker"] #npSubtitle{white-space:nowrap;}
 
 #nowPlayingOverlay{position:fixed;}
+
+/* NOW PLAYING size presets */
+#nowPlayingOverlay{
+  --np-art-size:52px;
+  --np-title-size:clamp(14px,1.6vw,19px);
+  --np-label-size:10px;
+  --np-sub-size:10px;
+  --np-pad-y:12px;
+  --np-pad-left:12px;
+  --np-pad-right:18px;
+  --np-gap:14px;
+  --np-min-height:76px;
+  gap:var(--np-gap);
+  padding:var(--np-pad-y) var(--np-pad-right) var(--np-pad-y) var(--np-pad-left);
+  min-height:var(--np-min-height);
+}
+#npArtwork{width:var(--np-art-size);height:var(--np-art-size);flex-basis:var(--np-art-size);}
+#npTitle{font-size:var(--np-title-size);}
+#npLabel{font-size:var(--np-label-size);}
+#npSubtitle{font-size:var(--np-sub-size);}
+#nowPlayingOverlay[data-size="small"]{
+  --np-art-size:40px;--np-title-size:14px;--np-label-size:8px;--np-sub-size:8px;
+  --np-pad-y:8px;--np-pad-left:9px;--np-pad-right:13px;--np-gap:10px;--np-min-height:56px;
+  width:min(390px,calc(100% - 24px));
+}
+#nowPlayingOverlay[data-size="medium"]{
+  --np-art-size:52px;--np-title-size:clamp(14px,1.6vw,19px);--np-label-size:10px;--np-sub-size:10px;
+  --np-pad-y:12px;--np-pad-left:12px;--np-pad-right:18px;--np-gap:14px;--np-min-height:76px;
+  width:min(520px,calc(100% - 28px));
+}
+#nowPlayingOverlay[data-size="large"]{
+  --np-art-size:70px;--np-title-size:clamp(19px,2.1vw,25px);--np-label-size:12px;--np-sub-size:12px;
+  --np-pad-y:16px;--np-pad-left:16px;--np-pad-right:22px;--np-gap:17px;--np-min-height:100px;
+  width:min(620px,calc(100% - 32px));
+}
+#nowPlayingOverlay[data-size="xlarge"]{
+  --np-art-size:90px;--np-title-size:clamp(23px,2.7vw,32px);--np-label-size:14px;--np-sub-size:13px;
+  --np-pad-y:20px;--np-pad-left:20px;--np-pad-right:26px;--np-gap:20px;--np-min-height:128px;
+  width:min(760px,calc(100% - 36px));
+}
+/* Keep the selected size coherent with alternate layouts. */
+#nowPlayingOverlay[data-style="spotify"] #npArtwork{width:var(--np-art-size);height:var(--np-art-size);flex-basis:var(--np-art-size);}
+#nowPlayingOverlay[data-style="minimal"]{padding:var(--np-pad-y) var(--np-pad-right) var(--np-pad-y) var(--np-pad-left);}
+#nowPlayingOverlay[data-style="ticker"]{padding:var(--np-pad-y) var(--np-pad-right);}
+#nowPlayingOverlay[data-style="ticker"] #npArtwork{width:var(--np-art-size);height:var(--np-art-size);flex-basis:var(--np-art-size);}
+
 </style>
 </head>
 <body>
-<div id="nowPlayingOverlay" class="hidden" data-style="professional" data-position="bottom-left" aria-live="polite">
-  <div id="npArtwork" aria-hidden="true">R</div>
+<div id="nowPlayingOverlay" class="hidden" data-style="professional" data-position="bottom-left" data-size="medium" aria-live="polite">
+  <div id="npArtwork" aria-hidden="true">♪</div>
   <div id="npInfo">
-    <div id="npLabel">NOW PLAYING · RADIOPHONICA</div>
+    <div id="npLabel">NOW PLAYING</div>
     <div id="npTitle">Sin reproducción</div>
-    <div id="npSubtitle">EN VIVO</div>
+    
   </div>
   <div id="npAccent" aria-hidden="true"></div>
 </div>
@@ -103,14 +151,17 @@ const canal = new BroadcastChannel("obs_player");
 const overlay = document.getElementById("nowPlayingOverlay");
 const titleEl = document.getElementById("npTitle");
 const subtitleEl = document.getElementById("npSubtitle");
-let state = {title:"",subtitle:"EN VIVO",visible:false,style:"professional",position:"bottom-left"};
+let state = {title:"",subtitle:"",visible:false,style:"professional",position:"bottom-left",size:"medium",logoData:""};
 function applyState(s){
  if(!s || typeof s!=="object") return;
  state={...state,...s};
  overlay.dataset.style=state.style||"professional";
  overlay.dataset.position=state.position||"bottom-left";
+ overlay.dataset.size=state.size||"medium";
  titleEl.textContent=state.title||"Sin reproducción";
- subtitleEl.textContent=state.subtitle||"EN VIVO";
+ const art=document.getElementById("npArtwork");
+ if(state.logoData){art.innerHTML="";const img=document.createElement("img");img.src=state.logoData;img.alt="Logo personalizado";art.appendChild(img);art.classList.add("has-logo");}
+ else{art.textContent="♪";art.classList.remove("has-logo");}
  overlay.classList.toggle("hidden",!state.visible);
 }
 function persist(s){
