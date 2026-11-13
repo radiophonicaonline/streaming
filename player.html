@@ -160,6 +160,7 @@ const npTitle = document.getElementById("npTitle");
 const npSubtitle = document.getElementById("npSubtitle");
 let autoplay = true;
 let lastPlaybackReport = 0;
+let activeSequence = null;
 let npState = {title:"", subtitle:"", visible:false, style:"professional", position:"bottom-left", size:"medium", logoData:""};
 
 function saveNpState(){
@@ -216,6 +217,37 @@ function playFile(file, name){
   main.src = URL.createObjectURL(file);
   main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
 }
+async function playHourSequence(){
+  activeSequence = null;
+  showNowPlaying("LOCUCIÓN DE HORA", "CONSULTANDO RELOJ");
+  try{
+    const response = await fetch("http://127.0.0.1:3030/api/hour-sequence", {cache:"no-store"});
+    const data = await response.json();
+    if(!response.ok || !data.ok || !Array.isArray(data.files) || data.files.length===0){
+      throw new Error((data.missing || []).join(", ") || "No se encontraron los audios de la hora");
+    }
+    activeSequence = {files:data.files, index:0, spokenTime:data.spokenTime};
+    showNowPlaying("LOCUCIÓN DE HORA · " + data.spokenTime, "HORA ACTUAL");
+    playSequencePart();
+  }catch(err){
+    console.error("Error en locución de hora:", err);
+    showNowPlaying("Error en locución de hora", "REVISAR SERVIDOR / AUDIOS");
+    activeSequence = null;
+    canal.postMessage({type:"hourSequenceError", message:String(err.message || err)});
+    if(autoplay) canal.postMessage({type:"next"});
+  }
+}
+function playSequencePart(){
+  if(!activeSequence) return;
+  const part = activeSequence.files[activeSequence.index];
+  if(!part) return;
+  main.src = part.url;
+  main.play().catch(err=>{
+    console.error("No se pudo reproducir parte de la locución:", err);
+    activeSequence = null;
+    if(autoplay) canal.postMessage({type:"next"});
+  });
+}
 function playFX(file, name){
   if(!file) return;
   showNowPlaying(name ? "FX · " + name : (file.name || "FX"), "EFECTO DE SONIDO");
@@ -231,7 +263,7 @@ main.onended=()=>{
 };
 function play(){ main.play(); }
 function pause(){ main.pause(); }
-function stop(){ main.pause(); main.currentTime=0; }
+function stop(){ activeSequence=null; main.pause(); main.currentTime=0; }
 
 function reportPlayback(force=false){
   const now = Date.now();
@@ -258,6 +290,7 @@ canal.onmessage=e=>{
   const d=e.data || {};
   switch(d.type){
     case "playFile": playFile(d.file, d.name); break;
+     case "playHour": playHourSequence(); break;
     case "fx": playFX(d.file, d.name); break;
     case "toggleNowPlaying": toggleNowPlaying(); break;
     case "setNowPlayingVisibility": updateNpState({visible:!!d.visible}); canal.postMessage({type:"nowPlayingState",state:npState}); break;

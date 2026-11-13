@@ -169,6 +169,7 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
+<button onclick="agregarLocucionHora()">🕒 Locución hora</button>
 
 <label>
 <input type="checkbox" id="auto" checked>Auto
@@ -372,6 +373,10 @@ function addItemToPreviewList(i){
   const it = items[i];
   if(!it) return;
 
+  if(it.type === "hour"){
+    alert("La locución de hora se consulta al momento de salir al aire y no tiene un archivo fijo para Preview.");
+    return;
+  }
   if(it.type === "file"){
     previewList.push({file:it.file, name:it.file.name});
   }else if(it.files && it.files.length){
@@ -384,7 +389,7 @@ function addItemToPreviewList(i){
 function duplicatePlaylistItem(i){
   const it = items[i];
   if(!it) return;
-  const copy = it.type === "file"
+  const copy = it.type === "file" || it.type === "hour"
     ? {...it}
     : {...it, files:[...it.files], shuffleList:null, shuffleIndex:0};
   items.splice(i+1, 0, copy);
@@ -507,60 +512,46 @@ function actualizarLista(){
 
 /* ===================== PLAY ===================== */
 
+function agregarLocucionHora(){
+  items.push({type:"hour", name:"🕒 LOCUCIÓN DE HORA"});
+  actualizarLista();
+}
+
+/* ===================== PLAY ===================== */
+
 function playItem(i){
+  if(items.length===0) return;
+  currentIndex=i;
+  const it=items[i];
 
-if(items.length===0) return;
-
-currentIndex=i;
-
-const it=items[i];
-
-if(it.type==="file"){
-
-document.getElementById("nowPlaying").textContent = it.name;
-npPanelState.title = it.file.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
-
-canal.postMessage({
-type:"playFile",
-file:it.file,
-name:it.file.name
-});
-
-}else{
-
-if(!it.shuffleList || it.shuffleList.length===0){
-
-it.shuffleList=[...it.files];
-
-for(let j=it.shuffleList.length-1;j>0;j--){
-const k=Math.floor(Math.random()*(j+1));
-[it.shuffleList[j],it.shuffleList[k]]=[it.shuffleList[k],it.shuffleList[j]];
-}
-
-it.shuffleIndex=0;
-}
-
-const f=it.shuffleList[it.shuffleIndex];
-
-it.shuffleIndex++;
-
-if(it.shuffleIndex>=it.shuffleList.length){
-it.shuffleList=null;
-}
-
-document.getElementById("nowPlaying").textContent = f.name;
-npPanelState.title = f.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
-
-canal.postMessage({
-type:"playFile",
-file:f,
-name:f.name
-});
-
-}
-
-actualizarLista();
-
+  if(it.type==="hour"){
+    const label="LOCUCIÓN DE HORA";
+    document.getElementById("nowPlaying").textContent=label;
+    npPanelState.title=label;
+    npPanelState.subtitle="CONSULTANDO RELOJ";
+    try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
+    canal.postMessage({type:"playHour"});
+  }else if(it.type==="file"){
+    document.getElementById("nowPlaying").textContent = it.name;
+    npPanelState.title = it.file.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
+    canal.postMessage({type:"playFile", file:it.file, name:it.file.name});
+  }else{
+    if(!it.shuffleList || it.shuffleList.length===0){
+      it.shuffleList=[...it.files];
+      for(let j=it.shuffleList.length-1;j>0;j--){
+        const k=Math.floor(Math.random()*(j+1));
+        [it.shuffleList[j],it.shuffleList[k]]=[it.shuffleList[k],it.shuffleList[j]];
+      }
+      it.shuffleIndex=0;
+    }
+    const f=it.shuffleList[it.shuffleIndex];
+    it.shuffleIndex++;
+    if(it.shuffleIndex>=it.shuffleList.length) it.shuffleList=null;
+    document.getElementById("nowPlaying").textContent = f.name;
+    npPanelState.title = f.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
+    canal.postMessage({type:"playFile", file:f, name:f.name});
+  }
+  actualizarLista();
 }
 
 /* ===================== PREVIEW ===================== */
@@ -568,6 +559,10 @@ actualizarLista();
 function preview(i){
 
 const it=items[i];
+if(it.type==="hour"){
+  alert("La locución de hora se genera dinámicamente al reproducirse y no tiene preview de archivo.");
+  return;
+}
 
 if(it.type==="file"){
 
