@@ -17,6 +17,29 @@ height:100%;
 object-fit:cover;
 background:black;
 }
+
+#nowPlayingOverlay{
+position:absolute;
+left:24px;
+bottom:24px;
+z-index:10;
+max-width:min(70%, 760px);
+padding:10px 16px;
+color:#fff;
+background:rgba(0,0,0,.72);
+border-left:4px solid #55c9ef;
+font-family:Arial, sans-serif;
+font-size:clamp(14px, 2vw, 24px);
+font-weight:600;
+line-height:1.25;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+text-shadow:0 1px 2px rgba(0,0,0,.7);
+box-sizing:border-box;
+}
+
+#nowPlayingOverlay.hidden{display:none;}
 </style>
 </head>
 
@@ -24,6 +47,7 @@ background:black;
 
 <video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
+<div id="nowPlayingOverlay" class="hidden" aria-live="polite"></div>
 
 <script>
 
@@ -31,17 +55,26 @@ const canal = new BroadcastChannel("obs_player");
 
 const main = document.getElementById("main");
 const fx = document.getElementById("fx");
+const nowPlayingOverlay = document.getElementById("nowPlayingOverlay");
 
 let autoplay = true;
+
+function showNowPlaying(name){
+  const title = (name || "Archivo en reproducción").trim();
+  nowPlayingOverlay.textContent = title;
+  nowPlayingOverlay.classList.remove("hidden");
+}
 
 /* =====================
    PLAY VIDEO
 ===================== */
 
-function playFile(file){
+function playFile(file, name){
 
+if(!file) return;
+showNowPlaying(name || file.name || "Archivo en reproducción");
 main.src = URL.createObjectURL(file);
-main.play();
+main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
 
 }
 
@@ -49,8 +82,10 @@ main.play();
    FX
 ===================== */
 
-function playFX(file){
+function playFX(file, name){
 
+if(!file) return;
+showNowPlaying(name ? "FX · " + name : (file.name || "FX"));
 fx.src = URL.createObjectURL(file);
 
 fx.style.display="block";
@@ -61,7 +96,7 @@ fx.onended=()=>{
 fx.style.display="none";
 };
 
-fx.play();
+fx.play().catch(err => console.warn("No se pudo reproducir el FX:", err));
 
 }
 
@@ -104,11 +139,11 @@ const d=e.data;
 switch(d.type){
 
 case "playFile":
-playFile(d.file);
+playFile(d.file, d.name);
 break;
 
 case "fx":
-playFX(d.file);
+playFX(d.file, d.name);
 break;
 
 case "play":

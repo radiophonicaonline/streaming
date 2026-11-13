@@ -253,7 +253,8 @@ document.getElementById("nowPlaying").textContent = it.name;
 
 canal.postMessage({
 type:"playFile",
-file:it.file
+file:it.file,
+name:it.file.name
 });
 
 }else{
@@ -282,7 +283,8 @@ document.getElementById("nowPlaying").textContent = f.name;
 
 canal.postMessage({
 type:"playFile",
-file:f
+file:f,
+name:f.name
 });
 
 }
@@ -373,7 +375,8 @@ previewItemData.name;
 
 canal.postMessage({
 type:"playFile",
-file:previewItemData.file
+file:previewItemData.file,
+name:previewItemData.name
 });
 
 }
@@ -432,7 +435,7 @@ const btn=document.createElement("div");
 btn.className="fxbtn";
 btn.textContent=f.name;
 btn.onclick=()=>{
-canal.postMessage({type:"fx",file:f});
+canal.postMessage({type:"fx",file:f,name:f.name});
 };
 fxdiv.appendChild(btn);
 }
