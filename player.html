@@ -19,27 +19,25 @@ background:black;
 }
 
 #nowPlayingOverlay{
-position:absolute;
-left:24px;
-bottom:24px;
-z-index:10;
-max-width:min(70%, 760px);
-padding:10px 16px;
-color:#fff;
-background:rgba(0,0,0,.72);
-border-left:4px solid #55c9ef;
-font-family:Arial, sans-serif;
-font-size:clamp(14px, 2vw, 24px);
-font-weight:600;
-line-height:1.25;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-text-shadow:0 1px 2px rgba(0,0,0,.7);
-box-sizing:border-box;
+position:absolute;left:clamp(14px,3vw,34px);bottom:clamp(14px,3vw,34px);z-index:10;
+width:min(520px,calc(100% - 28px));min-height:76px;display:flex;align-items:center;gap:14px;
+padding:12px 18px 12px 12px;box-sizing:border-box;color:#fff;font-family:Arial,Helvetica,sans-serif;
+background:linear-gradient(110deg,rgba(9,15,21,.94),rgba(17,25,33,.82));
+border:1px solid rgba(255,255,255,.13);border-left:4px solid #55c9ef;border-radius:10px;
+box-shadow:0 8px 30px rgba(0,0,0,.38);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+opacity:1;transform:translateY(0);visibility:visible;
+transition:opacity .28s ease,transform .28s ease,visibility .28s ease;pointer-events:none;
 }
+#nowPlayingOverlay.hidden{opacity:0;transform:translateY(12px);visibility:hidden;}
+#npArtwork{width:52px;height:52px;flex:0 0 52px;display:flex;align-items:center;justify-content:center;
+border-radius:7px;background:linear-gradient(145deg,#183747,#101a24);border:1px solid rgba(85,201,239,.45);
+color:#75d9f5;font-size:25px;font-weight:700;letter-spacing:-2px;}
+#npInfo{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px;}
+#npLabel{color:#72d9f5;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+#npTitle{color:#fff;font-size:clamp(14px,1.6vw,19px);font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.45);}
+#npSubtitle{color:rgba(235,244,249,.66);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;}
+#npAccent{width:3px;height:34px;flex:0 0 3px;border-radius:3px;background:linear-gradient(to bottom,#70e0f7,#2685ad);}
 
-#nowPlayingOverlay.hidden{display:none;}
 </style>
 </head>
 
@@ -47,7 +45,11 @@ box-sizing:border-box;
 
 <video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
-<div id="nowPlayingOverlay" class="hidden" aria-live="polite"></div>
+<div id="nowPlayingOverlay" class="hidden" aria-live="polite">
+  <div id="npArtwork" aria-hidden="true">R</div>
+  <div id="npInfo"><div id="npLabel">NOW PLAYING · RADIOPHONICA</div><div id="npTitle">Sin reproducción</div><div id="npSubtitle">EN VIVO</div></div>
+  <div id="npAccent" aria-hidden="true"></div>
+</div>
 
 <script>
 
@@ -56,13 +58,23 @@ const canal = new BroadcastChannel("obs_player");
 const main = document.getElementById("main");
 const fx = document.getElementById("fx");
 const nowPlayingOverlay = document.getElementById("nowPlayingOverlay");
+const npTitle = document.getElementById("npTitle");
+const npSubtitle = document.getElementById("npSubtitle");
+let nowPlayingVisible = false;
 
 let autoplay = true;
 
-function showNowPlaying(name){
+function showNowPlaying(name, kind){
   const title = (name || "Archivo en reproducción").trim();
-  nowPlayingOverlay.textContent = title;
+  npTitle.textContent = title;
+  npSubtitle.textContent = kind || "EN VIVO";
+  nowPlayingVisible = true;
   nowPlayingOverlay.classList.remove("hidden");
+}
+
+function toggleNowPlaying(){
+  nowPlayingVisible = !nowPlayingVisible;
+  nowPlayingOverlay.classList.toggle("hidden", !nowPlayingVisible);
 }
 
 /* =====================
@@ -72,7 +84,7 @@ function showNowPlaying(name){
 function playFile(file, name){
 
 if(!file) return;
-showNowPlaying(name || file.name || "Archivo en reproducción");
+showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO · RADIOPHONICA");
 main.src = URL.createObjectURL(file);
 main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
 
@@ -85,7 +97,7 @@ main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", er
 function playFX(file, name){
 
 if(!file) return;
-showNowPlaying(name ? "FX · " + name : (file.name || "FX"));
+showNowPlaying(name ? "FX · " + name : (file.name || "FX"), "EFECTO DE SONIDO");
 fx.src = URL.createObjectURL(file);
 
 fx.style.display="block";
@@ -144,6 +156,20 @@ break;
 
 case "fx":
 playFX(d.file, d.name);
+break;
+
+case "toggleNowPlaying":
+toggleNowPlaying();
+break;
+
+case "showNowPlaying":
+nowPlayingVisible = true;
+nowPlayingOverlay.classList.remove("hidden");
+break;
+
+case "hideNowPlaying":
+nowPlayingVisible = false;
+nowPlayingOverlay.classList.add("hidden");
 break;
 
 case "play":

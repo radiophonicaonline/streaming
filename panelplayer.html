@@ -76,6 +76,7 @@ margin-top:5px;
 <div id="nowPlaying" style="color:#6cf;font-size:14px">
 ninguno
 </div>
+<button onclick="toggleNowPlayingOverlay()" title="Mostrar u ocultar la franja NOW PLAYING">👁 Mostrar / ocultar NOW PLAYING</button>
 
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
@@ -440,6 +441,10 @@ canal.postMessage({type:"fx",file:f,name:f.name});
 fxdiv.appendChild(btn);
 }
 };
+
+function toggleNowPlayingOverlay(){
+canal.postMessage({type:"toggleNowPlaying"});
+}
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
 function playerPause(){ canal.postMessage({type:"pause"}); }
