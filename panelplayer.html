@@ -89,6 +89,23 @@ margin-top:5px;
 }
 
 #npLogoPreview{width:58px;height:58px;object-fit:contain;background:#202830;border:1px solid #3a4650;border-radius:7px;padding:3px;display:none;}
+
+.item{align-items:center;gap:6px;user-select:none}
+.item.dragging{opacity:.4}
+.item.drag-over{border-top:2px solid #55c9ef}
+.item span{flex:1;min-width:0}
+#playlistContextMenu{
+  position:fixed;z-index:99999;display:none;min-width:190px;
+  padding:5px;background:#171b20;border:1px solid #3b4650;
+  border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.55)
+}
+#playlistContextMenu button{
+  display:block;width:100%;text-align:left;margin:0;padding:9px 10px;
+  background:transparent;border-radius:5px;font-size:12px
+}
+#playlistContextMenu button:hover{background:#293640}
+#playlistContextMenu button.danger{color:#ff8585}
+
 </style>
 </head>
 
@@ -158,6 +175,7 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 </label>
 
 <div id="lista"></div>
+<div id="playlistContextMenu" role="menu" aria-label="Acciones del archivo"></div>
 
 <h3>Preview</h3>
 
@@ -340,90 +358,151 @@ const fxfiles=document.getElementById("fxfiles");
 
 /* ===================== LISTA PRINCIPAL ===================== */
 
-function actualizarLista(){
+const playlistContextMenu = document.getElementById("playlistContextMenu");
+let contextItemIndex = -1;
+let draggedItemIndex = -1;
 
-lista.innerHTML="";
-
-items.forEach((it,i)=>{
-
-const div=document.createElement("div");
-div.className="item";
-
-if(i===currentIndex)
-div.classList.add("active");
-
-const span=document.createElement("span");
-span.textContent=it.name;
-
-span.onclick=()=>playItem(i);
-
-/* 👉 CLICK DERECHO = PREVIEW (SE MANTIENE) */
-span.oncontextmenu=e=>{
-e.preventDefault();
-preview(i);
-};
-
-const botones=document.createElement("div");
-
-/* 🆕 AGREGAR A PREVIEW LIST */
-const addPreview=document.createElement("button");
-addPreview.textContent="➕";
-addPreview.onclick=()=>{
-
-if(it.type==="file"){
-previewList.push({
-file:it.file,
-name:it.file.name
-});
-}else{
-const f=it.files[Math.floor(Math.random()*it.files.length)];
-previewList.push({
-file:f,
-name:f.name
-});
+function hidePlaylistContextMenu(){
+  playlistContextMenu.style.display = "none";
+  playlistContextMenu.innerHTML = "";
+  contextItemIndex = -1;
 }
 
-actualizarPreviewLista();
+function addItemToPreviewList(i){
+  const it = items[i];
+  if(!it) return;
 
-};
+  if(it.type === "file"){
+    previewList.push({file:it.file, name:it.file.name});
+  }else if(it.files && it.files.length){
+    const f = it.files[Math.floor(Math.random()*it.files.length)];
+    previewList.push({file:f, name:f.name});
+  }
+  actualizarPreviewLista();
+}
 
-const up=document.createElement("button");
-up.textContent="▲";
-up.onclick=()=>{
-if(i===0) return;
-[items[i],items[i-1]]=[items[i-1],items[i]];
-actualizarLista();
-};
+function duplicatePlaylistItem(i){
+  const it = items[i];
+  if(!it) return;
+  const copy = it.type === "file"
+    ? {...it}
+    : {...it, files:[...it.files], shuffleList:null, shuffleIndex:0};
+  items.splice(i+1, 0, copy);
+  actualizarLista();
+}
 
-const down=document.createElement("button");
-down.textContent="▼";
-down.onclick=()=>{
-if(i===items.length-1) return;
-[items[i],items[i+1]]=[items[i+1],items[i]];
-actualizarLista();
-};
+function deletePlaylistItem(i){
+  if(i < 0 || i >= items.length) return;
+  items.splice(i,1);
+  if(currentIndex === i) currentIndex = -1;
+  else if(currentIndex > i) currentIndex--;
+  actualizarLista();
+}
 
-const copy=document.createElement("button");
-copy.textContent="⧉";
-copy.onclick=()=>{
-items.splice(i+1,0,structuredClone(it));
-actualizarLista();
-};
+function showPlaylistContextMenu(x,y,i){
+  contextItemIndex = i;
+  playlistContextMenu.innerHTML = "";
 
-const del=document.createElement("button");
-del.textContent="✖";
-del.onclick=()=>{
-items.splice(i,1);
-actualizarLista();
-};
+  const actions = [
+    {label:"▶  Enviar a escucha previa", action:()=>preview(contextItemIndex)},
+    {label:"＋  Agregar a Preview List", action:()=>addItemToPreviewList(contextItemIndex)},
+    {label:"⧉  Duplicar archivo", action:()=>duplicatePlaylistItem(contextItemIndex)},
+    {label:"✕  Eliminar de la lista", danger:true, action:()=>deletePlaylistItem(contextItemIndex)}
+  ];
 
-botones.append(addPreview,up,down,copy,del);
+  actions.forEach(item=>{
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = item.label;
+    if(item.danger) button.classList.add("danger");
+    button.setAttribute("role","menuitem");
+    button.addEventListener("click",()=>{
+      const selected = contextItemIndex;
+      hidePlaylistContextMenu();
+      // Ejecutar con el índice seleccionado antes de que cambie la lista.
+      if(item.label.startsWith("▶")) preview(selected);
+      else if(item.label.startsWith("＋")) addItemToPreviewList(selected);
+      else if(item.label.startsWith("⧉")) duplicatePlaylistItem(selected);
+      else deletePlaylistItem(selected);
+    });
+    playlistContextMenu.appendChild(button);
+  });
 
-div.append(span,botones);
-lista.appendChild(div);
+  playlistContextMenu.style.display = "block";
+  const menuRect = playlistContextMenu.getBoundingClientRect();
+  playlistContextMenu.style.left = Math.max(6, Math.min(x, window.innerWidth-menuRect.width-6))+"px";
+  playlistContextMenu.style.top = Math.max(6, Math.min(y, window.innerHeight-menuRect.height-6))+"px";
+}
 
+document.addEventListener("pointerdown", e=>{
+  if(!playlistContextMenu.contains(e.target)) hidePlaylistContextMenu();
 });
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape") hidePlaylistContextMenu();
+});
+window.addEventListener("blur", hidePlaylistContextMenu);
 
+function actualizarLista(){
+  lista.innerHTML="";
+
+  items.forEach((it,i)=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.draggable=true;
+    div.dataset.index=i;
+    if(i===currentIndex) div.classList.add("active");
+
+    const span=document.createElement("span");
+    span.textContent=it.name;
+    span.title = "Clic izquierdo: reproducir · Clic derecho: acciones · Arrastrar: reordenar";
+    span.onclick=()=>playItem(i);
+
+    // Todas las acciones del elemento están ahora en el menú contextual.
+    div.addEventListener("contextmenu",e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      showPlaylistContextMenu(e.clientX,e.clientY,i);
+    });
+
+    div.addEventListener("dragstart",e=>{
+      draggedItemIndex=i;
+      div.classList.add("dragging");
+      e.dataTransfer.effectAllowed="move";
+      e.dataTransfer.setData("text/plain",String(i));
+    });
+    div.addEventListener("dragover",e=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect="move";
+      div.classList.add("drag-over");
+    });
+    div.addEventListener("dragleave",()=>div.classList.remove("drag-over"));
+    div.addEventListener("drop",e=>{
+      e.preventDefault();
+      div.classList.remove("drag-over");
+      const from=draggedItemIndex;
+      const to=i;
+      if(from<0 || from===to || from>=items.length) return;
+
+      const [moved]=items.splice(from,1);
+      items.splice(to,0,moved);
+
+      // Mantener correctamente marcado el elemento que está al aire.
+      if(currentIndex===from) currentIndex=to;
+      else if(from<currentIndex && to>=currentIndex) currentIndex--;
+      else if(from>currentIndex && to<=currentIndex) currentIndex++;
+
+      draggedItemIndex=-1;
+      actualizarLista();
+    });
+    div.addEventListener("dragend",()=>{
+      draggedItemIndex=-1;
+      div.classList.remove("dragging");
+      lista.querySelectorAll(".drag-over").forEach(el=>el.classList.remove("drag-over"));
+    });
+
+    div.append(span);
+    lista.appendChild(div);
+  });
 }
 
 /* ===================== PLAY ===================== */
