@@ -4,40 +4,91 @@
 <meta charset="UTF-8">
 
 <style>
-html,body{
-margin:0;
-background:black;
-overflow:hidden;
-}
 
-video{
-position:absolute;
-width:100%;
-height:100%;
-object-fit:cover;
-background:black;
-}
+html,body{margin:0;background:black;overflow:hidden;}
 
+/* NOW PLAYING shared visual system */
 #nowPlayingOverlay{
-position:absolute;left:clamp(14px,3vw,34px);bottom:clamp(14px,3vw,34px);z-index:10;
-width:min(520px,calc(100% - 28px));min-height:76px;display:flex;align-items:center;gap:14px;
-padding:12px 18px 12px 12px;box-sizing:border-box;color:#fff;font-family:Arial,Helvetica,sans-serif;
-background:linear-gradient(110deg,rgba(9,15,21,.94),rgba(17,25,33,.82));
-border:1px solid rgba(255,255,255,.13);border-left:4px solid #55c9ef;border-radius:10px;
-box-shadow:0 8px 30px rgba(0,0,0,.38);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-opacity:1;transform:translateY(0);visibility:visible;
-transition:opacity .28s ease,transform .28s ease,visibility .28s ease;pointer-events:none;
+  --np-accent:#55c9ef;
+  position:absolute;
+  z-index:50;
+  width:min(520px,calc(100% - 28px));
+  min-height:76px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:12px 18px 12px 12px;
+  box-sizing:border-box;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+  background:linear-gradient(110deg,rgba(9,15,21,.94),rgba(17,25,33,.82));
+  border:1px solid rgba(255,255,255,.13);
+  border-left:4px solid var(--np-accent);
+  border-radius:10px;
+  box-shadow:0 8px 30px rgba(0,0,0,.38);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  opacity:1;
+  transform:translateY(0);
+  visibility:visible;
+  transition:opacity .28s ease,transform .28s ease,visibility .28s ease;
+  pointer-events:none;
 }
-#nowPlayingOverlay.hidden{opacity:0;transform:translateY(12px);visibility:hidden;}
-#npArtwork{width:52px;height:52px;flex:0 0 52px;display:flex;align-items:center;justify-content:center;
-border-radius:7px;background:linear-gradient(145deg,#183747,#101a24);border:1px solid rgba(85,201,239,.45);
-color:#75d9f5;font-size:25px;font-weight:700;letter-spacing:-2px;}
+#nowPlayingOverlay.hidden{opacity:0;visibility:hidden;}
+#npArtwork{
+  width:52px;height:52px;flex:0 0 52px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:7px;
+  background:linear-gradient(145deg,#183747,#101a24);
+  border:1px solid color-mix(in srgb,var(--np-accent) 65%,transparent);
+  color:#75d9f5;font-size:25px;font-weight:700;letter-spacing:-2px;
+}
 #npInfo{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px;}
-#npLabel{color:#72d9f5;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+#npLabel{color:var(--np-accent);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
 #npTitle{color:#fff;font-size:clamp(14px,1.6vw,19px);font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.45);}
 #npSubtitle{color:rgba(235,244,249,.66);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;}
 #npAccent{width:3px;height:34px;flex:0 0 3px;border-radius:3px;background:linear-gradient(to bottom,#70e0f7,#2685ad);}
 
+/* Positions */
+#nowPlayingOverlay[data-position="top-left"]{top:18px;left:18px;bottom:auto;right:auto;}
+#nowPlayingOverlay[data-position="top-center"]{top:18px;left:50%;bottom:auto;right:auto;transform:translateX(-50%);}
+#nowPlayingOverlay[data-position="top-right"]{top:18px;right:18px;bottom:auto;left:auto;}
+#nowPlayingOverlay[data-position="middle-left"]{top:50%;left:18px;bottom:auto;right:auto;transform:translateY(-50%);}
+#nowPlayingOverlay[data-position="middle-right"]{top:50%;right:18px;bottom:auto;left:auto;transform:translateY(-50%);}
+#nowPlayingOverlay[data-position="bottom-left"]{bottom:18px;left:18px;top:auto;right:auto;}
+#nowPlayingOverlay[data-position="bottom-center"]{bottom:18px;left:50%;top:auto;right:auto;transform:translateX(-50%);}
+#nowPlayingOverlay[data-position="bottom-right"]{bottom:18px;right:18px;top:auto;left:auto;}
+
+/* Design variants */
+#nowPlayingOverlay[data-style="spotify"]{
+  width:min(440px,calc(100% - 28px));min-height:94px;padding:14px;
+  border:1px solid rgba(255,255,255,.12);border-left:0;border-radius:13px;
+  background:rgba(12,12,14,.94);
+}
+#nowPlayingOverlay[data-style="spotify"] #npArtwork{width:66px;height:66px;flex-basis:66px;border-radius:5px;}
+#nowPlayingOverlay[data-style="spotify"] #npLabel{letter-spacing:1.4px;}
+#nowPlayingOverlay[data-style="minimal"]{
+  width:min(560px,calc(100% - 28px));min-height:0;padding:10px 16px;
+  gap:10px;border:0;border-left:3px solid var(--np-accent);border-radius:3px;
+  background:rgba(8,12,16,.78);box-shadow:0 4px 18px rgba(0,0,0,.22);
+}
+#nowPlayingOverlay[data-style="minimal"] #npArtwork,
+#nowPlayingOverlay[data-style="minimal"] #npAccent{display:none;}
+#nowPlayingOverlay[data-style="minimal"] #npInfo{gap:3px;}
+#nowPlayingOverlay[data-style="ticker"]{
+  width:min(720px,calc(100% - 28px));min-height:0;padding:12px 18px;
+  border:0;border-left:4px solid var(--np-accent);border-radius:5px;
+  background:rgba(7,13,18,.88);
+}
+#nowPlayingOverlay[data-style="ticker"] #npArtwork{width:34px;height:34px;flex-basis:34px;font-size:18px;}
+#nowPlayingOverlay[data-style="ticker"] #npInfo{flex-direction:row;align-items:center;gap:12px;overflow:hidden;}
+#nowPlayingOverlay[data-style="ticker"] #npLabel{white-space:nowrap;}
+#nowPlayingOverlay[data-style="ticker"] #npTitle{overflow:hidden;text-overflow:ellipsis;}
+#nowPlayingOverlay[data-style="ticker"] #npSubtitle{white-space:nowrap;}
+
+#nowPlayingOverlay{position:fixed;}
+
+video{position:absolute;width:100%;height:100%;object-fit:cover;background:black;}
 </style>
 </head>
 
@@ -45,7 +96,7 @@ color:#75d9f5;font-size:25px;font-weight:700;letter-spacing:-2px;}
 
 <video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
-<div id="nowPlayingOverlay" class="hidden" aria-live="polite">
+<div id="nowPlayingOverlay" class="hidden" data-style="professional" data-position="bottom-left" aria-live="polite">
   <div id="npArtwork" aria-hidden="true">R</div>
   <div id="npInfo"><div id="npLabel">NOW PLAYING · RADIOPHONICA</div><div id="npTitle">Sin reproducción</div><div id="npSubtitle">EN VIVO</div></div>
   <div id="npAccent" aria-hidden="true"></div>
@@ -54,155 +105,106 @@ color:#75d9f5;font-size:25px;font-weight:700;letter-spacing:-2px;}
 <script>
 
 const canal = new BroadcastChannel("obs_player");
-
 const main = document.getElementById("main");
 const fx = document.getElementById("fx");
 const nowPlayingOverlay = document.getElementById("nowPlayingOverlay");
 const npTitle = document.getElementById("npTitle");
 const npSubtitle = document.getElementById("npSubtitle");
-let nowPlayingVisible = false;
-
 let autoplay = true;
+let npState = {title:"", subtitle:"EN VIVO", visible:false, style:"professional", position:"bottom-left"};
 
+function saveNpState(){
+  try { localStorage.setItem("radiophonica_nowplaying_state", JSON.stringify(npState)); } catch(e){}
+}
+function applyNpState(){
+  nowPlayingOverlay.dataset.style = npState.style || "professional";
+  nowPlayingOverlay.dataset.position = npState.position || "bottom-left";
+  npTitle.textContent = npState.title || "Sin reproducción";
+  npSubtitle.textContent = npState.subtitle || "EN VIVO";
+  nowPlayingOverlay.classList.toggle("hidden", !npState.visible);
+}
+function updateNpState(patch, persist=true){
+  npState = {...npState, ...patch};
+  applyNpState();
+  if(persist) saveNpState();
+}
 function showNowPlaying(name, kind){
-  const title = (name || "Archivo en reproducción").trim();
-  npTitle.textContent = title;
-  npSubtitle.textContent = kind || "EN VIVO";
-  nowPlayingVisible = true;
-  nowPlayingOverlay.classList.remove("hidden");
+  updateNpState({title:(name || "Archivo en reproducción").trim(), subtitle:kind || "REPRODUCIENDO", visible:true});
+  canal.postMessage({type:"nowPlayingUpdate", state:npState});
 }
-
 function toggleNowPlaying(){
-  nowPlayingVisible = !nowPlayingVisible;
-  nowPlayingOverlay.classList.toggle("hidden", !nowPlayingVisible);
+  updateNpState({visible:!npState.visible});
+  canal.postMessage({type:"nowPlayingState", state:npState});
 }
-
-/* =====================
-   PLAY VIDEO
-===================== */
-
-function playFile(file, name){
-
-if(!file) return;
-showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO · RADIOPHONICA");
-main.src = URL.createObjectURL(file);
-main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
-
+function receiveNpState(state){
+  if(!state || typeof state !== "object") return;
+  updateNpState({
+    title:typeof state.title==="string"?state.title:npState.title,
+    subtitle:typeof state.subtitle==="string"?state.subtitle:npState.subtitle,
+    visible:typeof state.visible==="boolean"?state.visible:npState.visible,
+    style:typeof state.style==="string"?state.style:npState.style,
+    position:typeof state.position==="string"?state.position:npState.position
+  });
 }
-
-/* =====================
-   FX
-===================== */
-
-function playFX(file, name){
-
-if(!file) return;
-showNowPlaying(name ? "FX · " + name : (file.name || "FX"), "EFECTO DE SONIDO");
-fx.src = URL.createObjectURL(file);
-
-fx.style.display="block";
-
-fx.volume = main.volume;
-
-fx.onended=()=>{
-fx.style.display="none";
-};
-
-fx.play().catch(err => console.warn("No se pudo reproducir el FX:", err));
-
-}
-
-/* =====================
-   CUANDO TERMINA
-===================== */
-
-main.onended=()=>{
-
-if(!autoplay) return;
-
-canal.postMessage({
-type:"next"
+try {
+  const saved = JSON.parse(localStorage.getItem("radiophonica_nowplaying_state") || "null");
+  if(saved) receiveNpState(saved);
+} catch(e){}
+window.addEventListener("storage", e=>{
+  if(e.key==="radiophonica_nowplaying_state" && e.newValue){
+    try { receiveNpState(JSON.parse(e.newValue)); } catch(err){}
+  }
 });
 
+function playFile(file, name){
+  if(!file) return;
+  showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO · RADIOPHONICA");
+  main.src = URL.createObjectURL(file);
+  main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
+}
+function playFX(file, name){
+  if(!file) return;
+  showNowPlaying(name ? "FX · " + name : (file.name || "FX"), "EFECTO DE SONIDO");
+  fx.src = URL.createObjectURL(file);
+  fx.style.display="block";
+  fx.volume = main.volume;
+  fx.onended=()=>{ fx.style.display="none"; };
+  fx.play().catch(err => console.warn("No se pudo reproducir el FX:", err));
+}
+main.onended=()=>{
+  if(!autoplay) return;
+  canal.postMessage({type:"next"});
 };
-
-/* =====================
-   CONTROLES
-===================== */
-
 function play(){ main.play(); }
 function pause(){ main.pause(); }
-
-function stop(){
-
-main.pause();
-main.currentTime=0;
-
-}
-
-/* =====================
-   MENSAJES PANEL
-===================== */
+function stop(){ main.pause(); main.currentTime=0; }
 
 canal.onmessage=e=>{
-
-const d=e.data;
-
-switch(d.type){
-
-case "playFile":
-playFile(d.file, d.name);
-break;
-
-case "fx":
-playFX(d.file, d.name);
-break;
-
-case "toggleNowPlaying":
-toggleNowPlaying();
-break;
-
-case "showNowPlaying":
-nowPlayingVisible = true;
-nowPlayingOverlay.classList.remove("hidden");
-break;
-
-case "hideNowPlaying":
-nowPlayingVisible = false;
-nowPlayingOverlay.classList.add("hidden");
-break;
-
-case "play":
-play();
-break;
-
-case "pause":
-pause();
-break;
-
-case "stop":
-stop();
-break;
-
-case "volume":
-main.volume=d.value;
-fx.volume=d.value;
-break;
-
-case "setAutoplay":
-autoplay=d.value;
-break;
-
-case "forward":
-main.currentTime += 10;
-break;
-
-case "back":
-main.currentTime -= 10;
-break;
-}
-
+  const d=e.data || {};
+  switch(d.type){
+    case "playFile": playFile(d.file, d.name); break;
+    case "fx": playFX(d.file, d.name); break;
+    case "toggleNowPlaying": toggleNowPlaying(); break;
+    case "setNowPlayingVisibility": updateNpState({visible:!!d.visible}); canal.postMessage({type:"nowPlayingState",state:npState}); break;
+    case "setNowPlayingConfig": receiveNpState(d.state); saveNpState(); canal.postMessage({type:"nowPlayingState",state:npState}); break;
+    case "requestNowPlayingState":
+      canal.postMessage({type:"nowPlayingState",state:npState});
+      break;
+    case "nowPlayingConfig": case "nowPlayingState": case "nowPlayingUpdate":
+      receiveNpState(d.state);
+      break;
+    case "showNowPlaying": updateNpState({visible:true}); break;
+    case "hideNowPlaying": updateNpState({visible:false}); break;
+    case "play": play(); break;
+    case "pause": pause(); break;
+    case "stop": stop(); break;
+    case "volume": main.volume=d.value; fx.volume=d.value; break;
+    case "setAutoplay": autoplay=d.value; break;
+    case "forward": main.currentTime+=10; break;
+    case "back": main.currentTime-=10; break;
+  }
 };
+canal.postMessage({type:"requestNowPlayingState"});
 
 </script>
 

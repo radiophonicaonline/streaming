@@ -76,7 +76,36 @@ margin-top:5px;
 <div id="nowPlaying" style="color:#6cf;font-size:14px">
 ninguno
 </div>
-<button onclick="toggleNowPlayingOverlay()" title="Mostrar u ocultar la franja NOW PLAYING">👁 Mostrar / ocultar NOW PLAYING</button>
+
+<hr>
+<h3>NOW PLAYING · DISEÑO</h3>
+<label style="display:block;margin:7px 2px">Diseño
+<select id="npDesign" style="width:100%;padding:7px;background:#222;color:#fff;border:1px solid #444">
+  <option value="professional">Radio profesional</option>
+  <option value="spotify">Spotify</option>
+  <option value="minimal">Minimalista</option>
+  <option value="ticker">Cinta horizontal</option>
+</select>
+</label>
+<label style="display:block;margin:7px 2px">Posición en pantalla
+<select id="npPosition" style="width:100%;padding:7px;background:#222;color:#fff;border:1px solid #444">
+  <option value="top-left">Superior izquierda</option>
+  <option value="top-center">Superior centro</option>
+  <option value="top-right">Superior derecha</option>
+  <option value="middle-left">Centro izquierda</option>
+  <option value="middle-right">Centro derecha</option>
+  <option value="bottom-left" selected>Inferior izquierda</option>
+  <option value="bottom-center">Inferior centro</option>
+  <option value="bottom-right">Inferior derecha</option>
+</select>
+</label>
+<button onclick="toggleNowPlayingOverlay()" style="width:100%;padding:8px;margin-top:5px">👁 Mostrar / ocultar NOW PLAYING</button>
+<div style="font-size:11px;color:#999;margin:7px 2px;line-height:1.4">
+Fuente independiente para OBS:<br>
+<strong style="color:#6cf">https://radiophonica.cl/nowplaying.html</strong><br>
+Agrégala como fuente de navegador transparente en cualquier escena.
+</div>
+
 
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
@@ -131,6 +160,29 @@ oninput="setVolume(this.value)">
 <script>
 
 const canal=new BroadcastChannel("obs_player");
+
+const NP_STORAGE_KEY = "radiophonica_nowplaying_state";
+let npPanelState = {title:"", subtitle:"EN VIVO", visible:false, style:"professional", position:"bottom-left"};
+
+function loadNpPanelState(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(NP_STORAGE_KEY) || "null");
+    if(saved) npPanelState = {...npPanelState, ...saved};
+  } catch(e){}
+  document.getElementById("npDesign").value = npPanelState.style || "professional";
+  document.getElementById("npPosition").value = npPanelState.position || "bottom-left";
+}
+function publishNpPanelState(){
+  npPanelState.style = document.getElementById("npDesign").value;
+  npPanelState.position = document.getElementById("npPosition").value;
+  try { localStorage.setItem(NP_STORAGE_KEY, JSON.stringify(npPanelState)); } catch(e){}
+  canal.postMessage({type:"setNowPlayingConfig", state:npPanelState});
+}
+document.getElementById("npDesign").addEventListener("change", publishNpPanelState);
+document.getElementById("npPosition").addEventListener("change", publishNpPanelState);
+loadNpPanelState();
+
+
 
 let items=[];
 let currentIndex=-1;
@@ -251,6 +303,7 @@ const it=items[i];
 if(it.type==="file"){
 
 document.getElementById("nowPlaying").textContent = it.name;
+npPanelState.title = it.file.name; npPanelState.subtitle = "REPRODUCIENDO · RADIOPHONICA"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
 
 canal.postMessage({
 type:"playFile",
@@ -281,6 +334,7 @@ it.shuffleList=null;
 }
 
 document.getElementById("nowPlaying").textContent = f.name;
+npPanelState.title = f.name; npPanelState.subtitle = "REPRODUCIENDO · RADIOPHONICA"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
 
 canal.postMessage({
 type:"playFile",
@@ -373,6 +427,7 @@ if(!previewItemData) return;
 
 document.getElementById("nowPlaying").textContent =
 previewItemData.name;
+npPanelState.title = previewItemData.name; npPanelState.subtitle = "REPRODUCIENDO · RADIOPHONICA"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
 
 canal.postMessage({
 type:"playFile",
@@ -390,6 +445,10 @@ previewVideo.src="";
 }
 
 canal.onmessage=e=>{
+if(e.data && ["nowPlayingState","nowPlayingUpdate"].includes(e.data.type) && e.data.state){
+npPanelState = {...npPanelState, ...e.data.state};
+try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify(npPanelState));}catch(err){}
+}
 if(e.data.type==="next"){
 if(items.length===0) return;
 currentIndex++;
@@ -443,7 +502,9 @@ fxdiv.appendChild(btn);
 };
 
 function toggleNowPlayingOverlay(){
-canal.postMessage({type:"toggleNowPlaying"});
+npPanelState.visible = !npPanelState.visible;
+try { localStorage.setItem(NP_STORAGE_KEY, JSON.stringify(npPanelState)); } catch(e){}
+canal.postMessage({type:"setNowPlayingVisibility", visible:npPanelState.visible});
 }
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
