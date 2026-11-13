@@ -258,6 +258,19 @@ function playFX(file, name){
   fx.play().catch(err => console.warn("No se pudo reproducir el FX:", err));
 }
 main.onended=()=>{
+  // Si estamos dentro de una locución dinámica, reproducir el siguiente
+  // fragmento antes de avisar al panel que avance la playlist.
+  if(activeSequence){
+    activeSequence.index++;
+    if(activeSequence.index < activeSequence.files.length){
+      playSequencePart();
+      return;
+    }
+    activeSequence = null;
+    if(autoplay) canal.postMessage({type:"next"});
+    return;
+  }
+
   if(!autoplay) return;
   canal.postMessage({type:"next"});
 };
