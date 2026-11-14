@@ -170,6 +170,8 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
 <button onclick="agregarLocucionHora()">🕒 Locución hora</button>
+<button onclick="agregarLocucionClima('temperature')">🌡️ Locución temperatura</button>
+<button onclick="agregarLocucionClima('humidity')">💧 Locución humedad</button>
 
 <label>
 <input type="checkbox" id="auto" checked>Auto
@@ -373,8 +375,8 @@ function addItemToPreviewList(i){
   const it = items[i];
   if(!it) return;
 
-  if(it.type === "hour"){
-    alert("La locución de hora se consulta al momento de salir al aire y no tiene un archivo fijo para Preview.");
+  if(["hour","temperature","humidity"].includes(it.type)){
+    alert("Esta locución se consulta al momento de salir al aire y no tiene un archivo fijo para Preview.");
     return;
   }
   if(it.type === "file"){
@@ -389,7 +391,7 @@ function addItemToPreviewList(i){
 function duplicatePlaylistItem(i){
   const it = items[i];
   if(!it) return;
-  const copy = it.type === "file" || it.type === "hour"
+  const copy = it.type === "file" || ["hour","temperature","humidity"].includes(it.type)
     ? {...it}
     : {...it, files:[...it.files], shuffleList:null, shuffleIndex:0};
   items.splice(i+1, 0, copy);
@@ -516,6 +518,11 @@ function agregarLocucionHora(){
   items.push({type:"hour", name:"🕒 LOCUCIÓN DE HORA"});
   actualizarLista();
 }
+function agregarLocucionClima(type){
+  const isTemp = type === "temperature";
+  items.push({type, name:isTemp ? "🌡️ LOCUCIÓN DE TEMPERATURA" : "💧 LOCUCIÓN DE HUMEDAD"});
+  actualizarLista();
+}
 
 /* ===================== PLAY ===================== */
 
@@ -524,13 +531,14 @@ function playItem(i){
   currentIndex=i;
   const it=items[i];
 
-  if(it.type==="hour"){
-    const label="LOCUCIÓN DE HORA";
+  if(["hour","temperature","humidity"].includes(it.type)){
+    const labels={hour:"LOCUCIÓN DE HORA",temperature:"LOCUCIÓN DE TEMPERATURA",humidity:"LOCUCIÓN DE HUMEDAD"};
+    const label=labels[it.type];
     document.getElementById("nowPlaying").textContent=label;
     npPanelState.title=label;
-    npPanelState.subtitle="CONSULTANDO RELOJ";
+    npPanelState.subtitle=it.type === "hour" ? "CONSULTANDO RELOJ" : "CONSULTANDO CLIMA";
     try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
-    canal.postMessage({type:"playHour"});
+    canal.postMessage({type:it.type === "hour" ? "playHour" : "playWeather", weatherType:it.type});
   }else if(it.type==="file"){
     document.getElementById("nowPlaying").textContent = it.name;
     npPanelState.title = it.file.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
@@ -559,8 +567,8 @@ function playItem(i){
 function preview(i){
 
 const it=items[i];
-if(it.type==="hour"){
-  alert("La locución de hora se genera dinámicamente al reproducirse y no tiene preview de archivo.");
+if(["hour","temperature","humidity"].includes(it.type)){
+  alert("La locución dinámica se genera al reproducirse y no tiene preview de archivo.");
   return;
 }
 
