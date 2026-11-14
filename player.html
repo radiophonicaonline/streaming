@@ -137,6 +137,41 @@ video{position:absolute;width:100%;height:100%;object-fit:cover;background:black
 #nowPlayingOverlay[data-style="ticker"]{padding:var(--np-pad-y) var(--np-pad-right);}
 #nowPlayingOverlay[data-style="ticker"] #npArtwork{width:var(--np-art-size);height:var(--np-art-size);flex-basis:var(--np-art-size);}
 
+
+/* Pantalla visual para locuciones dinámicas */
+#hourVisual{
+  position:fixed;inset:0;z-index:40;display:none;align-items:center;
+  justify-content:center;flex-direction:column;gap:clamp(12px,2.5vh,26px);
+  overflow:hidden;background:
+    radial-gradient(ellipse at 50% 42%,rgba(20,72,96,.42),transparent 55%),
+    linear-gradient(145deg,#05090e,#0a121a 58%,#05080c);
+  color:#f5fbff;font-family:Arial,Helvetica,sans-serif;text-align:center;
+}
+#hourVisual.active{display:flex;}
+#hourVisual:before,#hourVisual:after{
+  content:"";position:absolute;left:8%;right:8%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(85,201,239,.32),transparent);
+}
+#hourVisual:before{top:16%}#hourVisual:after{bottom:16%}
+#hourEyebrow{font-size:clamp(11px,1.5vw,18px);letter-spacing:.42em;color:#69cce9;font-weight:700}
+#hourDigits{
+  font-size:clamp(90px,22vw,280px);font-weight:300;letter-spacing:.035em;
+  line-height:1;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 34px rgba(64,190,235,.18);
+}
+#hourCaption{font-size:clamp(13px,2vw,24px);letter-spacing:.24em;color:#a9c5d2}
+#hourEqualizer{height:58px;display:flex;align-items:center;justify-content:center;gap:6px}
+#hourEqualizer span{
+  display:block;width:5px;height:12px;border-radius:8px;
+  background:linear-gradient(180deg,#8be7ff,#238bb5);
+  box-shadow:0 0 12px rgba(67,190,235,.35);
+  animation:hourEq .78s ease-in-out infinite alternate;
+}
+#hourEqualizer span:nth-child(3n){animation-delay:-.22s}
+#hourEqualizer span:nth-child(3n + 1){animation-delay:-.48s}
+#hourEqualizer span:nth-child(4n){animation-duration:.58s}
+@keyframes hourEq{from{height:8px;opacity:.55}to{height:52px;opacity:1}}
+
 </style>
 </head>
 
@@ -144,6 +179,12 @@ video{position:absolute;width:100%;height:100%;object-fit:cover;background:black
 
 <video id="main" autoplay></video>
 <video id="fx" style="display:none"></video>
+<div id="hourVisual" aria-live="polite">
+  <div id="hourEyebrow">HORA ACTUAL</div>
+  <div id="hourDigits">00:00</div>
+  <div id="hourCaption">LOCUCIÓN DE HORA</div>
+  <div id="hourEqualizer" aria-hidden="true"></div>
+</div>
 <div id="nowPlayingOverlay" class="hidden" data-style="professional" data-position="bottom-left" data-size="medium" aria-live="polite">
   <div id="npArtwork" aria-hidden="true">♪</div>
   <div id="npInfo"><div id="npLabel">NOW PLAYING</div><div id="npTitle">Sin reproducción</div></div>
@@ -158,6 +199,15 @@ const fx = document.getElementById("fx");
 const nowPlayingOverlay = document.getElementById("nowPlayingOverlay");
 const npTitle = document.getElementById("npTitle");
 const npSubtitle = document.getElementById("npSubtitle");
+const hourVisual = document.getElementById("hourVisual");
+const hourDigits = document.getElementById("hourDigits");
+const hourCaption = document.getElementById("hourCaption");
+const hourEqualizer = document.getElementById("hourEqualizer");
+for(let i=0;i<  thirtyBarsCount;i++){
+  const bar=document.createElement("span");
+  hourEqualizer.appendChild(bar);
+}
+
 let autoplay = true;
 let lastPlaybackReport = 0;
 let activeSequence = null;
@@ -211,6 +261,16 @@ window.addEventListener("storage", e=>{
   }
 });
 
+function showHourVisual(time){
+  hourDigits.textContent = time || "--:--";
+  hourCaption.textContent = "LOCUCIÓN DE HORA";
+  main.style.display = "none";
+  hourVisual.classList.add("active");
+}
+function hideHourVisual(){
+  hourVisual.classList.remove("active");
+  main.style.display = "block";
+}
 function playFile(file, name){
   if(!file) return;
   showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO");
@@ -276,7 +336,7 @@ main.onended=()=>{
 };
 function play(){ main.play(); }
 function pause(){ main.pause(); }
-function stop(){ activeSequence=null; main.pause(); main.currentTime=0; }
+function stop(){ activeSequence=null; hideHourVisual(); main.pause(); main.currentTime=0; }
 
 function reportPlayback(force=false){
   const now = Date.now();
