@@ -203,7 +203,7 @@ const hourVisual = document.getElementById("hourVisual");
 const hourDigits = document.getElementById("hourDigits");
 const hourCaption = document.getElementById("hourCaption");
 const hourEqualizer = document.getElementById("hourEqualizer");
-for(let i=0;i<  thirtyBarsCount;i++){
+for(let i=0;i<30;i++){
   const bar=document.createElement("span");
   hourEqualizer.appendChild(bar);
 }
@@ -273,6 +273,7 @@ function hideHourVisual(){
 }
 function playFile(file, name){
   if(!file) return;
+  hideHourVisual();
   showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO");
   main.src = URL.createObjectURL(file);
   main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
@@ -287,12 +288,14 @@ async function playHourSequence(){
       throw new Error((data.missing || []).join(", ") || "No se encontraron los audios de la hora");
     }
     activeSequence = {files:data.files, index:0, spokenTime:data.spokenTime};
+    showHourVisual(data.spokenTime);
     showNowPlaying("LOCUCIÓN DE HORA · " + data.spokenTime, "HORA ACTUAL");
     playSequencePart();
   }catch(err){
     console.error("Error en locución de hora:", err);
     showNowPlaying("Error en locución de hora", "REVISAR SERVIDOR / AUDIOS");
     activeSequence = null;
+    hideHourVisual();
     canal.postMessage({type:"hourSequenceError", message:String(err.message || err)});
     if(autoplay) canal.postMessage({type:"next"});
   }
@@ -327,6 +330,7 @@ main.onended=()=>{
       return;
     }
     activeSequence = null;
+    hideHourVisual();
     if(autoplay) canal.postMessage({type:"next"});
     return;
   }
