@@ -263,7 +263,7 @@ window.addEventListener("storage", e=>{
 
 function showHourVisual(time){
   hourDigits.textContent = time || "--:--";
-  hourCaption.textContent = "LOCUCIÓN DE HORA";
+  hourCaption.textContent = window.currentLocutionCaption || "LOCUCIÓN DE HORA";
   main.style.display = "none";
   hourVisual.classList.add("active");
 }
@@ -300,6 +300,32 @@ async function playHourSequence(){
     if(autoplay) canal.postMessage({type:"next"});
   }
 }
+async function playWeatherSequence(type){
+  activeSequence = null;
+  const isTemp = type === "temperature";
+  const caption = isTemp ? "LOCUCIÓN DE TEMPERATURA" : "LOCUCIÓN DE HUMEDAD";
+  window.currentLocutionCaption = caption;
+  showNowPlaying(caption, "CONSULTANDO SANTIAGO");
+  try{
+    const response = await fetch(`http://127.0.0.1:3030/api/weather/${type}`, {cache:"no-store"});
+    const data = await response.json();
+    if(!response.ok || !data.ok || !data.file || !data.file.url){
+      throw new Error(data.error || "No se encontró el audio meteorológico");
+    }
+    activeSequence = {files:[data.file], index:0, spokenTime:null};
+    showHourVisual(isTemp ? `${data.value}°` : `${data.value}%`);
+    showNowPlaying(`${caption} · ${data.spokenValue}`, "SANTIAGO · ACTUALIZADO");
+    playSequencePart();
+  }catch(err){
+    console.error(`Error en ${caption}:`, err);
+    showNowPlaying(`Error en ${caption}`, "REVISAR SERVIDOR / AUDIOS");
+    activeSequence = null;
+    hideHourVisual();
+    canal.postMessage({type:"weatherSequenceError", weatherType:type, message:String(err.message || err)});
+    if(autoplay) canal.postMessage({type:"next"});
+  }
+}
+
 function playSequencePart(){
   if(!activeSequence) return;
   const part = activeSequence.files[activeSequence.index];
@@ -367,7 +393,8 @@ canal.onmessage=e=>{
   const d=e.data || {};
   switch(d.type){
     case "playFile": playFile(d.file, d.name); break;
-     case "playHour": playHourSequence(); break;
+     case "playHour": window.currentLocutionCaption="LOCUCIÓN DE HORA"; playHourSequence(); break;
+    case "playWeather": playWeatherSequence(d.weatherType); break;
     case "fx": playFX(d.file, d.name); break;
     case "toggleNowPlaying": toggleNowPlaying(); break;
     case "setNowPlayingVisibility": updateNpState({visible:!!d.visible}); canal.postMessage({type:"nowPlayingState",state:npState}); break;
