@@ -127,6 +127,7 @@ margin-top:5px;
 .replay-actions{display:flex;gap:3px;flex-shrink:0}
 .replay-actions button{font-size:10px;padding:5px 7px}
 .replay-empty{padding:12px;color:#8997a3;font-size:11px;text-align:center}
+.replay-delete{background:#5b2020!important;color:#ffdada!important}
 
 </style>
 </head>
@@ -240,7 +241,7 @@ sin preview
 <button onclick="back10()">⏪ 10s</button>
 <button onclick="forward10()">10s ⏩</button>
 
-<br><br>
+<br>
 
 <div id="playbackTimePanel">
   <div class="time-head">
@@ -789,7 +790,39 @@ async function cargarReplays(){
         });
       });
 
-      actions.append(previewBtn, airBtn);
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.textContent = "🗑";
+      deleteBtn.title = "Eliminar definitivamente este replay";
+      deleteBtn.className = "replay-delete";
+      deleteBtn.addEventListener("click", async ()=>{
+        const confirmed = confirm("¿Eliminar definitivamente este replay?\n\n" + replay.name);
+        if(!confirmed) return;
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = "...";
+        try{
+          const deleteResponse = await fetch(
+            "http://127.0.0.1:3030/replays/" + encodeURIComponent(replay.name),
+            {method:"DELETE", cache:"no-store"}
+          );
+          const deleteData = await deleteResponse.json();
+          if(!deleteResponse.ok || !deleteData.ok){
+            throw new Error(deleteData.error || "No se pudo eliminar el replay");
+          }
+          if(previewItemData && previewItemData.name === replay.name){
+            stopPreview();
+            previewItemData = null;
+            document.getElementById("previewName").textContent = "sin preview";
+          }
+          cargarReplays();
+        }catch(error){
+          alert("No se pudo eliminar el replay: " + error.message);
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = "🗑";
+        }
+      });
+
+      actions.append(previewBtn, airBtn, deleteBtn);
       row.append(name, size, actions);
       replaysListEl.appendChild(row);
     });
@@ -883,13 +916,6 @@ function playerPause(){ canal.postMessage({type:"pause"}); }
 function playerStop(){ canal.postMessage({type:"stop"}); }
 function forward10(){ canal.postMessage({type:"forward"}); }
 function back10(){ canal.postMessage({type:"back"}); }
-
-function setVolume(v){
-canal.postMessage({
-type:"volume",
-value:parseFloat(v)
-});
-}
 
 </script>
 

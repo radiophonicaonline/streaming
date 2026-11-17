@@ -277,6 +277,7 @@ function playReplay(url, name){
   activeSequence = null;
   hideHourVisual();
   showNowPlaying(name || "REPETICIÓN OBS", "REPRODUCIENDO REPLAY");
+  main.playbackRate = 1;
   main.src = url;
   main.load();
   main.play().catch(err=>{
@@ -288,6 +289,7 @@ function playFile(file, name){
   if(!file) return;
   hideHourVisual();
   showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO");
+  main.playbackRate = 1;
   main.src = URL.createObjectURL(file);
   main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
 }
@@ -377,9 +379,21 @@ main.onended=()=>{
   if(!autoplay) return;
   canal.postMessage({type:"next"});
 };
-function play(){ main.play(); }
-function pause(){ main.pause(); }
-function stop(){ activeSequence=null; hideHourVisual(); main.pause(); main.currentTime=0; }
+function play(){
+  main.play().catch(err=>console.warn("No se pudo reanudar:",err));
+}
+function pause(){
+  main.pause();
+  reportPlayback(true);
+}
+function stop(){
+  activeSequence=null;
+  hideHourVisual();
+  main.pause();
+  main.playbackRate=1;
+  main.currentTime=0;
+  reportPlayback(true);
+}
 
 function reportPlayback(force=false){
   const now = Date.now();
