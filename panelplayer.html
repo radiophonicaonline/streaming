@@ -802,7 +802,7 @@ async function cargarReplays(){
         deleteBtn.textContent = "...";
         try{
           const deleteResponse = await fetch(
-            "http://127.0.0.1:3030/replays/" + encodeURIComponent(replay.name),
+            "http://127.0.0.1:3030/api/replays/" + encodeURIComponent(replay.name),
             {method:"DELETE", cache:"no-store"}
           );
           const deleteData = await deleteResponse.json();
