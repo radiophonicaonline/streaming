@@ -106,6 +106,28 @@ margin-top:5px;
 #playlistContextMenu button:hover{background:#293640}
 #playlistContextMenu button.danger{color:#ff8585}
 
+
+/* REPETICIONES OBS */
+#replaysPanel{
+  margin:12px 0;padding:10px;background:#121820;
+  border:1px solid #293744;border-radius:8px;
+}
+#replaysHead{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:8px;margin-bottom:7px;
+}
+#replaysStatus{font-size:11px;color:#8fa3b2}
+#replaysList{max-height:190px;overflow:auto;border:1px solid #26313a;border-radius:5px}
+.replay-row{
+  display:flex;align-items:center;gap:5px;padding:7px;
+  border-bottom:1px solid #26313a;font-size:11px;
+}
+.replay-row:last-child{border-bottom:0}
+.replay-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.replay-actions{display:flex;gap:3px;flex-shrink:0}
+.replay-actions button{font-size:10px;padding:5px 7px}
+.replay-empty{padding:12px;color:#8997a3;font-size:11px;text-align:center}
+
 </style>
 </head>
 
@@ -178,6 +200,18 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 </label>
 
 <div id="lista"></div>
+
+<div id="replaysPanel">
+  <div id="replaysHead">
+    <strong style="color:#6cf">🎬 REPETICIONES OBS</strong>
+    <button type="button" onclick="cargarReplays()">↻ Actualizar</button>
+  </div>
+  <div id="replaysStatus">Conectando con el servidor...</div>
+  <div id="replaysList">
+    <div class="replay-empty">Buscando repeticiones...</div>
+  </div>
+</div>
+
 <div id="playlistContextMenu" role="menu" aria-label="Acciones del archivo"></div>
 
 <h3>Preview</h3>
@@ -647,13 +681,129 @@ document.getElementById("nowPlaying").textContent =
 previewItemData.name;
 npPanelState.title = previewItemData.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
 
-canal.postMessage({
-type:"playFile",
-file:previewItemData.file,
-name:previewItemData.name
-});
+if(previewItemData.url){
+  canal.postMessage({
+    type:"playReplay",
+    url:previewItemData.url,
+    name:previewItemData.name
+  });
+}else{
+  canal.postMessage({
+    type:"playFile",
+    file:previewItemData.file,
+    name:previewItemData.name
+  });
+}
 
 }
+
+
+/* ===================== REPETICIONES OBS ===================== */
+
+const REPLAY_API = "http://127.0.0.1:3030/api/replays";
+const replaysListEl = document.getElementById("replaysList");
+const replaysStatusEl = document.getElementById("replaysStatus");
+
+function formatReplaySize(bytes){
+  if(!Number.isFinite(bytes) || bytes < 0) return "";
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(0)+" KB";
+  return (bytes/(1024*1024)).toFixed(1)+" MB";
+}
+
+async function cargarReplays(){
+  if(!replaysListEl || !replaysStatusEl) return;
+
+  replaysStatusEl.textContent = "Actualizando...";
+  try{
+    const response = await fetch(REPLAY_API + "?t=" + Date.now(), {
+      cache:"no-store"
+    });
+    const data = await response.json();
+
+    if(!response.ok || !data.ok){
+      throw new Error(data.error || "No se pudo consultar el servidor");
+    }
+
+    replaysStatusEl.textContent =
+      data.count + (data.count === 1 ? " replay disponible" : " replays disponibles");
+
+    replaysListEl.innerHTML = "";
+
+    if(!Array.isArray(data.files) || data.files.length === 0){
+      replaysListEl.innerHTML =
+        '<div class="replay-empty">No hay repeticiones MKV disponibles todavía.</div>';
+      return;
+    }
+
+    data.files.forEach(replay=>{
+      const row = document.createElement("div");
+      row.className = "replay-row";
+
+      const name = document.createElement("div");
+      name.className = "replay-name";
+      name.textContent = replay.name;
+      name.title = replay.name;
+
+      const size = document.createElement("span");
+      size.style.cssText = "color:#8294a2;white-space:nowrap";
+      size.textContent = formatReplaySize(replay.size);
+
+      const actions = document.createElement("div");
+      actions.className = "replay-actions";
+
+      const previewBtn = document.createElement("button");
+      previewBtn.type = "button";
+      previewBtn.textContent = "▶ Preview";
+      previewBtn.title = "Reproducir en Preview";
+      previewBtn.addEventListener("click", ()=>{
+        previewVideo.src = replay.url;
+        previewItemData = {
+          url: replay.url,
+          name: replay.name
+        };
+        document.getElementById("previewName").textContent = replay.name;
+        previewVideo.load();
+        previewVideo.play().catch(err=>{
+          console.warn("No se pudo reproducir el replay en Preview:", err);
+        });
+      });
+
+      const airBtn = document.createElement("button");
+      airBtn.type = "button";
+      airBtn.textContent = "CUE → AIR";
+      airBtn.title = "Enviar directamente al reproductor de OBS";
+      airBtn.addEventListener("click", ()=>{
+        document.getElementById("nowPlaying").textContent = replay.name;
+        npPanelState.title = replay.name;
+        npPanelState.subtitle = "REPETICIÓN OBS";
+        try{
+          localStorage.setItem(
+            NP_STORAGE_KEY,
+            JSON.stringify({...npPanelState,visible:true})
+          );
+        }catch(e){}
+        canal.postMessage({
+          type:"playReplay",
+          url:replay.url,
+          name:replay.name
+        });
+      });
+
+      actions.append(previewBtn, airBtn);
+      row.append(name, size, actions);
+      replaysListEl.appendChild(row);
+    });
+
+  }catch(error){
+    replaysStatusEl.textContent = "Servidor no disponible";
+    replaysListEl.innerHTML =
+      '<div class="replay-empty">No se pudo conectar con Radiophonica Player. Revisa que server.js esté funcionando.</div>';
+    console.warn("Error consultando repeticiones OBS:", error);
+  }
+}
+
+cargarReplays();
+setInterval(cargarReplays, 5000);
 
 /* ===================== RESTO ===================== */
 

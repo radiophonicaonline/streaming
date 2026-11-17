@@ -271,6 +271,19 @@ function hideHourVisual(){
   hourVisual.classList.remove("active");
   main.style.display = "block";
 }
+
+function playReplay(url, name){
+  if(!url) return;
+  activeSequence = null;
+  hideHourVisual();
+  showNowPlaying(name || "REPETICIÓN OBS", "REPRODUCIENDO REPLAY");
+  main.src = url;
+  main.load();
+  main.play().catch(err=>{
+    console.warn("No se pudo reproducir el replay:", err);
+  });
+}
+
 function playFile(file, name){
   if(!file) return;
   hideHourVisual();
@@ -393,6 +406,7 @@ canal.onmessage=e=>{
   const d=e.data || {};
   switch(d.type){
     case "playFile": playFile(d.file, d.name); break;
+     case "playReplay": playReplay(d.url, d.name); break;
      case "playHour": window.currentLocutionCaption="LOCUCIÓN DE HORA"; playHourSequence(); break;
     case "playWeather": playWeatherSequence(d.weatherType); break;
     case "fx": playFX(d.file, d.name); break;
