@@ -320,7 +320,8 @@ async function playHourSequence(){
     activeSequence = null;
     hideHourVisual();
     canal.postMessage({type:"hourSequenceError", message:String(err.message || err)});
-    if(autoplay) canal.postMessage({type:"next"});
+    if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); }
+    else if(autoplay) canal.postMessage({type:"next"});
   }
 }
 async function playWeatherSequence(type){
@@ -357,7 +358,8 @@ function playSequencePart(){
   main.play().catch(err=>{
     console.error("No se pudo reproducir parte de la locución:", err);
     activeSequence = null;
-    if(autoplay) canal.postMessage({type:"next"});
+    if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); }
+    else if(autoplay) canal.postMessage({type:"next"});
   });
 }
 function playFX(file, name){
@@ -369,7 +371,59 @@ function playFX(file, name){
   fx.onended=()=>{ fx.style.display="none"; };
   fx.play().catch(err => console.warn("No se pudo reproducir el FX:", err));
 }
+let automationBlocks = [];
+let currentAutomationBlock = null;
+let automationWaitingTimer = null;
+function startAutomationBlock(block){
+  if(!block) return;
+  currentAutomationBlock=block;
+  const delay=Math.max(0,Number(block.delaySeconds)||0)*1000;
+  automationWaitingTimer=setTimeout(()=>{
+    automationWaitingTimer=null;
+    playNextAutomationItem();
+  },delay);
+}
+function playNextAutomationItem(){
+  if(!currentAutomationBlock) return;
+  const item=currentAutomationBlock.items[currentAutomationBlock.index++];
+  if(!item){
+    currentAutomationBlock=null;
+    if(automationBlocks.length) startAutomationBlock(automationBlocks.shift());
+    else if(!playbackOptions.stopAtEnd && autoplay) canal.postMessage({type:"next"});
+    return;
+  }
+  if(item.category==='hour'){
+    currentAutomationBlock.index--;
+    currentAutomationBlock.waitingDynamic=true;
+    window.currentLocutionCaption='LOCUCIÓN DE HORA';
+    playHourSequence();
+    return;
+  }
+  if(item.category==='temperature'||item.category==='humidity'){
+    currentAutomationBlock.index--;
+    currentAutomationBlock.waitingDynamic=true;
+    playWeatherSequence(item.category);
+    return;
+  }
+  currentMediaKind='automation'; activeSequence=null; hideHourVisual();
+  showNowPlaying(item.name||'Contenido programado','AUTOMATIZADOR');
+  main.playbackRate=1; main.src=item.url; main.load();
+  main.play().catch(err=>console.warn('No se pudo reproducir bloque:',err));
+}
+function automationItemEnded(){
+  if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); return true; }
+  return false;
+}
+function queueAutomationBlock(block){
+  if(!block || !Array.isArray(block.items) || !block.items.length) return;
+  if(currentAutomationBlock){automationBlocks.push(block);return;}
+  const waitForEnd=(block.when||'end')==='end' && !main.paused && !!main.src;
+  if(waitForEnd){automationBlocks.push({...block,_waitCurrent:true});return;}
+  startAutomationBlock(block);
+}
 main.onended=()=>{
+  if(automationBlocks.length && automationBlocks[0]._waitCurrent){ const b=automationBlocks.shift(); delete b._waitCurrent; startAutomationBlock(b); return; }
+  if(currentAutomationBlock && !currentAutomationBlock.waitingDynamic){ playNextAutomationItem(); return; }
   // Bucle vuelve a iniciar el archivo actual sin avanzar la playlist.
   if(playbackOptions.loopTrack && !activeSequence){
     main.currentTime=0;
@@ -386,6 +440,7 @@ main.onended=()=>{
     }
     activeSequence = null;
     hideHourVisual();
+    if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); return; }
     if(!playbackOptions.stopAtEnd && autoplay) canal.postMessage({type:"next"});
     return;
   }
@@ -430,41 +485,14 @@ main.addEventListener("play", ()=>reportPlayback(true));
 main.addEventListener("pause", ()=>reportPlayback(true));
 main.addEventListener("ended", ()=>reportPlayback(true));
 
-// El servidor evalúa los horarios; el reproductor consulta las ejecuciones pendientes.
-let automationPollBusy = false;
+// El servidor evalúa los horarios; el reproductor procesa los bloques en orden.
+let automationPollBusy=false;
 async function pollAutomationDue(){
-  if(automationPollBusy) return;
-  automationPollBusy = true;
-  try{
-    const response = await fetch('http://127.0.0.1:3030/api/automation/due', {cache:'no-store'});
-    if(!response.ok) return;
-    const data = await response.json();
-    for(const rule of (data.due || [])){
-      if(rule.category === 'hour'){
-        window.currentLocutionCaption = 'LOCUCIÓN DE HORA';
-        await playHourSequence();
-      }else if(rule.category === 'temperature' || rule.category === 'humidity'){
-        await playWeatherSequence(rule.category);
-      }else if(rule.url){
-        playScheduledMedia(rule.url, rule.name || rule.path || 'Automatización');
-      }
-    }
-  }catch(err){ console.warn('Automatizador sin conexión:', err); }
-  finally{ automationPollBusy = false; }
+ if(automationPollBusy)return; automationPollBusy=true;
+ try{const response=await fetch('http://127.0.0.1:3030/api/automation/due',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(data.enabled===false){automationBlocks=[];return;}for(const rule of(data.due||[])){const items=(rule.items||[]).length?rule.items:[{category:rule.category,url:rule.url,name:rule.name}];queueAutomationBlock({name:rule.name,items, index:0,when:rule.when||'end',delaySeconds:rule.delaySeconds||0});}}
+ catch(err){console.warn('Automatizador sin conexión:',err)}finally{automationPollBusy=false;}
 }
-function playScheduledMedia(url, name){
-  if(!url) return;
-  activeSequence = null;
-  currentMediaKind = 'automation';
-  hideHourVisual();
-  showNowPlaying(name, 'AUTOMATIZADOR');
-  main.playbackRate = 1;
-  main.src = url;
-  main.load();
-  main.play().catch(err => console.warn('No se pudo reproducir automatización:', err));
-}
-setInterval(pollAutomationDue, 5000);
-setTimeout(pollAutomationDue, 1800);
+setInterval(pollAutomationDue,5000);setTimeout(pollAutomationDue,1800);
 
 canal.onmessage=e=>{
   const d=e.data || {};
