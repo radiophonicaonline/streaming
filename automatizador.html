@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radiophonica · Automatizador</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1015;color:#e8eef2;font:14px Segoe UI,Arial,sans-serif}header{padding:20px 24px;background:#111a22;border-bottom:1px solid #263642;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}h1{font-size:21px;margin:0;color:#eaf8ff}header p{margin:5px 0 0;color:#9eafb9;font-size:12px}.status{font-size:12px;color:#9fb1bd}main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns: minmax(280px,380px) 1fr;gap:16px}.card{background:#121a21;border:1px solid #263640;border-radius:10px;padding:16px;min-width:0}h2{font-size:15px;margin:0 0 14px;color:#77d4ef}label{display:block;font-size:12px;color:#b7c5cd;margin:10px 0 5px}input,select{width:100%;background:#0b1116;color:#eef5f8;border:1px solid #344550;border-radius:6px;padding:9px;font:inherit}button{background:#1d5268;color:#fff;border:1px solid #34748c;border-radius:6px;padding:8px 11px;cursor:pointer;font:inherit}button:hover{background:#286b86}button.secondary{background:#26323a;border-color:#3a4a55}button.danger{background:#51282a;border-color:#824247}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1;min-width:0}.muted{color:#91a2ad;font-size:11px;line-height:1.5}.filelist,.rules{border:1px solid #2b3942;border-radius:7px;overflow:auto;max-height:360px;margin-top:10px}.file{display:flex;align-items:center;gap:8px;padding:9px;border-bottom:1px solid #26343d}.file:last-child{border:0}.file .name{flex:1;min-width:0;overflow-wrap:anywhere;font-size:12px}.rule{padding:12px;border-bottom:1px solid #2a3943;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.rule:last-child{border:0}.rule strong{display:block;margin-bottom:4px}.rule small{color:#9caeb9}.rule-actions{display:flex;gap:5px;align-items:center}.empty{padding:20px;text-align:center;color:#8ea0aa}.toggle{width:auto}.hidden{display:none!important}.pill{font-size:10px;padding:3px 6px;border-radius:20px;background:#203d4b;color:#9de4fa;margin-left:6px}@media(max-width:760px){main{grid-template-columns:1fr}header{padding:16px}}
+</style></head>
+<body>
+<header><div><h1>RADIOPHONICA · AUTOMATIZADOR</h1><p>Programación de anuncios, jingles y locuciones</p></div><div class="status" id="status">Conectando con Radiophonica Player…</div></header>
+<main>
+<section class="card">
+<h2>1. Crear programación</h2>
+<label>Nombre de la regla</label><input id="name" placeholder="Ej. Anuncio almacén">
+<label>Categoría</label><select id="category"><option value="anuncio">Anuncio</option><option value="jingle">Jingle</option><option value="hour">Locución horaria</option><option value="temperature">Temperatura</option><option value="humidity">Humedad</option></select>
+<div id="mediaFields">
+<label>Biblioteca</label><select id="root"></select>
+<label>Carpeta (ruta relativa, opcional)</label><input id="folder" placeholder="Dejar vacío para la raíz">
+<button id="browse" class="secondary" type="button">Mostrar archivos</button>
+<div class="filelist" id="files"><div class="empty">Selecciona una biblioteca y pulsa Mostrar archivos</div></div>
+<div class="muted" id="selected">Ningún archivo seleccionado</div>
+</div>
+<label>Modalidad</label><select id="mode"><option value="time">A una hora determinada</option><option value="interval">Cada cierto intervalo</option></select>
+<div id="timeField"><label>Hora (repite cada día)</label><input type="time" id="at" value="12:00"></div>
+<div id="intervalField" class="hidden"><label>Intervalo en minutos</label><input type="number" id="minutes" min="1" max="1440" value="30"></div>
+<p class="muted">Las reglas se guardan en el servidor. La ejecución de anuncios y jingles reproduce el archivo seleccionado en el reproductor; las locuciones horarias y meteorológicas utilizan las funciones que ya existen.</p>
+<button id="add" style="width:100%;margin-top:8px">＋ Agregar programación</button>
+</section>
+<section class="card">
+<div class="row" style="justify-content:space-between"><h2>2. Programaciones guardadas</h2><button id="refresh" class="secondary">↻ Actualizar</button></div>
+<div class="muted">Activa o pausa cada regla. Las reglas horarias se ejecutan una vez al día; las de intervalo se cuentan desde su última ejecución o desde que se crean.</div>
+<div class="rules" id="rules"><div class="empty">Cargando reglas…</div></div>
+<div class="row" style="margin-top:12px"><button id="save" style="flex:2">Guardar cambios</button><span class="muted" id="saveState">Cambios pendientes</span></div>
+</section>
+</main>
+<script>
+const API='http://127.0.0.1:3030';let rules=[];let selected=null;let roots=[];
+const $=id=>document.getElementById(id);
+function status(t,ok=true){$('status').textContent=t;$('status').style.color=ok?'#8bd8a7':'#ff9b9b'}
+async function api(url,opts={}){const r=await fetch(API+url,{cache:'no-store',...opts});const d=await r.json();if(!r.ok||d.ok===false)throw Error(d.error||'Error del servidor');return d}
+function mediaVisible(){const isMedia=['anuncio','jingle'].includes($('category').value);$('mediaFields').classList.toggle('hidden',!isMedia)}
+function modeVisible(){$('timeField').classList.toggle('hidden',$('mode').value!=='time');$('intervalField').classList.toggle('hidden',$('mode').value!=='interval')}
+$('category').onchange=mediaVisible;$('mode').onchange=modeVisible;
+async function loadRoots(){const d=await api('/api/library/roots');roots=d.roots||[];$('root').innerHTML=roots.map(r=>`<option value="${r.key}">${r.label}${r.available?'':' (no disponible)'}</option>`).join('')}
+async function browse(){try{const root=$('root').value,path=$('folder').value.trim();const d=await api('/api/library/list?root='+encodeURIComponent(root)+'&path='+encodeURIComponent(path));const dirs=(d.folders||[]).map(f=>`<div class="file"><span class="name">📁 ${esc(f.name)}</span><button class="secondary" data-folder="${escAttr(f.path)}">Abrir</button></div>`).join('');const files=(d.files||[]).map(f=>`<div class="file"><span class="name">${/\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(f.name)?'🎬':'🎵'} ${esc(f.name)}</span><button data-file="${escAttr(f.path)}" data-name="${escAttr(f.name)}">Seleccionar</button></div>`).join('');$('files').innerHTML=dirs+files||'<div class="empty">No hay archivos compatibles en esta carpeta</div>'; $('files').querySelectorAll('[data-folder]').forEach(b=>b.onclick=()=>{$('folder').value=b.dataset.folder;browse()});$('files').querySelectorAll('[data-file]').forEach(b=>b.onclick=()=>{selected={root,path:b.dataset.file,name:b.dataset.name};$('selected').textContent='Seleccionado: '+selected.name});}catch(e){$('files').innerHTML='<div class="empty">'+esc(e.message)+'</div>';status(e.message,false)}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function escAttr(s){return esc(s)}
+function render(){if(!rules.length){$('rules').innerHTML='<div class="empty">Todavía no hay programaciones.</div>';return}$('rules').innerHTML=rules.map((r,i)=>{const desc=r.mode==='time'?'Todos los días · '+r.at:'Cada '+r.minutes+' minutos';const cat={anuncio:'ANUNCIO',jingle:'JINGLE',hour:'LOCUCIÓN HORA',temperature:'TEMPERATURA',humidity:'HUMEDAD'}[r.category];return `<div class="rule"><div><strong>${esc(r.name)} <span class="pill">${cat}</span></strong><small>${esc(desc)}${r.path?' · '+esc(r.path):''}</small></div><div class="rule-actions"><label style="margin:0"><input class="toggle" type="checkbox" data-enabled="${i}" ${r.enabled?'checked':''}></label><button class="danger" data-delete="${i}">Quitar</button></div></div>`}).join('');$('rules').querySelectorAll('[data-enabled]').forEach(c=>c.onchange=()=>{rules[+c.dataset.enabled].enabled=c.checked;$('saveState').textContent='Cambios pendientes'});$('rules').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{rules.splice(+b.dataset.delete,1);render();$('saveState').textContent='Cambios pendientes'})}
+async function load(){try{const d=await api('/api/automation');rules=d.rules||[];render();status('Servidor conectado · '+rules.length+' reglas');$('saveState').textContent='Guardado en servidor'}catch(e){status(e.message,false)}}
+$('browse').onclick=browse;$('refresh').onclick=load;
+$('add').onclick=()=>{const category=$('category').value,mode=$('mode').value;let name=$('name').value.trim();if(!name)name=({anuncio:'Anuncio',jingle:'Jingle',hour:'Locución horaria',temperature:'Locución temperatura',humidity:'Locución humedad'})[category];const r={id:'auto_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name,category,mode,enabled:true,createdAtMs:Date.now()};if(mode==='time')r.at=$('at').value;else r.minutes=Math.max(1,Math.min(1440,Number($('minutes').value)||30));if(['anuncio','jingle'].includes(category)){if(!selected){alert('Selecciona primero un archivo de la biblioteca.');return}r.root=selected.root;r.path=selected.path;r.mediaName=selected.name;}rules.push(r);selected=null;$('selected').textContent='Ningún archivo seleccionado';render();$('saveState').textContent='Cambios pendientes'};
+$('save').onclick=async()=>{try{const d=await api('/api/automation',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules})});$('saveState').textContent='Guardado · '+d.count+' reglas';status('Programación guardada');}catch(e){status(e.message,false);$('saveState').textContent='No se pudo guardar'}};
+(async()=>{mediaVisible();modeVisible();try{await loadRoots();await load()}catch(e){status(e.message,false)}})();
+</script></body></html>

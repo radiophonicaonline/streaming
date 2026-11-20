@@ -430,6 +430,42 @@ main.addEventListener("play", ()=>reportPlayback(true));
 main.addEventListener("pause", ()=>reportPlayback(true));
 main.addEventListener("ended", ()=>reportPlayback(true));
 
+// El servidor evalúa los horarios; el reproductor consulta las ejecuciones pendientes.
+let automationPollBusy = false;
+async function pollAutomationDue(){
+  if(automationPollBusy) return;
+  automationPollBusy = true;
+  try{
+    const response = await fetch('http://127.0.0.1:3030/api/automation/due', {cache:'no-store'});
+    if(!response.ok) return;
+    const data = await response.json();
+    for(const rule of (data.due || [])){
+      if(rule.category === 'hour'){
+        window.currentLocutionCaption = 'LOCUCIÓN DE HORA';
+        await playHourSequence();
+      }else if(rule.category === 'temperature' || rule.category === 'humidity'){
+        await playWeatherSequence(rule.category);
+      }else if(rule.url){
+        playScheduledMedia(rule.url, rule.name || rule.path || 'Automatización');
+      }
+    }
+  }catch(err){ console.warn('Automatizador sin conexión:', err); }
+  finally{ automationPollBusy = false; }
+}
+function playScheduledMedia(url, name){
+  if(!url) return;
+  activeSequence = null;
+  currentMediaKind = 'automation';
+  hideHourVisual();
+  showNowPlaying(name, 'AUTOMATIZADOR');
+  main.playbackRate = 1;
+  main.src = url;
+  main.load();
+  main.play().catch(err => console.warn('No se pudo reproducir automatización:', err));
+}
+setInterval(pollAutomationDue, 5000);
+setTimeout(pollAutomationDue, 1800);
+
 canal.onmessage=e=>{
   const d=e.data || {};
   switch(d.type){
