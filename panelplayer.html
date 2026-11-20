@@ -46,6 +46,19 @@ white-space:nowrap;
 
 .active{ background:#184a8b; }
 
+/* ESTADOS DE PROGRAMACIÓN DE LA PLAYLIST */
+#playlistLegend{display:flex;flex-wrap:wrap;gap:6px;margin:7px 2px;font-size:10px;color:#b8c4cc}
+.legend-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 6px;border-radius:5px;background:#171c22}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.item{border-left:4px solid transparent;transition:background .12s,border-color .12s}
+.item.queue-next{background:#123b70;border-left-color:#4b9dff}
+.item.playing-now{background:#482027;border-left-color:#ff6475}
+.item.queue-next span,.item.playing-now span{color:#fff}
+.item span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .queue-tag{font-size:9px;font-weight:700;letter-spacing:.3px;white-space:nowrap;padding:3px 5px;border-radius:4px;flex-shrink:0}
+.item.queue-next .queue-tag{background:#246bc2;color:#eef6ff}
+.item.playing-now .queue-tag{background:#a83d4b;color:#fff0f2}
+
 .fxbtn{
 background:#7a0d0d;
 padding:5px;
@@ -196,10 +209,18 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 <button onclick="agregarLocucionClima('temperature')">🌡️ Locución temperatura</button>
 <button onclick="agregarLocucionClima('humidity')">💧 Locución humedad</button>
 
-<label>
-<input type="checkbox" id="auto" checked>Auto
-</label>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 2px">
+  <label><input type="checkbox" id="auto" checked> Auto avance</label>
+  <label><input type="checkbox" id="shuffle"> 🔀 Shuffle</label>
+  <label><input type="checkbox" id="stopAtEnd"> ⏹ Parar al final</label>
+  <label><input type="checkbox" id="loopTrack"> 🔁 Bucle</label>
+</div>
 
+<div id="playlistLegend">
+  <span class="legend-chip"><i class="legend-dot" style="background:#ff6475"></i> AL AIRE</span>
+  <span class="legend-chip"><i class="legend-dot" style="background:#4b9dff"></i> SIGUIENTE · 1 clic</span>
+  <span class="legend-chip">2 clics · REPRODUCIR AHORA</span>
+</div>
 <div id="lista"></div>
 
 <div id="replaysPanel">
@@ -273,6 +294,19 @@ oninput="setVolume(this.value)">
 <script>
 
 const canal=new BroadcastChannel("obs_player");
+
+function publishPlaybackOptions(){
+  playbackOptions.shuffle = document.getElementById("shuffle").checked;
+  playbackOptions.stopAtEnd = document.getElementById("stopAtEnd").checked;
+  playbackOptions.loopTrack = document.getElementById("loopTrack").checked;
+  canal.postMessage({type:"setPlaybackOptions", options:playbackOptions});
+  try{localStorage.setItem("radiophonica_playback_options",JSON.stringify(playbackOptions));}catch(e){}
+}
+try{
+  const savedPlaybackOptions=JSON.parse(localStorage.getItem("radiophonica_playback_options")||"null");
+  if(savedPlaybackOptions) playbackOptions={...playbackOptions,...savedPlaybackOptions};
+}catch(e){}
+window.addEventListener("DOMContentLoaded",()=>{});
 
 const seekBar = document.getElementById("seekBar");
 const elapsedTimeEl = document.getElementById("elapsedTime");
@@ -378,6 +412,9 @@ document.getElementById("npLogoRemove").addEventListener("click",()=>{
 
 let items=[];
 let currentIndex=-1;
+let currentItemRef=null;
+let nextItemRef=null;
+let playbackOptions = {shuffle:false, stopAtEnd:false, loopTrack:false};
 
 let previewItemData=null;
 
@@ -393,6 +430,17 @@ const fxdiv=document.getElementById("fx");
 const files=document.getElementById("files");
 const folder=document.getElementById("folder");
 const fxfiles=document.getElementById("fxfiles");
+["shuffle","stopAtEnd","loopTrack"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.checked=!!playbackOptions[id === "stopAtEnd" ? "stopAtEnd" : id === "loopTrack" ? "loopTrack" : "shuffle"];
+  el.addEventListener("change",()=>{
+    if(id === "loopTrack" && el.checked) document.getElementById("stopAtEnd").checked=false;
+    if(id === "stopAtEnd" && el.checked) document.getElementById("loopTrack").checked=false;
+    publishPlaybackOptions();
+  });
+});
+document.getElementById("auto").addEventListener("change",e=>canal.postMessage({type:"setAutoplay",value:e.target.checked}));
+publishPlaybackOptions();
 
 /* ===================== LISTA PRINCIPAL ===================== */
 
@@ -435,10 +483,24 @@ function duplicatePlaylistItem(i){
 
 function deletePlaylistItem(i){
   if(i < 0 || i >= items.length) return;
+  const removed = items[i];
+  if(removed === nextItemRef) nextItemRef = null;
+  if(removed === currentItemRef){ currentItemRef = null; currentIndex = -1; }
   items.splice(i,1);
-  if(currentIndex === i) currentIndex = -1;
-  else if(currentIndex > i) currentIndex--;
+  if(currentIndex > i) currentIndex--;
   actualizarLista();
+}
+
+function markAsNext(item){
+  if(!item || item === currentItemRef) return;
+  nextItemRef = item;
+  actualizarLista();
+}
+
+function consumeQueuedItem(item){
+  if(item === nextItemRef){
+    nextItemRef = null;
+  }
 }
 
 function showPlaylistContextMenu(x,y,i){
@@ -492,12 +554,34 @@ function actualizarLista(){
     div.className="item";
     div.draggable=true;
     div.dataset.index=i;
-    if(i===currentIndex) div.classList.add("active");
+    const isPlaying = it === currentItemRef || (currentItemRef === null && i === currentIndex);
+    if(isPlaying) div.classList.add("playing-now");
+    else if(it === nextItemRef) div.classList.add("queue-next");
 
     const span=document.createElement("span");
     span.textContent=it.name;
-    span.title = "Clic izquierdo: reproducir · Clic derecho: acciones · Arrastrar: reordenar";
-    span.onclick=()=>playItem(i);
+    span.title = it.name + "\n\n1 clic: marcar como SIGUIENTE\n2 clics rápidos: REPRODUCIR AHORA\nClic derecho: acciones\nArrastrar: reordenar";
+
+    // Un clic marca la próxima pista; doble clic la envía al aire inmediatamente.
+    let clickTimer = null;
+    span.addEventListener("click",()=>{
+      if(clickTimer){
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        const liveIndex = items.indexOf(it);
+        if(liveIndex >= 0) playItem(liveIndex);
+        return;
+      }
+      clickTimer = setTimeout(()=>{
+        clickTimer = null;
+        if(items.includes(it)) markAsNext(it);
+      },260);
+    });
+
+    const tag=document.createElement("small");
+    tag.className="queue-tag";
+    if(isPlaying) tag.textContent="AL AIRE";
+    else if(it === nextItemRef) tag.textContent="SIGUIENTE";
 
     // Todas las acciones del elemento están ahora en el menú contextual.
     div.addEventListener("contextmenu",e=>{
@@ -543,6 +627,7 @@ function actualizarLista(){
     });
 
     div.append(span);
+    if(tag.textContent) div.append(tag);
     lista.appendChild(div);
   });
 }
@@ -565,6 +650,8 @@ function playItem(i){
   if(items.length===0) return;
   currentIndex=i;
   const it=items[i];
+  currentItemRef=it;
+  consumeQueuedItem(it);
 
   if(["hour","temperature","humidity"].includes(it.type)){
     const labels={hour:"LOCUCIÓN DE HORA",temperature:"LOCUCIÓN DE TEMPERATURA",humidity:"LOCUCIÓN DE HUMEDAD"};
@@ -802,7 +889,7 @@ async function cargarReplays(){
         deleteBtn.textContent = "...";
         try{
           const deleteResponse = await fetch(
-            "http://127.0.0.1:3030/api/replays/" + encodeURIComponent(replay.name),
+            "http://127.0.0.1:3030/replays/" + encodeURIComponent(replay.name),
             {method:"DELETE", cache:"no-store"}
           );
           const deleteData = await deleteResponse.json();
@@ -849,15 +936,24 @@ canal.onmessage=e=>{
 if(e.data && e.data.type==="playbackTime"){
 renderPlaybackTime(e.data);
 }
+if(e.data && e.data.type==="requestPlaybackOptions"){
+  publishPlaybackOptions();
+}
 if(e.data && ["nowPlayingState","nowPlayingUpdate"].includes(e.data.type) && e.data.state){
 npPanelState = {...npPanelState, ...e.data.state};
 try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify(npPanelState));}catch(err){}
 }
 if(e.data.type==="next"){
 if(items.length===0) return;
-currentIndex++;
-if(currentIndex>=items.length) currentIndex=0;
-playItem(currentIndex);
+let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
+if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
+  const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
+  targetIndex=choices[Math.floor(Math.random()*choices.length)];
+}else if(targetIndex < 0){
+  targetIndex = currentIndex + 1;
+  if(targetIndex >= items.length) targetIndex = 0;
+}
+playItem(targetIndex);
 }
 };
 
