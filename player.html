@@ -302,6 +302,7 @@ function playFile(file, name){
   main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
 }
 async function playHourSequence(){
+  currentMediaKind = currentAutomationBlock ? "automation-dynamic" : "dynamic";
   activeSequence = null;
   showNowPlaying("LOCUCIÓN DE HORA", "CONSULTANDO RELOJ");
   try{
@@ -325,6 +326,7 @@ async function playHourSequence(){
   }
 }
 async function playWeatherSequence(type){
+  currentMediaKind = currentAutomationBlock ? "automation-dynamic" : "dynamic";
   activeSequence = null;
   const isTemp = type === "temperature";
   const caption = isTemp ? "LOCUCIÓN DE TEMPERATURA" : "LOCUCIÓN DE HUMEDAD";
@@ -346,7 +348,8 @@ async function playWeatherSequence(type){
     activeSequence = null;
     hideHourVisual();
     canal.postMessage({type:"weatherSequenceError", weatherType:type, message:String(err.message || err)});
-    if(autoplay) canal.postMessage({type:"next"});
+    if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); }
+    else if(autoplay) canal.postMessage({type:"next"});
   }
 }
 
@@ -393,14 +396,12 @@ function playNextAutomationItem(){
     return;
   }
   if(item.category==='hour'){
-    currentAutomationBlock.index--;
     currentAutomationBlock.waitingDynamic=true;
     window.currentLocutionCaption='LOCUCIÓN DE HORA';
     playHourSequence();
     return;
   }
   if(item.category==='temperature'||item.category==='humidity'){
-    currentAutomationBlock.index--;
     currentAutomationBlock.waitingDynamic=true;
     playWeatherSequence(item.category);
     return;
@@ -420,6 +421,29 @@ function queueAutomationBlock(block){
   const waitForEnd=(block.when||'end')==='end' && !main.paused && !!main.src;
   if(waitForEnd){automationBlocks.push({...block,_waitCurrent:true});return;}
   startAutomationBlock(block);
+}
+
+function disableAutomationPlayback(){
+  automationBlocks = [];
+  if(automationWaitingTimer){
+    clearTimeout(automationWaitingTimer);
+    automationWaitingTimer = null;
+  }
+
+  const wasDynamic = currentMediaKind === "automation-dynamic";
+  currentAutomationBlock = null;
+
+  if(wasDynamic){
+    activeSequence = null;
+    main.pause();
+    main.removeAttribute("src");
+    main.load();
+    hideHourVisual();
+    currentMediaKind = "file";
+    if(autoplay && !playbackOptions.stopAtEnd){
+      canal.postMessage({type:"next"});
+    }
+  }
 }
 main.onended=()=>{
   if(automationBlocks.length && automationBlocks[0]._waitCurrent){ const b=automationBlocks.shift(); delete b._waitCurrent; startAutomationBlock(b); return; }
@@ -489,7 +513,7 @@ main.addEventListener("ended", ()=>reportPlayback(true));
 let automationPollBusy=false;
 async function pollAutomationDue(){
  if(automationPollBusy)return; automationPollBusy=true;
- try{const response=await fetch('http://127.0.0.1:3030/api/automation/due',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(data.enabled===false){automationBlocks=[];return;}for(const rule of(data.due||[])){const items=(rule.items||[]).length?rule.items:[{category:rule.category,url:rule.url,name:rule.name}];queueAutomationBlock({name:rule.name,items, index:0,when:rule.when||'end',delaySeconds:rule.delaySeconds||0});}}
+ try{const response=await fetch('http://127.0.0.1:3030/api/automation/due',{cache:'no-store'});if(!response.ok)return;const data=await response.json();if(data.enabled===false){disableAutomationPlayback();return;}for(const rule of(data.due||[])){const items=(rule.items||[]).length?rule.items:[{category:rule.category,url:rule.url,name:rule.name}];queueAutomationBlock({name:rule.name,items, index:0,when:rule.when||'end',delaySeconds:rule.delaySeconds||0});}}
  catch(err){console.warn('Automatizador sin conexión:',err)}finally{automationPollBusy=false;}
 }
 setInterval(pollAutomationDue,5000);setTimeout(pollAutomationDue,1800);
