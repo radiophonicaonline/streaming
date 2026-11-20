@@ -174,7 +174,7 @@ window.addEventListener("storage",e=>{
 canal.onmessage=e=>{
  const d=e.data||{};
  if(["nowPlayingState","nowPlayingUpdate","nowPlayingConfig","setNowPlayingConfig"].includes(d.type)&&d.state){applyState(d.state);persist(state);}
- if(d.type==="setNowPlayingVisibility"){state.visible=!!d.visible;applyState(state);persist(state);}
+ // La visibilidad de esta fuente OBS se controla desde OBS, no desde el panel.
  if(d.type==="requestNowPlayingState"){canal.postMessage({type:"requestNowPlayingState"});}
 };
 canal.postMessage({type:"requestNowPlayingState"});
