@@ -560,7 +560,7 @@ function actualizarLista(){
 
     const span=document.createElement("span");
     span.textContent=it.name;
-    span.title = it.name + "\n\n1 clic: marcar como SIGUIENTE\n2 clics rápidos: REPRODUCIR AHORA\nClic derecho: acciones\nArrastrar: reordenar";
+    span.title = it.name + "\n\n1 clic: marcar como SIGUIENTE\nSin selección: continúa la pista siguiente de la lista\n2 clics rápidos: REPRODUCIR AHORA\nClic derecho: acciones\nArrastrar: reordenar";
 
     // Un clic marca la próxima pista; doble clic la envía al aire inmediatamente.
     let clickTimer = null;
@@ -651,7 +651,10 @@ function playItem(i){
   currentIndex=i;
   const it=items[i];
   currentItemRef=it;
-  consumeQueuedItem(it);
+  // Al iniciar cualquier pista (incluido doble clic), se consume la selección
+  // pendiente anterior. Así el doble clic reproduce ahora y no deja una
+  // canción antigua marcada para saltar después.
+  nextItemRef=null;
 
   if(["hour","temperature","humidity"].includes(it.type)){
     const labels={hour:"LOCUCIÓN DE HORA",temperature:"LOCUCIÓN DE TEMPERATURA",humidity:"LOCUCIÓN DE HUMEDAD"};
