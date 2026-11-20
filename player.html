@@ -212,6 +212,8 @@ let autoplay = true;
 let lastPlaybackReport = 0;
 let activeSequence = null;
 let npState = {title:"", subtitle:"", visible:false, style:"professional", position:"bottom-left", size:"medium", logoData:""};
+let playerNowPlayingVisible = false;
+let playerNowPlayingManual = false;
 
 function saveNpState(){
   try { localStorage.setItem("radiophonica_nowplaying_state", JSON.stringify(npState)); } catch(e){}
@@ -224,7 +226,7 @@ function applyNpState(){
   const art = document.getElementById("npArtwork");
   if(npState.logoData){ art.innerHTML = ""; const img=document.createElement("img"); img.src=npState.logoData; img.alt="Logo personalizado"; art.appendChild(img); art.classList.add("has-logo"); }
   else { art.textContent="♪"; art.classList.remove("has-logo"); }
-  nowPlayingOverlay.classList.toggle("hidden", !npState.visible);
+  nowPlayingOverlay.classList.toggle("hidden", !playerNowPlayingVisible);
 }
 function updateNpState(patch, persist=true){
   npState = {...npState, ...patch};
@@ -232,6 +234,9 @@ function updateNpState(patch, persist=true){
   if(persist) saveNpState();
 }
 function showNowPlaying(name, kind){
+  // El reproductor muestra NOW PLAYING al comenzar, salvo que el usuario
+  // haya decidido manualmente ocultarlo/mostrarlo desde el panel.
+  if(!playerNowPlayingManual) playerNowPlayingVisible = true;
   updateNpState({title:(name || "Archivo en reproducción").trim(), subtitle:"", visible:true});
   canal.postMessage({type:"nowPlayingUpdate", state:npState});
 }
@@ -406,6 +411,7 @@ canal.onmessage=e=>{
     case "playWeather": playWeatherSequence(d.weatherType); break;
     case "fx": playFX(d.file, d.name); break;
     case "toggleNowPlaying": toggleNowPlaying(); break;
+    case "setPlayerNowPlayingVisibility": playerNowPlayingManual=true; playerNowPlayingVisible=!!d.visible; applyNpState(); break;
     case "setNowPlayingVisibility": updateNpState({visible:!!d.visible}); canal.postMessage({type:"nowPlayingState",state:npState}); break;
     case "setNowPlayingConfig": receiveNpState(d.state); saveNpState(); canal.postMessage({type:"nowPlayingState",state:npState}); break;
     case "requestNowPlayingState":

@@ -143,14 +143,6 @@ margin-top:5px;
 .replay-delete{background:#5b2020!important;color:#ffdada!important}
 
 
-#libraryExplorer{margin:10px 0;padding:10px;background:#121820;border:1px solid #293744;border-radius:8px}
-#libraryHead{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-#libraryPath{font-size:11px;color:#9fb2c0;margin:8px 0;overflow-wrap:anywhere}
-#libraryList{max-height:220px;overflow:auto;border:1px solid #293744;border-radius:5px}
-.library-row{display:flex;align-items:center;gap:8px;padding:7px;border-bottom:1px solid #25313a;font-size:12px}
-.library-row:last-child{border-bottom:0}.library-row .lib-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.library-row button{font-size:11px}.library-row input{accent-color:#55c9ef}
-#libraryStatus{font-size:11px;color:#9fb2c0;margin-top:7px;min-height:15px}
 </style>
 </head>
 
@@ -212,23 +204,9 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 </div>
 
 
-<div id="libraryExplorer">
-  <strong style="color:#6cf">📚 BIBLIOTECA DE VIDEOS · Google Drive</strong>
-  <div id="libraryHead" style="margin-top:8px">
-    <select id="libraryRoot" style="flex:1;min-width:150px;padding:6px;background:#222;color:#fff;border:1px solid #444"></select>
-    <button type="button" id="libraryBack">⬅ Atrás</button>
-    <button type="button" id="libraryRefresh">↻ Actualizar</button>
-  </div>
-  <div id="libraryPath">Selecciona una carpeta principal</div>
-  <div id="libraryList"><div class="replay-empty">Conectando con el servidor...</div></div>
-  <div style="display:flex;gap:6px;align-items:center;margin-top:8px">
-    <button type="button" id="libraryAdd" style="background:#155b45">＋ Agregar seleccionados a playlist</button>
-    <span id="librarySelected" style="font-size:11px;color:#9fb2c0">0 seleccionados</span>
-  </div>
-  <div id="libraryStatus"></div>
-</div>
-<button onclick="cargarVideos()">Videos</button>
-<button onclick="cargarCarpeta()">Carpeta</button>
+<button onclick="cargarVideos()">📄 Agregar archivos</button>
+<button onclick="cargarCarpeta()">📁 Agregar carpeta completa</button>
+<div style="font-size:11px;color:#9aa8b3;margin:5px 2px 9px">Selecciona varios videos o una carpeta desde el explorador de Windows. Se incorporarán sus videos a la playlist.</div>
 <button onclick="agregarLocucionHora()">🕒 Locución hora</button>
 <button onclick="agregarLocucionClima('temperature')">🌡️ Locución temperatura</button>
 <button onclick="agregarLocucionClima('humidity')">💧 Locución humedad</button>
@@ -311,8 +289,8 @@ oninput="setVolume(this.value)">
 <button onclick="cargarFX()">Cargar FX</button>
 <div id="fx"></div>
 
-<input type="file" id="files" multiple hidden>
-<input type="file" id="folder" webkitdirectory hidden>
+<input type="file" id="files" accept="video/*,.mkv,.avi,.mov,.m4v" multiple hidden>
+<input type="file" id="folder" accept="video/*,.mkv,.avi,.mov,.m4v" webkitdirectory multiple hidden>
 <input type="file" id="fxfiles" multiple hidden>
 
 <script>
@@ -450,72 +428,51 @@ const previewLista=document.getElementById("previewLista");
 
 
 const PLAYER_API = 'http://127.0.0.1:3030';
-let libraryRoot='videos', libraryCurrentPath='', librarySelection=new Map(), playlistLoading=true, playlistSaveTimer=null;
-function libraryUrl(file){return PLAYER_API+'/api/library/file?root='+encodeURIComponent(file.root)+'&path='+encodeURIComponent(file.path);}
-async function loadLibraryRoots(){
- const rootSel=document.getElementById('libraryRoot');
- try{
-  const r=await fetch(PLAYER_API+'/api/library/roots',{cache:'no-store'}); const d=await r.json();
-  if(!r.ok||!d.ok) throw new Error(d.error||'Servidor no disponible');
-  rootSel.innerHTML=''; d.roots.forEach(x=>{const o=document.createElement('option');o.value=x.key;o.textContent=x.label+(x.available?'':' · no disponible');rootSel.appendChild(o);});
-  libraryRoot=rootSel.value||'videos'; await browseLibrary('');
- }catch(e){document.getElementById('libraryStatus').textContent='No se pudo conectar con el servidor: '+e.message;}
-}
-async function browseLibrary(pathValue){
- libraryCurrentPath=pathValue||''; librarySelection.clear(); updateLibrarySelected();
- const list=document.getElementById('libraryList'), status=document.getElementById('libraryStatus');
- list.innerHTML='<div class="replay-empty">Leyendo carpeta...</div>';
- try{
-  const url=PLAYER_API+'/api/library/list?root='+encodeURIComponent(libraryRoot)+'&path='+encodeURIComponent(libraryCurrentPath);
-  const r=await fetch(url,{cache:'no-store'}); const d=await r.json(); if(!r.ok||!d.ok) throw new Error(d.error||'No se pudo leer la carpeta');
-  document.getElementById('libraryPath').textContent=d.root+' / '+(d.path||''); list.innerHTML='';
-  d.folders.forEach(folder=>{const row=document.createElement('div');row.className='library-row';const icon=document.createElement('span');icon.textContent='📁';const name=document.createElement('span');name.className='lib-name';name.textContent=folder.name;const open=document.createElement('button');open.textContent='Abrir';open.onclick=()=>browseLibrary(folder.path);row.append(icon,name,open);list.appendChild(row);});
-  d.files.forEach(file=>{const row=document.createElement('label');row.className='library-row';const check=document.createElement('input');check.type='checkbox';check.onchange=()=>{if(check.checked)librarySelection.set(file.path,{...file,root:libraryRoot});else librarySelection.delete(file.path);updateLibrarySelected();};const name=document.createElement('span');name.className='lib-name';name.textContent='🎬 '+file.name;name.title=file.name;const size=document.createElement('small');size.style.color='#8fa3b2';size.textContent=formatReplaySize(file.size);row.append(check,name,size);list.appendChild(row);});
-  if(!d.folders.length&&!d.files.length) list.innerHTML='<div class="replay-empty">Esta carpeta no contiene videos compatibles.</div>';
-  status.textContent=d.files.length+' videos · '+d.folders.length+' carpetas';
- }catch(e){list.innerHTML='<div class="replay-empty">'+e.message+'</div>';status.textContent='Comprueba que Google Drive esté montado como H:.';}
-}
-function updateLibrarySelected(){document.getElementById('librarySelected').textContent=librarySelection.size+' seleccionados';}
-function insertItemsAtReference(newItems){
- const ref=nextItemRef && items.includes(nextItemRef)?nextItemRef:null;
- const idx=ref?items.indexOf(ref)+1:items.length;
- items.splice(idx,0,...newItems);
- actualizarLista();
-}
-async function loadSavedPlaylist(){
- try{
-  const r=await fetch(PLAYER_API+'/api/playlist',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'No se pudo recuperar la playlist');
-  items=(d.items||[]).map(x=>({...x,name:'🎬 '+x.name,url:libraryUrl(x)}));
-  actualizarLista();
- }catch(e){document.getElementById('libraryStatus').textContent='Playlist no recuperada: '+e.message;}
- finally{playlistLoading=false;}
-}
-function savePlaylistSoon(){
- if(playlistLoading)return;
- clearTimeout(playlistSaveTimer);
- playlistSaveTimer=setTimeout(async()=>{
-  const saved=items.filter(x=>x.type==='file'&&x.root&&x.path).map(x=>({type:'file',root:x.root,path:x.path,name:x.fileName||x.name.replace(/^🎬 /,''),fileName:x.fileName||x.name.replace(/^🎬 /,'')}));
-  try{const r=await fetch(PLAYER_API+'/api/playlist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:saved})});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Error guardando');document.getElementById('libraryStatus').textContent='Playlist guardada en el servidor · '+saved.length+' archivos';}
-  catch(e){document.getElementById('libraryStatus').textContent='No se pudo guardar la playlist: '+e.message;}
- },350);
-}
-document.getElementById('libraryRoot').addEventListener('change',e=>{libraryRoot=e.target.value;browseLibrary('');});
-document.getElementById('libraryBack').addEventListener('click',()=>{if(!libraryCurrentPath)return;const parts=libraryCurrentPath.split('/');parts.pop();browseLibrary(parts.join('/'));});
-document.getElementById('libraryRefresh').addEventListener('click',()=>browseLibrary(libraryCurrentPath));
-document.getElementById('libraryAdd').addEventListener('click',()=>{
- const selected=[...librarySelection.values()];if(!selected.length){alert('Selecciona uno o más videos.');return;}
- const fresh=selected.map(f=>({type:'file',name:'🎬 '+f.name,fileName:f.name,root:f.root,path:f.path,url:f.url}));
- insertItemsAtReference(fresh);librarySelection.clear();updateLibrarySelected();browseLibrary(libraryCurrentPath);
-});
-loadLibraryRoots();
-loadSavedPlaylist();
-
 const previewVideo=document.getElementById("previewVideo");
 const fxdiv=document.getElementById("fx");
 
 const files=document.getElementById("files");
 const folder=document.getElementById("folder");
 const fxfiles=document.getElementById("fxfiles");
+let playlistLoading = true;
+let playlistSaveTimer = null;
+function libraryUrl(item){
+  return PLAYER_API+"/api/library/file?root="+encodeURIComponent(item.root)+"&path="+encodeURIComponent(item.path);
+}
+async function loadSavedPlaylist(){
+  try{
+    const response=await fetch(PLAYER_API+"/api/playlist",{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok || !data.ok) throw new Error(data.error || "No se pudo recuperar la playlist");
+    items=(data.items||[]).map(item=>({...item,name:"🎬 "+(item.fileName||item.name),url:libraryUrl(item)}));
+    actualizarLista();
+  }catch(error){
+    console.warn("No se pudo recuperar la playlist guardada:",error);
+  }finally{
+    playlistLoading=false;
+  }
+}
+function savePlaylistSoon(){
+  if(playlistLoading) return;
+  clearTimeout(playlistSaveTimer);
+  playlistSaveTimer=setTimeout(async()=>{
+    const saved=items
+      .filter(item=>item.type==="file" && item.root && item.path)
+      .map(item=>({type:"file",root:item.root,path:item.path,name:item.fileName||item.name.replace(/^🎬 /,""),fileName:item.fileName||item.name.replace(/^🎬 /,"")}));
+    try{
+      const response=await fetch(PLAYER_API+"/api/playlist",{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({items:saved})
+      });
+      const data=await response.json();
+      if(!response.ok || !data.ok) throw new Error(data.error || "No se pudo guardar");
+    }catch(error){
+      console.warn("No se pudo guardar la playlist:",error);
+    }
+  },350);
+}
+loadSavedPlaylist();
 ["shuffle","stopAtEnd","loopTrack"].forEach(id=>{
   const el=document.getElementById(id);
   el.checked=!!playbackOptions[id === "stopAtEnd" ? "stopAtEnd" : id === "loopTrack" ? "loopTrack" : "shuffle"];
@@ -1048,19 +1005,24 @@ playItem(targetIndex);
 function cargarVideos(){ files.click(); }
 
 files.onchange=e=>{
-const fresh=[...e.target.files].map(f=>({type:"file",name:"🎬 "+f.name,file:f}));
-insertItemsAtReference(fresh); files.value="";
+const fresh=[...e.target.files]
+  .filter(f=>f.type.startsWith("video/") || /\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(f.name))
+  .map(f=>({type:"file",name:"🎬 "+f.name,file:f}));
+if(fresh.length) insertItemsAtReference(fresh);
+else if(e.target.files.length) alert("No se encontraron videos compatibles en la selección.");
+files.value="";
 };
 
 function cargarCarpeta(){ folder.click(); }
 
 folder.onchange=e=>{
-const fileList=[...e.target.files];
-if(fileList.length===0) return;
-
-const name=fileList[0].webkitRelativePath.split("/")[0];
-
-insertItemsAtReference([{type:"folder",name:"📂 "+name,files:fileList}]);
+const fileList=[...e.target.files]
+  .filter(f=>f.type.startsWith("video/") || /\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(f.name))
+  .sort((a,b)=>a.webkitRelativePath.localeCompare(b.webkitRelativePath,"es",{numeric:true}));
+if(fileList.length===0){alert("La carpeta seleccionada no contiene videos compatibles.");folder.value="";return;}
+const name=(fileList[0].webkitRelativePath||fileList[0].name).split("/")[0];
+insertItemsAtReference([{type:"folder",name:"📂 "+name+" · "+fileList.length+" videos",files:fileList}]);
+folder.value="";
 };
 
 function cargarFX(){ fxfiles.click(); }
@@ -1077,9 +1039,10 @@ fxdiv.appendChild(btn);
 }
 };
 
+let playerNowPlayingVisible = false;
 function toggleNowPlayingOverlay(){
-  const box=document.getElementById("nowPlaying");
-  box.style.display=box.style.display==="none"?"block":"none";
+  playerNowPlayingVisible = !playerNowPlayingVisible;
+  canal.postMessage({type:"setPlayerNowPlayingVisibility", visible:playerNowPlayingVisible});
 }
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
