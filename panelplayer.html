@@ -150,7 +150,7 @@ margin-top:5px;
 <h3>Playlist</h3>
 
 <h3>Controles Player</h3>
-
+<div id="nowPlaying" style="color:#6cf;font-size:14px;margin:0 0 9px;padding:7px 9px;background:#15191e;border:1px solid #2b333b;border-radius:7px;overflow-wrap:anywhere">ninguno</div>
 <button onclick="playerPlay()">▶</button>
 <button onclick="playerPause()">⏸</button>
 <button onclick="playerStop()">⏹</button>
@@ -226,11 +226,6 @@ sin preview
 <!-- 🆕 LISTA AUXILIAR -->
 <h3>Preview List</h3>
 <div id="previewLista"></div>
-
-<h3>NOW PLAYING</h3>
-<div id="nowPlaying" style="color:#6cf;font-size:14px">
-ninguno
-</div>
 
 <hr>
 <h3>NOW PLAYING · DISEÑO</h3>
@@ -490,7 +485,7 @@ async function restorePlaylistPersistent(){
     if(Array.isArray(records) && records.length){
       items=records.sort((a,b)=>a.index-b.index).map(r=>({
         id:r.id || makeItemId(), type:r.type, name:r.name,
-        handle:r.handle || null, rootName:r.rootName || "", file:null
+        handle:r.handle || null, rootName:r.rootName || "", file:null, files:null, shuffleList:null, shuffleIndex:0
       }));
       actualizarLista();
       const needsAccess=items.some(it=>it.handle);
@@ -501,7 +496,10 @@ async function restorePlaylistPersistent(){
         if(it.handle){
           try{
             const permission=await it.handle.queryPermission({mode:"read"});
-            if(permission==="granted") it.file=await it.handle.getFile();
+            if(permission==="granted") {
+              if(it.type==="folder") it.files=await collectDirectoryFiles(it.handle);
+              else it.file=await it.handle.getFile();
+            }
           }catch(e){}
         }
       }
@@ -523,7 +521,9 @@ async function reconnectFileAccess(){
       let permission=await it.handle.queryPermission({mode:"read"});
       if(permission!=="granted") permission=await it.handle.requestPermission({mode:"read"});
       if(permission==="granted"){
-        it.file=await it.handle.getFile(); ok++;
+        if(it.type==="folder") it.files=await collectDirectoryFiles(it.handle);
+        else it.file=await it.handle.getFile();
+        ok++;
       }else pending++;
     }catch(e){ pending++; }
   }
@@ -591,21 +591,17 @@ async function pickFolderWithHandles(){
     try{
       const directory=await window.showDirectoryPicker({mode:"read"});
       const entries=await collectDirectoryFiles(directory);
-      const additions=[];
-      for(const entry of entries){
-        try{
-          const file=await entry.handle.getFile();
-          additions.push({id:makeItemId(),type:"file",name:"🎬 "+entry.relative,file,handle:entry.handle,rootName:directory.name});
-        }catch(err){ console.warn("No se pudo abrir",entry.relative,err); }
-      }
-      insertItemsAtCurrentPosition(additions);
-      if(additions.length) await savePlaylistPersistent();
-      persistenceEl.textContent=`Carpeta “${directory.name}”: ${additions.length} videos agregados y guardados.`;
+      if(!entries.length){ alert("Esta carpeta no contiene videos compatibles."); return; }
+      const folderItem={id:makeItemId(),type:"folder",name:"📁 "+directory.name+" ("+entries.length+" videos)",handle:directory,rootName:directory.name,files:entries,shuffleList:null,shuffleIndex:0};
+      insertItemsAtCurrentPosition([folderItem]);
+      await savePlaylistPersistent();
+      persistenceEl.textContent=`Carpeta “${directory.name}” agregada como un solo elemento · ${entries.length} videos disponibles para reproducción aleatoria.`;
       return;
     }catch(err){ if(err.name!=="AbortError") alert("No se pudo abrir la carpeta: "+err.message); return; }
   }
   folder.click();
 }
+
 ["shuffle","stopAtEnd","loopTrack"].forEach(id=>{
   const el=document.getElementById(id);
   el.checked=!!playbackOptions[id === "stopAtEnd" ? "stopAtEnd" : id === "loopTrack" ? "loopTrack" : "shuffle"];
@@ -631,7 +627,7 @@ function hidePlaylistContextMenu(){
   contextItemIndex = -1;
 }
 
-function addItemToPreviewList(i){
+async function addItemToPreviewList(i){
   const it = items[i];
   if(!it) return;
 
@@ -642,7 +638,8 @@ function addItemToPreviewList(i){
   if(it.type === "file"){
     previewList.push({file:it.file, name:it.file.name});
   }else if(it.files && it.files.length){
-    const f = it.files[Math.floor(Math.random()*it.files.length)];
+    const selected = it.files[Math.floor(Math.random()*it.files.length)];
+    const f = selected.file || (selected.handle ? await selected.handle.getFile() : selected);
     previewList.push({file:f, name:f.name});
   }
   actualizarPreviewLista();
@@ -651,8 +648,8 @@ function addItemToPreviewList(i){
 function duplicatePlaylistItem(i){
   const it = items[i];
   if(!it) return;
-  const copy = it.type === "file" || ["hour","temperature","humidity"].includes(it.type)
-    ? {...it}
+  const copy = it.type === "file" || it.type === "folder" || ["hour","temperature","humidity"].includes(it.type)
+    ? {...it, id:makeItemId(), shuffleList:null, shuffleIndex:0}
     : {...it, files:[...it.files], shuffleList:null, shuffleIndex:0};
   items.splice(i+1, 0, copy);
   actualizarLista();
@@ -848,6 +845,14 @@ async function playItem(i){
     npPanelState.title = it.file.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
     canal.postMessage({type:"playFile", file:it.file, name:it.file.name});
   }else{
+    if(it.type==="folder" && (!it.files || !it.files.length) && it.handle){
+      try{ it.files=await collectDirectoryFiles(it.handle); }catch(e){}
+    }
+    if(!it.files || !it.files.length){
+      persistenceEl.textContent="La carpeta no tiene videos disponibles o debes reconectar su acceso.";
+      reconnectFilesBtn.style.display=it.handle?"inline-block":"none";
+      return;
+    }
     if(!it.shuffleList || it.shuffleList.length===0){
       it.shuffleList=[...it.files];
       for(let j=it.shuffleList.length-1;j>0;j--){
@@ -856,9 +861,11 @@ async function playItem(i){
       }
       it.shuffleIndex=0;
     }
-    const f=it.shuffleList[it.shuffleIndex];
-    it.shuffleIndex++;
+    const selected=it.shuffleList[it.shuffleIndex++];
     if(it.shuffleIndex>=it.shuffleList.length) it.shuffleList=null;
+    let f=selected.file || null;
+    if(!f && selected.handle){ try{ f=await selected.handle.getFile(); }catch(e){} }
+    if(!f){ persistenceEl.textContent="No se pudo acceder a un video de la carpeta. Reconecta el acceso."; reconnectFilesBtn.style.display="inline-block"; return; }
     document.getElementById("nowPlaying").textContent = f.name;
     npPanelState.title = f.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
     canal.postMessage({type:"playFile", file:f, name:f.name});
@@ -888,16 +895,11 @@ name:it.file.name
 };
 
 }else{
-
-const f=it.files[Math.floor(Math.random()*it.files.length)];
-
+if(it.type==="folder" && (!it.files || !it.files.length) && it.handle) it.files=await collectDirectoryFiles(it.handle);
+const selected=it.files[Math.floor(Math.random()*it.files.length)];
+const f=selected.file || (selected.handle ? await selected.handle.getFile() : selected);
 previewVideo.src=URL.createObjectURL(f);
-
-previewItemData={
-file:f,
-name:f.name
-};
-
+previewItemData={file:f,name:f.name};
 }
 
 document.getElementById("previewName").textContent=previewItemData.name;
