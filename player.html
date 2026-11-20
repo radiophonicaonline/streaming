@@ -214,6 +214,7 @@ let currentMediaKind = "file";
 let lastPlaybackReport = 0;
 let activeSequence = null;
 let npState = {title:"", subtitle:"", visible:false, style:"professional", position:"bottom-left", size:"medium", logoData:""};
+let playerNowPlayingVisible = false;
 
 function saveNpState(){
   try { localStorage.setItem("radiophonica_nowplaying_state", JSON.stringify(npState)); } catch(e){}
@@ -226,7 +227,7 @@ function applyNpState(){
   const art = document.getElementById("npArtwork");
   if(npState.logoData){ art.innerHTML = ""; const img=document.createElement("img"); img.src=npState.logoData; img.alt="Logo personalizado"; art.appendChild(img); art.classList.add("has-logo"); }
   else { art.textContent="♪"; art.classList.remove("has-logo"); }
-  nowPlayingOverlay.classList.toggle("hidden", !npState.visible);
+  nowPlayingOverlay.classList.toggle("hidden", !playerNowPlayingVisible);
 }
 function updateNpState(patch, persist=true){
   npState = {...npState, ...patch};
@@ -234,12 +235,15 @@ function updateNpState(patch, persist=true){
   if(persist) saveNpState();
 }
 function showNowPlaying(name, kind){
+  // El estado compartido actualiza la fuente independiente; la visibilidad
+  // integrada se mantiene como control local del reproductor.
+  playerNowPlayingVisible = true;
   updateNpState({title:(name || "Archivo en reproducción").trim(), subtitle:"", visible:true});
   canal.postMessage({type:"nowPlayingUpdate", state:npState});
 }
 function toggleNowPlaying(){
-  updateNpState({visible:!npState.visible});
-  canal.postMessage({type:"nowPlayingState", state:npState});
+  playerNowPlayingVisible = !playerNowPlayingVisible;
+  nowPlayingOverlay.classList.toggle("hidden", !playerNowPlayingVisible);
 }
 function receiveNpState(state){
   if(!state || typeof state !== "object") return;
@@ -255,7 +259,7 @@ function receiveNpState(state){
 }
 try {
   const saved = JSON.parse(localStorage.getItem("radiophonica_nowplaying_state") || "null");
-  if(saved) receiveNpState(saved);
+  if(saved){ receiveNpState(saved); playerNowPlayingVisible = !!saved.visible; applyNpState(); }
 } catch(e){}
 window.addEventListener("storage", e=>{
   if(e.key==="radiophonica_nowplaying_state" && e.newValue){
@@ -435,7 +439,8 @@ canal.onmessage=e=>{
     case "playWeather": playWeatherSequence(d.weatherType); break;
     case "fx": playFX(d.file, d.name); break;
     case "toggleNowPlaying": toggleNowPlaying(); break;
-    case "setNowPlayingVisibility": updateNpState({visible:!!d.visible}); canal.postMessage({type:"nowPlayingState",state:npState}); break;
+    case "togglePlayerNowPlaying": toggleNowPlaying(); break;
+    case "setNowPlayingVisibility": break;
     case "setNowPlayingConfig": receiveNpState(d.state); saveNpState(); canal.postMessage({type:"nowPlayingState",state:npState}); break;
     case "requestNowPlayingState":
       canal.postMessage({type:"nowPlayingState",state:npState});

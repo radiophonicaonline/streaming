@@ -149,6 +149,84 @@ margin-top:5px;
 
 <h3>Playlist</h3>
 
+<h3>Controles Player</h3>
+
+<button onclick="playerPlay()">▶</button>
+<button onclick="playerPause()">⏸</button>
+<button onclick="playerStop()">⏹</button>
+
+<button onclick="back10()">⏪ 10s</button>
+<button onclick="forward10()">10s ⏩</button>
+
+<br>
+
+<div id="playbackTimePanel">
+  <div class="time-head">
+    <span>TIEMPO DE REPRODUCCIÓN</span>
+    <strong id="playStateLabel">SIN VIDEO</strong>
+  </div>
+  <input id="seekBar" type="range" min="0" max="1000" value="0" step="1" disabled
+         aria-label="Desplazar posición del video">
+  <div class="time-foot">
+    <span id="elapsedTime">00:00</span>
+    <span>RESTAN <span id="remainingTime">--:--</span></span>
+    <span id="totalTime">--:--</span>
+  </div>
+</div>
+
+Volumen
+<input type="range" min="0" max="1" step="0.01" value="1"
+oninput="setVolume(this.value)">
+
+
+<button onclick="cargarVideos()">Videos</button>
+<button onclick="cargarCarpeta()">Carpeta</button>
+<button onclick="agregarLocucionHora()">🕒 Locución hora</button>
+<button onclick="agregarLocucionClima('temperature')">🌡️ Locución temperatura</button>
+<button onclick="agregarLocucionClima('humidity')">💧 Locución humedad</button>
+
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 2px">
+  <label><input type="checkbox" id="auto" checked> Auto avance</label>
+  <label><input type="checkbox" id="shuffle"> 🔀 Shuffle</label>
+  <label><input type="checkbox" id="stopAtEnd"> ⏹ Parar al final</label>
+  <label><input type="checkbox" id="loopTrack"> 🔁 Bucle</label>
+</div>
+
+<div id="playlistLegend">
+  <span class="legend-chip"><i class="legend-dot" style="background:#ff6475"></i> AL AIRE</span>
+  <span class="legend-chip"><i class="legend-dot" style="background:#4b9dff"></i> SIGUIENTE · 1 clic</span>
+  <span class="legend-chip">2 clics · REPRODUCIR AHORA</span>
+</div>
+<div id="lista"></div>
+
+<div id="replaysPanel">
+  <div id="replaysHead">
+    <strong style="color:#6cf">🎬 REPETICIONES OBS</strong>
+    <button type="button" onclick="cargarReplays()">↻ Actualizar</button>
+  </div>
+  <div id="replaysStatus">Conectando con el servidor...</div>
+  <div id="replaysList">
+    <div class="replay-empty">Buscando repeticiones...</div>
+  </div>
+</div>
+
+<div id="playlistContextMenu" role="menu" aria-label="Acciones del archivo"></div>
+
+<h3>Preview</h3>
+
+<video id="previewVideo" controls></video>
+
+<div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
+sin preview
+</div>
+
+<button onclick="mandarAlAire()">CUE → AIR</button>
+<button onclick="stopPreview()">STOP</button>
+
+<!-- 🆕 LISTA AUXILIAR -->
+<h3>Preview List</h3>
+<div id="previewLista"></div>
+
 <h3>NOW PLAYING</h3>
 <div id="nowPlaying" style="color:#6cf;font-size:14px">
 ninguno
@@ -203,93 +281,11 @@ Agrégala como fuente de navegador transparente en cualquier escena.
 </div>
 
 
-<button onclick="cargarVideos()">Videos</button>
-<button onclick="cargarCarpeta()">Carpeta</button>
-<button onclick="agregarLocucionHora()">🕒 Locución hora</button>
-<button onclick="agregarLocucionClima('temperature')">🌡️ Locución temperatura</button>
-<button onclick="agregarLocucionClima('humidity')">💧 Locución humedad</button>
-
-<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 2px">
-  <label><input type="checkbox" id="auto" checked> Auto avance</label>
-  <label><input type="checkbox" id="shuffle"> 🔀 Shuffle</label>
-  <label><input type="checkbox" id="stopAtEnd"> ⏹ Parar al final</label>
-  <label><input type="checkbox" id="loopTrack"> 🔁 Bucle</label>
-</div>
-
-<div id="playlistLegend">
-  <span class="legend-chip"><i class="legend-dot" style="background:#ff6475"></i> AL AIRE</span>
-  <span class="legend-chip"><i class="legend-dot" style="background:#4b9dff"></i> SIGUIENTE · 1 clic</span>
-  <span class="legend-chip">2 clics · REPRODUCIR AHORA</span>
-</div>
-<div id="lista"></div>
-
-<div id="replaysPanel">
-  <div id="replaysHead">
-    <strong style="color:#6cf">🎬 REPETICIONES OBS</strong>
-    <button type="button" onclick="cargarReplays()">↻ Actualizar</button>
-  </div>
-  <div id="replaysStatus">Conectando con el servidor...</div>
-  <div id="replaysList">
-    <div class="replay-empty">Buscando repeticiones...</div>
-  </div>
-</div>
-
-<div id="playlistContextMenu" role="menu" aria-label="Acciones del archivo"></div>
-
-<h3>Preview</h3>
-
-<video id="previewVideo" controls></video>
-
-<div id="previewName" style="font-size:13px;color:#aaa;margin-top:4px">
-sin preview
-</div>
-
-<button onclick="mandarAlAire()">CUE → AIR</button>
-<button onclick="stopPreview()">STOP</button>
-
-<!-- 🆕 LISTA AUXILIAR -->
-<h3>Preview List</h3>
-<div id="previewLista"></div>
-
-<hr>
-
-<h3>Controles Player</h3>
-
-<button onclick="playerPlay()">▶</button>
-<button onclick="playerPause()">⏸</button>
-<button onclick="playerStop()">⏹</button>
-
-<button onclick="back10()">⏪ 10s</button>
-<button onclick="forward10()">10s ⏩</button>
-
-<br>
-
-<div id="playbackTimePanel">
-  <div class="time-head">
-    <span>TIEMPO DE REPRODUCCIÓN</span>
-    <strong id="playStateLabel">SIN VIDEO</strong>
-  </div>
-  <input id="seekBar" type="range" min="0" max="1000" value="0" step="1" disabled
-         aria-label="Desplazar posición del video">
-  <div class="time-foot">
-    <span id="elapsedTime">00:00</span>
-    <span>RESTAN <span id="remainingTime">--:--</span></span>
-    <span id="totalTime">--:--</span>
-  </div>
-</div>
-
-Volumen
-<input type="range" min="0" max="1" step="0.01" value="1"
-oninput="setVolume(this.value)">
-
-<h3>FX</h3>
-
-<button onclick="cargarFX()">Cargar FX</button>
-<div id="fx"></div>
 
 <input type="file" id="files" multiple hidden>
-<input type="file" id="folder" webkitdirectory hidden>
-<input type="file" id="fxfiles" multiple hidden>
+<input type="file" id="folder" webkitdirectory multiple hidden>
+<div id="playlistPersistence" style="margin:8px 2px;padding:8px 10px;background:#15191e;border:1px solid #2b333b;border-radius:7px;font-size:11px;color:#aebbc5">Preparando guardado de playlist...</div>
+<button type="button" id="reconnectFilesBtn" style="display:none">🔓 Reconectar acceso a archivos</button>
 
 <script>
 
@@ -425,11 +421,191 @@ const lista=document.getElementById("lista");
 const previewLista=document.getElementById("previewLista");
 
 const previewVideo=document.getElementById("previewVideo");
-const fxdiv=document.getElementById("fx");
 
 const files=document.getElementById("files");
 const folder=document.getElementById("folder");
-const fxfiles=document.getElementById("fxfiles");
+
+
+// PLAYLIST PERSISTENTE: guarda referencias (File System Access handles),
+// no duplica los videos dentro del servidor ni en una biblioteca adicional.
+const DB_NAME = "RadiophonicaPlayerDB";
+const DB_VERSION = 1;
+const DB_STORE = "playlist";
+const persistenceEl = document.getElementById("playlistPersistence");
+const reconnectFilesBtn = document.getElementById("reconnectFilesBtn");
+let dbPromise = null;
+let restoringPlaylist = true;
+
+function openPlaylistDB(){
+  if(dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve,reject)=>{
+    if(!("indexedDB" in window)){ reject(new Error("Este navegador no permite guardar la playlist localmente.")); return; }
+    const request=indexedDB.open(DB_NAME,DB_VERSION);
+    request.onupgradeneeded=()=>{
+      const db=request.result;
+      if(!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+    };
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error || new Error("No se pudo abrir el almacenamiento local."));
+  });
+  return dbPromise;
+}
+function dbRequest(mode, action){
+  return openPlaylistDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(DB_STORE,mode);
+    const store=tx.objectStore(DB_STORE);
+    let req;
+    try{ req=action(store); }catch(err){reject(err);return;}
+    if(req){ req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error); }
+    else { tx.oncomplete=()=>resolve(true); tx.onerror=()=>reject(tx.error); }
+  }));
+}
+async function savePlaylistPersistent(){
+  if(restoringPlaylist) return;
+  // Los videos sin FileSystemHandle (selector antiguo) no se guardan como
+  // si fueran recuperables: solo persistimos locuciones y archivos con handle.
+  const records=items
+    .filter(it => it.type !== "file" || !!it.handle)
+    .map((it,index)=>({
+      id:it.id || (it.id=makeItemId()),
+      index,
+      type:it.type,
+      name:it.name,
+      handle:it.handle || null,
+      rootName:it.rootName || ""
+    }));
+  try{
+    await dbRequest("readwrite",store=>store.put(records,"items"));
+    const temporary=items.filter(it=>it.type==="file" && !it.handle).length;
+    persistenceEl.textContent=`✓ Playlist guardada · ${records.length} elementos permanentes.${temporary?` ${temporary} archivo(s) seleccionados con el método antiguo solo duran esta sesión.`:" Los videos permanecen en sus carpetas originales."}`;
+    reconnectFilesBtn.style.display=items.some(it=>it.handle && !it.file)?"inline-block":"none";
+  }catch(err){
+    persistenceEl.textContent="No se pudo guardar la playlist: "+err.message;
+  }
+}
+function makeItemId(){ return "rp_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,9); }
+async function restorePlaylistPersistent(){
+  try{
+    const records=await dbRequest("readonly",store=>store.get("items"));
+    if(Array.isArray(records) && records.length){
+      items=records.sort((a,b)=>a.index-b.index).map(r=>({
+        id:r.id || makeItemId(), type:r.type, name:r.name,
+        handle:r.handle || null, rootName:r.rootName || "", file:null
+      }));
+      actualizarLista();
+      const needsAccess=items.some(it=>it.handle);
+      persistenceEl.textContent=`✓ Playlist recuperada · ${items.length} elementos. ${needsAccess?"Comprueba el acceso a los archivos.":""}`;
+      reconnectFilesBtn.style.display=needsAccess?"inline-block":"none";
+      // Si el permiso sigue vigente, recupera los File sin pedir intervención.
+      for(const it of items){
+        if(it.handle){
+          try{
+            const permission=await it.handle.queryPermission({mode:"read"});
+            if(permission==="granted") it.file=await it.handle.getFile();
+          }catch(e){}
+        }
+      }
+      actualizarLista();
+    }else{
+      persistenceEl.textContent="La playlist se guardará aquí automáticamente al agregar o mover archivos.";
+    }
+  }catch(err){
+    persistenceEl.textContent="Guardado persistente no disponible: "+err.message;
+  }finally{
+    restoringPlaylist=false;
+  }
+}
+async function reconnectFileAccess(){
+  let ok=0, pending=0;
+  for(const it of items){
+    if(!it.handle) continue;
+    try{
+      let permission=await it.handle.queryPermission({mode:"read"});
+      if(permission!=="granted") permission=await it.handle.requestPermission({mode:"read"});
+      if(permission==="granted"){
+        it.file=await it.handle.getFile(); ok++;
+      }else pending++;
+    }catch(e){ pending++; }
+  }
+  persistenceEl.textContent=`Acceso recuperado: ${ok} archivo(s). ${pending?pending+" pendiente(s) de volver a seleccionar.":"Todos disponibles."}`;
+  reconnectFilesBtn.style.display=pending?"inline-block":"none";
+  actualizarLista();
+}
+reconnectFilesBtn.addEventListener("click",reconnectFileAccess);
+
+function insertItemsAtCurrentPosition(newItems){
+  if(!newItems.length) return;
+  const scrollTop=lista.scrollTop;
+  let insertAt=items.length;
+  if(nextItemRef){
+    const idx=items.indexOf(nextItemRef);
+    if(idx>=0) insertAt=idx+1;
+  }else if(currentItemRef){
+    const idx=items.indexOf(currentItemRef);
+    if(idx>=0) insertAt=idx+1;
+  }
+  newItems.forEach(it=>{ if(!it.id) it.id=makeItemId(); });
+  items.splice(insertAt,0,...newItems);
+  actualizarLista();
+  lista.scrollTop=scrollTop;
+}
+function isVideoFile(name){ return /\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(name); }
+async function addPickedFileHandles(handles){
+  const additions=[];
+  for(const handle of handles){
+    try{
+      const file=await handle.getFile();
+      if(!isVideoFile(file.name)) continue;
+      additions.push({id:makeItemId(),type:"file",name:"🎬 "+file.name,file,handle,rootName:""});
+    }catch(err){ console.warn("No se pudo leer",handle.name,err); }
+  }
+  insertItemsAtCurrentPosition(additions);
+  if(additions.length) await savePlaylistPersistent();
+}
+async function collectDirectoryFiles(directoryHandle, prefix=""){
+  const out=[];
+  const entries=[];
+  for await (const [name,handle] of directoryHandle.entries()) entries.push([name,handle]);
+  entries.sort((a,b)=>a[0].localeCompare(b[0],"es"));
+  for(const [name,handle] of entries){
+    if(handle.kind==="file" && isVideoFile(name)){
+      out.push({handle,relative:prefix?prefix+"/"+name:name});
+    }else if(handle.kind==="directory"){
+      out.push(...await collectDirectoryFiles(handle,prefix?prefix+"/"+name:name));
+    }
+  }
+  return out;
+}
+async function pickFilesWithHandles(){
+  if(window.showOpenFilePicker){
+    try{
+      const handles=await window.showOpenFilePicker({multiple:true,types:[{description:"Videos",accept:{"video/*":[".mp4",".mkv",".mov",".webm",".avi",".m4v"]}}]});
+      await addPickedFileHandles(handles);
+      return;
+    }catch(err){ if(err.name!=="AbortError") alert("No se pudieron seleccionar los archivos: "+err.message); return; }
+  }
+  files.click();
+}
+async function pickFolderWithHandles(){
+  if(window.showDirectoryPicker){
+    try{
+      const directory=await window.showDirectoryPicker({mode:"read"});
+      const entries=await collectDirectoryFiles(directory);
+      const additions=[];
+      for(const entry of entries){
+        try{
+          const file=await entry.handle.getFile();
+          additions.push({id:makeItemId(),type:"file",name:"🎬 "+entry.relative,file,handle:entry.handle,rootName:directory.name});
+        }catch(err){ console.warn("No se pudo abrir",entry.relative,err); }
+      }
+      insertItemsAtCurrentPosition(additions);
+      if(additions.length) await savePlaylistPersistent();
+      persistenceEl.textContent=`Carpeta “${directory.name}”: ${additions.length} videos agregados y guardados.`;
+      return;
+    }catch(err){ if(err.name!=="AbortError") alert("No se pudo abrir la carpeta: "+err.message); return; }
+  }
+  folder.click();
+}
 ["shuffle","stopAtEnd","loopTrack"].forEach(id=>{
   const el=document.getElementById(id);
   el.checked=!!playbackOptions[id === "stopAtEnd" ? "stopAtEnd" : id === "loopTrack" ? "loopTrack" : "shuffle"];
@@ -441,6 +617,7 @@ const fxfiles=document.getElementById("fxfiles");
 });
 document.getElementById("auto").addEventListener("change",e=>canal.postMessage({type:"setAutoplay",value:e.target.checked}));
 publishPlaybackOptions();
+restorePlaylistPersistent();
 
 /* ===================== LISTA PRINCIPAL ===================== */
 
@@ -630,6 +807,7 @@ function actualizarLista(){
     if(tag.textContent) div.append(tag);
     lista.appendChild(div);
   });
+  savePlaylistPersistent();
 }
 
 /* ===================== PLAY ===================== */
@@ -646,7 +824,7 @@ function agregarLocucionClima(type){
 
 /* ===================== PLAY ===================== */
 
-function playItem(i){
+async function playItem(i){
   if(items.length===0) return;
   currentIndex=i;
   const it=items[i];
@@ -662,6 +840,10 @@ function playItem(i){
     try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
     canal.postMessage({type:it.type === "hour" ? "playHour" : "playWeather", weatherType:it.type});
   }else if(it.type==="file"){
+    try{
+      if(!it.file && it.handle) it.file=await it.handle.getFile();
+      if(!it.file) throw new Error("Vuelve a conectar el acceso al archivo.");
+    }catch(err){ persistenceEl.textContent="No hay acceso a "+it.name+". Pulsa Reconectar acceso a archivos."; reconnectFilesBtn.style.display="inline-block"; return; }
     document.getElementById("nowPlaying").textContent = it.name;
     npPanelState.title = it.file.name; npPanelState.subtitle = "REPRODUCIENDO"; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
     canal.postMessage({type:"playFile", file:it.file, name:it.file.name});
@@ -686,7 +868,7 @@ function playItem(i){
 
 /* ===================== PREVIEW ===================== */
 
-function preview(i){
+async function preview(i){
 
 const it=items[i];
 if(["hour","temperature","humidity"].includes(it.type)){
@@ -696,6 +878,8 @@ if(["hour","temperature","humidity"].includes(it.type)){
 
 if(it.type==="file"){
 
+try{ if(!it.file && it.handle) it.file=await it.handle.getFile(); }catch(e){}
+if(!it.file){ persistenceEl.textContent="Vuelve a conectar el acceso a archivos para usar el Preview."; reconnectFilesBtn.style.display="inline-block"; return; }
 previewVideo.src=URL.createObjectURL(it.file);
 
 previewItemData={
@@ -957,54 +1141,33 @@ playItem(targetIndex);
 }
 };
 
-function cargarVideos(){ files.click(); }
+function cargarVideos(){ pickFilesWithHandles(); }
 
+// Compatibilidad para navegadores antiguos: esta selección dura solo la sesión.
 files.onchange=e=>{
-for(const f of e.target.files){
-items.push({
-type:"file",
-name:"🎬 "+f.name,
-file:f
-});
-}
-actualizarLista();
+  const additions=[...e.target.files].filter(f=>isVideoFile(f.name)).map(f=>({
+    id:makeItemId(),type:"file",name:"🎬 "+f.name,file:f,handle:null
+  }));
+  insertItemsAtCurrentPosition(additions);
+  persistenceEl.textContent="Estos archivos quedaron cargados en esta sesión, pero este navegador no permite guardar sus referencias. Usa Chrome o Edge actualizado para conservarlos.";
+  files.value="";
 };
 
-function cargarCarpeta(){ folder.click(); }
+function cargarCarpeta(){ pickFolderWithHandles(); }
 
 folder.onchange=e=>{
-const fileList=[...e.target.files];
-if(fileList.length===0) return;
-
-const name=fileList[0].webkitRelativePath.split("/")[0];
-
-items.push({
-type:"folder",
-name:"📂 "+name,
-files:fileList
-});
-
-actualizarLista();
+  const additions=[...e.target.files].filter(f=>isVideoFile(f.name)).map(f=>({
+    id:makeItemId(),type:"file",name:"🎬 "+(f.webkitRelativePath||f.name),file:f,handle:null
+  }));
+  insertItemsAtCurrentPosition(additions);
+  persistenceEl.textContent="Carpeta cargada para esta sesión. Para conservar el acceso después de cerrar, usa Chrome o Edge actualizado.";
+  folder.value="";
 };
 
-function cargarFX(){ fxfiles.click(); }
-
-fxfiles.onchange=e=>{
-for(const f of e.target.files){
-const btn=document.createElement("div");
-btn.className="fxbtn";
-btn.textContent=f.name;
-btn.onclick=()=>{
-canal.postMessage({type:"fx",file:f,name:f.name});
-};
-fxdiv.appendChild(btn);
-}
-};
 
 function toggleNowPlayingOverlay(){
-npPanelState.visible = !npPanelState.visible;
-try { localStorage.setItem(NP_STORAGE_KEY, JSON.stringify(npPanelState)); } catch(e){}
-canal.postMessage({type:"setNowPlayingVisibility", visible:npPanelState.visible});
+  // Esta orden controla únicamente el NOW PLAYING integrado del reproductor.
+  canal.postMessage({type:"togglePlayerNowPlaying"});
 }
 
 function playerPlay(){ canal.postMessage({type:"play"}); }
