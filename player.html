@@ -209,11 +209,11 @@ for(let i=0;i<30;i++){
 }
 
 let autoplay = true;
+let playbackOptions = {shuffle:false, stopAtEnd:false, loopTrack:false};
+let currentMediaKind = "file";
 let lastPlaybackReport = 0;
 let activeSequence = null;
 let npState = {title:"", subtitle:"", visible:false, style:"professional", position:"bottom-left", size:"medium", logoData:""};
-let playerNowPlayingVisible = false;
-let playerNowPlayingManual = false;
 
 function saveNpState(){
   try { localStorage.setItem("radiophonica_nowplaying_state", JSON.stringify(npState)); } catch(e){}
@@ -226,7 +226,7 @@ function applyNpState(){
   const art = document.getElementById("npArtwork");
   if(npState.logoData){ art.innerHTML = ""; const img=document.createElement("img"); img.src=npState.logoData; img.alt="Logo personalizado"; art.appendChild(img); art.classList.add("has-logo"); }
   else { art.textContent="♪"; art.classList.remove("has-logo"); }
-  nowPlayingOverlay.classList.toggle("hidden", !playerNowPlayingVisible);
+  nowPlayingOverlay.classList.toggle("hidden", !npState.visible);
 }
 function updateNpState(patch, persist=true){
   npState = {...npState, ...patch};
@@ -234,9 +234,6 @@ function updateNpState(patch, persist=true){
   if(persist) saveNpState();
 }
 function showNowPlaying(name, kind){
-  // El reproductor muestra NOW PLAYING al comenzar, salvo que el usuario
-  // haya decidido manualmente ocultarlo/mostrarlo desde el panel.
-  if(!playerNowPlayingManual) playerNowPlayingVisible = true;
   updateNpState({title:(name || "Archivo en reproducción").trim(), subtitle:"", visible:true});
   canal.postMessage({type:"nowPlayingUpdate", state:npState});
 }
@@ -276,20 +273,29 @@ function hideHourVisual(){
   hourVisual.classList.remove("active");
   main.style.display = "block";
 }
+
+function playReplay(url, name){
+  if(!url) return;
+  currentMediaKind = "replay";
+  activeSequence = null;
+  hideHourVisual();
+  showNowPlaying(name || "REPETICIÓN OBS", "REPRODUCIENDO REPLAY");
+  main.playbackRate = 1;
+  main.src = url;
+  main.load();
+  main.play().catch(err=>{
+    console.warn("No se pudo reproducir el replay:", err);
+  });
+}
+
 function playFile(file, name){
   if(!file) return;
+  currentMediaKind = "file";
   hideHourVisual();
   showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO");
+  main.playbackRate = 1;
   main.src = URL.createObjectURL(file);
   main.play().catch(err => console.warn("No se pudo iniciar la reproducción:", err));
-}
-function playUrl(url,name){
-  if(!url) return;
-  activeSequence=null; hideHourVisual();
-  showNowPlaying(name || "Archivo en reproducción", "REPRODUCIENDO");
-  main.src=url;
-  main.load();
-  main.play().catch(err=>console.warn("No se pudo iniciar el video desde la biblioteca:",err));
 }
 async function playHourSequence(){
   activeSequence = null;
@@ -360,6 +366,12 @@ function playFX(file, name){
   fx.play().catch(err => console.warn("No se pudo reproducir el FX:", err));
 }
 main.onended=()=>{
+  // Bucle vuelve a iniciar el archivo actual sin avanzar la playlist.
+  if(playbackOptions.loopTrack && !activeSequence){
+    main.currentTime=0;
+    main.play().catch(err=>console.warn("No se pudo reiniciar el bucle:",err));
+    return;
+  }
   // Si estamos dentro de una locución dinámica, reproducir el siguiente
   // fragmento antes de avisar al panel que avance la playlist.
   if(activeSequence){
@@ -370,16 +382,28 @@ main.onended=()=>{
     }
     activeSequence = null;
     hideHourVisual();
-    if(autoplay) canal.postMessage({type:"next"});
+    if(!playbackOptions.stopAtEnd && autoplay) canal.postMessage({type:"next"});
     return;
   }
 
-  if(!autoplay) return;
+  if(playbackOptions.stopAtEnd || !autoplay) return;
   canal.postMessage({type:"next"});
 };
-function play(){ main.play(); }
-function pause(){ main.pause(); }
-function stop(){ activeSequence=null; hideHourVisual(); main.pause(); main.currentTime=0; }
+function play(){
+  main.play().catch(err=>console.warn("No se pudo reanudar:",err));
+}
+function pause(){
+  main.pause();
+  reportPlayback(true);
+}
+function stop(){
+  activeSequence=null;
+  hideHourVisual();
+  main.pause();
+  main.playbackRate=1;
+  main.currentTime=0;
+  reportPlayback(true);
+}
 
 function reportPlayback(force=false){
   const now = Date.now();
@@ -406,12 +430,11 @@ canal.onmessage=e=>{
   const d=e.data || {};
   switch(d.type){
     case "playFile": playFile(d.file, d.name); break;
-    case "playUrl": case "playReplay": playUrl(d.url,d.name); break;
+     case "playReplay": playReplay(d.url, d.name); break;
      case "playHour": window.currentLocutionCaption="LOCUCIÓN DE HORA"; playHourSequence(); break;
     case "playWeather": playWeatherSequence(d.weatherType); break;
     case "fx": playFX(d.file, d.name); break;
     case "toggleNowPlaying": toggleNowPlaying(); break;
-    case "setPlayerNowPlayingVisibility": playerNowPlayingManual=true; playerNowPlayingVisible=!!d.visible; applyNpState(); break;
     case "setNowPlayingVisibility": updateNpState({visible:!!d.visible}); canal.postMessage({type:"nowPlayingState",state:npState}); break;
     case "setNowPlayingConfig": receiveNpState(d.state); saveNpState(); canal.postMessage({type:"nowPlayingState",state:npState}); break;
     case "requestNowPlayingState":
@@ -427,6 +450,9 @@ canal.onmessage=e=>{
     case "stop": stop(); break;
     case "volume": main.volume=d.value; fx.volume=d.value; break;
     case "setAutoplay": autoplay=d.value; break;
+    case "setPlaybackOptions":
+      if(d.options && typeof d.options === "object") playbackOptions={...playbackOptions,...d.options};
+      break;
     case "forward": main.currentTime=Math.min((Number.isFinite(main.duration)?main.duration:main.currentTime+10),main.currentTime+10); reportPlayback(true); break;
     case "back": main.currentTime=Math.max(0,main.currentTime-10); reportPlayback(true); break;
     case "seek":
@@ -439,6 +465,7 @@ canal.onmessage=e=>{
   }
 };
 canal.postMessage({type:"requestNowPlayingState"});
+canal.postMessage({type:"requestPlaybackOptions"});
 
 </script>
 
