@@ -588,44 +588,13 @@ async function collectDirectoryFiles(directoryHandle, prefix=""){
   }
   return out;
 }
-// Evita que OBS/Chromium intente abrir dos selectores nativos al mismo tiempo.
-let nativeFilePickerActive = false;
-async function pickFilesWithHandles(){
-  if(nativeFilePickerActive) return;
-  nativeFilePickerActive = true;
-  try{
-    if(window.showOpenFilePicker){
-      const handles=await window.showOpenFilePicker({multiple:true,types:[{description:"Videos",accept:{"video/*":[".mp4",".mkv",".mov",".webm",".avi",".m4v"]}}]});
-      await addPickedFileHandles(handles);
-      return;
-    }
-    files.click();
-  }catch(err){
-    if(err.name!=="AbortError" && !String(err.message||"").includes("File picker already active")) alert("No se pudieron seleccionar los archivos: "+err.message);
-  }finally{
-    nativeFilePickerActive = false;
-  }
+// Compatibilidad con OBS: usar los selectores HTML tradicionales evita el error
+// "File picker already active" de Chromium embebido.
+function pickFilesWithHandles(){
+  files.click();
 }
-async function pickFolderWithHandles(){
-  if(nativeFilePickerActive) return;
-  nativeFilePickerActive = true;
-  try{
-    if(window.showDirectoryPicker){
-      const directory=await window.showDirectoryPicker({mode:"read"});
-      const entries=await collectDirectoryFiles(directory);
-      if(!entries.length){ alert("Esta carpeta no contiene videos compatibles."); return; }
-      const folderItem={id:makeItemId(),type:"folder",name:"📁 "+directory.name+" ("+entries.length+" videos)",handle:directory,rootName:directory.name,files:entries,shuffleList:null,shuffleIndex:0};
-      insertItemsAtCurrentPosition([folderItem]);
-      await savePlaylistPersistent();
-      persistenceEl.textContent=`Carpeta “${directory.name}” agregada como un solo elemento · ${entries.length} videos disponibles para reproducción aleatoria.`;
-      return;
-    }
-    folder.click();
-  }catch(err){
-    if(err.name!=="AbortError" && !String(err.message||"").includes("File picker already active")) alert("No se pudo abrir la carpeta: "+err.message);
-  }finally{
-    nativeFilePickerActive = false;
-  }
+function pickFolderWithHandles(){
+  folder.click();
 }
 
 ["shuffle","stopAtEnd","loopTrack"].forEach(id=>{
