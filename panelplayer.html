@@ -472,7 +472,7 @@ async function savePlaylistPersistent(){
   // Los videos sin FileSystemHandle (selector antiguo) no se guardan como
   // si fueran recuperables: solo persistimos locuciones y archivos con handle.
   const records=items
-    .filter(it => it.type !== "file" || !!it.handle)
+    .filter(it => (it.type !== "file" && it.type !== "folder") || !!it.handle)
     .map((it,index)=>({
       id:it.id || (it.id=makeItemId()),
       index,
@@ -483,7 +483,7 @@ async function savePlaylistPersistent(){
     }));
   try{
     await dbRequest("readwrite",store=>store.put(records,"items"));
-    const temporary=items.filter(it=>it.type==="file" && !it.handle).length;
+    const temporary=items.filter(it=>(it.type==="file" || it.type==="folder") && !it.handle).length;
     persistenceEl.textContent=`✓ Playlist guardada · ${records.length} elementos permanentes.${temporary?` ${temporary} archivo(s) seleccionados con el método antiguo solo duran esta sesión.`:" Los videos permanecen en sus carpetas originales."}`;
     reconnectFilesBtn.style.display=items.some(it=>it.handle && !it.file)?"inline-block":"none";
   }catch(err){
@@ -1204,11 +1204,18 @@ files.onchange=e=>{
 function cargarCarpeta(){ pickFolderWithHandles(); }
 
 folder.onchange=e=>{
-  const additions=[...e.target.files].filter(f=>isVideoFile(f.name)).map(f=>({
-    id:makeItemId(),type:"file",name:"🎬 "+(f.webkitRelativePath||f.name),file:f,handle:null
-  }));
-  insertItemsAtCurrentPosition(additions);
-  persistenceEl.textContent="Carpeta cargada para esta sesión. Para conservar el acceso después de cerrar, usa Chrome o Edge actualizado.";
+  const selected=[...e.target.files].filter(f=>isVideoFile(f.name));
+  if(!selected.length){ alert("Esta carpeta no contiene videos compatibles."); folder.value=""; return; }
+  const folderName=(selected[0].webkitRelativePath||selected[0].name).split("/")[0];
+  const folderItem={
+    id:makeItemId(), type:"folder",
+    name:"📁 "+folderName+" ("+selected.length+" videos · aleatorio)",
+    handle:null, rootName:folderName,
+    files:selected.map(file=>({file,relative:file.webkitRelativePath||file.name})),
+    shuffleList:null, shuffleIndex:0
+  };
+  insertItemsAtCurrentPosition([folderItem]);
+  persistenceEl.textContent="Carpeta agregada como un solo elemento · "+selected.length+" videos en reproducción aleatoria. Disponible durante esta sesión.";
   folder.value="";
 };
 
