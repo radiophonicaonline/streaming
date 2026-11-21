@@ -53,6 +53,13 @@ white-space:nowrap;
 .item{border-left:4px solid transparent;transition:background .12s,border-color .12s}
 .item.queue-next{background:#123b70;border-left-color:#4b9dff}
 .item.playing-now{background:#482027;border-left-color:#ff6475}
+.item.selected-for-delete{background:#34402a;border-left-color:#a6d66f;outline:1px solid #789c4d}
+.item.selected-for-delete span{color:#f0ffd9}
+#playlistBulkBar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:8px 2px}
+#playlistBulkBar button{border-radius:5px;padding:7px 10px}
+#deleteSelectedBtn{background:#633b18;color:#ffe0b8}
+#clearPlaylistBtn{background:#67252b;color:#ffe0e2}
+#selectionCount{font-size:11px;color:#aeb8c2}
 .item.queue-next span,.item.playing-now span{color:#fff}
 .item span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .queue-tag{font-size:9px;font-weight:700;letter-spacing:.3px;white-space:nowrap;padding:3px 5px;border-radius:4px;flex-shrink:0}
@@ -196,6 +203,11 @@ oninput="setVolume(this.value)">
   <span class="legend-chip"><i class="legend-dot" style="background:#ff6475"></i> AL AIRE</span>
   <span class="legend-chip"><i class="legend-dot" style="background:#4b9dff"></i> SIGUIENTE · 1 clic</span>
   <span class="legend-chip">2 clics · REPRODUCIR AHORA</span>
+</div>
+<div id="playlistBulkBar">
+  <button type="button" id="deleteSelectedBtn" onclick="deleteSelectedPlaylistItems()">✖ Borrar seleccionadas</button>
+  <button type="button" id="clearPlaylistBtn" onclick="clearEntirePlaylist()">🗑 Borrar toda la lista</button>
+  <span id="selectionCount">0 seleccionadas · Ctrl + clic para seleccionar</span>
 </div>
 <div id="lista"></div>
 
@@ -620,6 +632,7 @@ restorePlaylistPersistent();
 const playlistContextMenu = document.getElementById("playlistContextMenu");
 let contextItemIndex = -1;
 let draggedItemIndex = -1;
+let selectedPlaylistItems = new Set();
 
 function hidePlaylistContextMenu(){
   playlistContextMenu.style.display = "none";
@@ -662,6 +675,49 @@ function deletePlaylistItem(i){
   if(removed === currentItemRef){ currentItemRef = null; currentIndex = -1; }
   items.splice(i,1);
   if(currentIndex > i) currentIndex--;
+  actualizarLista();
+}
+
+function updatePlaylistSelectionUI(){
+  const count=selectedPlaylistItems.size;
+  const label=document.getElementById("selectionCount");
+  const button=document.getElementById("deleteSelectedBtn");
+  if(label) label.textContent=`${count} seleccionada(s) · Ctrl + clic para seleccionar`;
+  if(button) button.disabled=count===0;
+}
+
+function togglePlaylistItemSelection(item, row){
+  if(selectedPlaylistItems.has(item)){
+    selectedPlaylistItems.delete(item);
+    row.classList.remove("selected-for-delete");
+  }else{
+    selectedPlaylistItems.add(item);
+    row.classList.add("selected-for-delete");
+  }
+  updatePlaylistSelectionUI();
+}
+
+function deleteSelectedPlaylistItems(){
+  const selected=items.filter(item=>selectedPlaylistItems.has(item));
+  if(!selected.length){alert("Primero selecciona una o varias canciones con Ctrl + clic.");return;}
+  if(!confirm(`¿Eliminar ${selected.length} elemento(s) seleccionados de la playlist?`)) return;
+  const current=currentItemRef || (currentIndex>=0 ? items[currentIndex] : null);
+  items=items.filter(item=>!selectedPlaylistItems.has(item));
+  if(selectedPlaylistItems.has(nextItemRef)) nextItemRef=null;
+  selectedPlaylistItems.clear();
+  currentItemRef=current && items.includes(current) ? current : null;
+  currentIndex=currentItemRef ? items.indexOf(currentItemRef) : -1;
+  actualizarLista();
+}
+
+function clearEntirePlaylist(){
+  if(!items.length){alert("La playlist ya está vacía.");return;}
+  if(!confirm(`¿Borrar toda la playlist? Se eliminarán sus ${items.length} elementos guardados. Esta acción no borra los archivos originales de tus carpetas.`)) return;
+  items=[];
+  selectedPlaylistItems.clear();
+  currentIndex=-1;
+  currentItemRef=null;
+  nextItemRef=null;
   actualizarLista();
 }
 
@@ -731,6 +787,7 @@ function actualizarLista(){
     const isPlaying = it === currentItemRef || (currentItemRef === null && i === currentIndex);
     if(isPlaying) div.classList.add("playing-now");
     else if(it === nextItemRef) div.classList.add("queue-next");
+    if(selectedPlaylistItems.has(it)) div.classList.add("selected-for-delete");
 
     const span=document.createElement("span");
     span.textContent=it.name;
@@ -738,7 +795,12 @@ function actualizarLista(){
 
     // Un clic marca la próxima pista; doble clic la envía al aire inmediatamente.
     let clickTimer = null;
-    span.addEventListener("click",()=>{
+    span.addEventListener("click",(event)=>{
+      if(event.ctrlKey || event.metaKey){
+        if(clickTimer){clearTimeout(clickTimer);clickTimer=null;}
+        togglePlaylistItemSelection(it,div);
+        return;
+      }
       if(clickTimer){
         clearTimeout(clickTimer);
         clickTimer = null;
@@ -804,6 +866,7 @@ function actualizarLista(){
     if(tag.textContent) div.append(tag);
     lista.appendChild(div);
   });
+  updatePlaylistSelectionUI();
   savePlaylistPersistent();
 }
 
