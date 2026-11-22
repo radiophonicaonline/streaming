@@ -285,6 +285,26 @@
 
 
   <!-- =========================================
+       TIEMPOS DE PERMANENCIA Y ESCUCHA
+  ========================================= -->
+  <div id="tiempos" style="padding:20px;background:#181818;border-top:1px solid #333;">
+    <h2 style="text-align:center;margin-top:0;">⏱️ Tiempo de permanencia y escucha de hoy</h2>
+    <div id="resumen-tiempos" style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;">
+      <div class="tarjeta">🌐 Permanencia total<strong id="tiempo-web-total">0 min</strong></div>
+      <div class="tarjeta">🎧 Escucha total<strong id="tiempo-escucha-total">0 min</strong></div>
+      <div class="tarjeta">📄 Visitas medidas<strong id="sesiones-web">0</strong></div>
+      <div class="tarjeta">🎵 Sesiones de escucha<strong id="sesiones-escucha">0</strong></div>
+      <div class="tarjeta">📊 Promedio por visita<strong id="promedio-web">0 min</strong></div>
+      <div class="tarjeta">🎧 Promedio por escucha<strong id="promedio-escucha">0 min</strong></div>
+    </div>
+    <p style="max-width:900px;margin:14px auto 0;color:#aaa;text-align:center;font-size:12px;line-height:1.5;">
+      Los tiempos se guardan en intervalos de 15 segundos. Si alguien cierra el navegador de golpe,
+      se conserva el último intervalo confirmado, por lo que puede existir una diferencia de hasta unos segundos.
+      La permanencia y la escucha se contabilizan por separado.
+    </p>
+  </div>
+
+  <!-- =========================================
        LEAFLET
   ========================================= -->
 
@@ -1408,6 +1428,56 @@
       }
 
     );
+
+
+
+
+    /* =========================================
+       ESTADÍSTICAS DE PERMANENCIA Y ESCUCHA
+    ========================================= */
+    let historialPermanencia = {};
+    let historialEscucha = {};
+
+    function formatoDuracion(segundos) {
+      const total = Math.max(0, Math.floor(Number(segundos) || 0));
+      const horas = Math.floor(total / 3600);
+      const minutos = Math.floor((total % 3600) / 60);
+      const seg = total % 60;
+      if (horas > 0) return `${horas} h ${minutos} min`;
+      if (minutos > 0) return `${minutos} min ${seg} s`;
+      return `${seg} s`;
+    }
+
+    function actualizarTiempos() {
+      const hoy = obtenerFechaLocal();
+      const visitas = Object.values(historialPermanencia).filter(r => r && r.fecha === hoy);
+      const escuchas = Object.values(historialEscucha).filter(r => r && r.fecha === hoy);
+
+      // Una fila por página visitada. Los reproductores también miden
+      // su permanencia; para el total web se cuentan solo registros tipo web.
+      const visitasWeb = visitas;
+      const totalWeb = visitasWeb.reduce((s,r) => s + (Number(r.duracionSegundos) || 0), 0);
+      const totalEscucha = escuchas.reduce((s,r) => s + (Number(r.duracionSegundos) || 0), 0);
+      const promedioWeb = visitasWeb.length ? totalWeb / visitasWeb.length : 0;
+      const promedioEscucha = escuchas.length ? totalEscucha / escuchas.length : 0;
+
+      document.getElementById("tiempo-web-total").textContent = formatoDuracion(totalWeb);
+      document.getElementById("tiempo-escucha-total").textContent = formatoDuracion(totalEscucha);
+      document.getElementById("sesiones-web").textContent = visitasWeb.length;
+      document.getElementById("sesiones-escucha").textContent = escuchas.length;
+      document.getElementById("promedio-web").textContent = formatoDuracion(promedioWeb);
+      document.getElementById("promedio-escucha").textContent = formatoDuracion(promedioEscucha);
+    }
+
+    onValue(ref(db, "historial_permanencia/" + obtenerFechaLocal()), snapshot => {
+      historialPermanencia = snapshot.val() || {};
+      actualizarTiempos();
+    }, error => console.error("Error leyendo permanencia:", error));
+
+    onValue(ref(db, "historial_escucha/" + obtenerFechaLocal()), snapshot => {
+      historialEscucha = snapshot.val() || {};
+      actualizarTiempos();
+    }, error => console.error("Error leyendo escucha:", error));
 
 
   </script>

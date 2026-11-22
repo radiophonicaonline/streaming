@@ -5,6 +5,7 @@ import {
   ref,
   set,
   update,
+  remove,
   onDisconnect,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
@@ -370,4 +371,56 @@ fetch("https://ipapi.co/json/")
     error
   );
 
+});
+
+
+// ======================================================
+// MEDICIÓN DE PERMANENCIA EN LA PÁGINA WEB
+// ======================================================
+function fechaLocalPermanencia(fecha = new Date()) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+const permanenciaWebId = "pagina_web_" + Date.now().toString(36) + "_" +
+  Math.random().toString(36).slice(2, 10);
+const permanenciaWebInicio = Date.now();
+const permanenciaWebFecha = fechaLocalPermanencia(new Date(permanenciaWebInicio));
+const permanenciaWebRef = ref(db, "historial_permanencia/" + permanenciaWebFecha + "/" + permanenciaWebId);
+const permanenciaWebActivaRef = ref(db, "permanencia_en_vivo/" + permanenciaWebId);
+let permanenciaWebFinalizada = false;
+
+function guardarPermanenciaWeb() {
+  if (permanenciaWebFinalizada) return;
+  const ahora = Date.now();
+  const datos = {
+    inicio: permanenciaWebInicio,
+    ultimaActualizacion: ahora,
+    duracionSegundos: Math.max(0, Math.floor((ahora - permanenciaWebInicio) / 1000)),
+    fecha: permanenciaWebFecha,
+    tipo: "web",
+    pagina: window.location.pathname || "Página principal",
+    dispositivo: detectarDispositivo()
+  };
+  update(permanenciaWebRef, datos).catch(e => console.warn("Error permanencia web:", e));
+  update(permanenciaWebActivaRef, datos).catch(() => {});
+}
+
+onDisconnect(permanenciaWebActivaRef).remove();
+guardarPermanenciaWeb();
+const heartbeatPermanenciaWeb = setInterval(guardarPermanenciaWeb, 15000);
+
+function finalizarPermanenciaWeb() {
+  if (permanenciaWebFinalizada) return;
+  guardarPermanenciaWeb();
+  permanenciaWebFinalizada = true;
+  clearInterval(heartbeatPermanenciaWeb);
+  remove(permanenciaWebActivaRef).catch(() => {});
+}
+
+window.addEventListener("pagehide", finalizarPermanenciaWeb);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") guardarPermanenciaWeb();
 });
