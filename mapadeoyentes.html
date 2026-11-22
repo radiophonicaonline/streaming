@@ -1188,255 +1188,31 @@
 
 
     /* =========================================
-       FECHA LOCAL
+       FECHA OFICIAL: CHILE CONTINENTAL
+       America/Santiago ajusta automáticamente
+       el horario de verano e invierno.
     ========================================= */
-
-    function obtenerFechaLocal() {
-
-      const ahora =
-        new Date();
-
-
-      const year =
-        ahora.getFullYear();
-
-
-      const month =
-        String(
-          ahora.getMonth() + 1
-        )
-        .padStart(
-          2,
-          "0"
-        );
-
-
-      const day =
-        String(
-          ahora.getDate()
-        )
-        .padStart(
-          2,
-          "0"
-        );
-
-
-      return (
-        year +
-        "-" +
-        month +
-        "-" +
-        day
-      );
-
+    function obtenerFechaChile(fecha = new Date()) {
+      const partes = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santiago",
+        year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(fecha);
+      const obtener = tipo => partes.find(p => p.type === tipo)?.value || "00";
+      return `${obtener("year")}-${obtener("month")}-${obtener("day")}`;
     }
 
-
     /* =========================================
-       ESTADÍSTICAS DIARIAS
-    ========================================= */
-
-    const fechaHoy =
-      obtenerFechaLocal();
-
-
-    const diarioRef =
-      ref(
-
-        db,
-
-        "conexiones_diarias/" +
-        fechaHoy
-
-      );
-
-
-    onValue(
-
-      diarioRef,
-
-      snapshot => {
-
-        const datos =
-          snapshot.val() ||
-          {};
-
-
-        const lista =
-          document.getElementById(
-            "lista-regiones"
-          );
-
-
-        lista.innerHTML =
-          "";
-
-
-        const regiones =
-          Object.entries(
-            datos
-          );
-
-
-        regiones.sort(
-          (a,b) =>
-            Number(b[1] || 0) -
-            Number(a[1] || 0)
-        );
-
-
-        if (
-          regiones.length === 0
-        ) {
-
-          lista.textContent =
-            "Todavía no hay visitas registradas hoy.";
-
-          return;
-
-        }
-
-
-        let totalDia =
-          0;
-
-
-        regiones.forEach(
-          ([region, cantidad]) => {
-
-            const numero =
-              Number(cantidad) ||
-              0;
-
-
-            totalDia +=
-              numero;
-
-
-            const fila =
-              document.createElement(
-                "div"
-              );
-
-
-            fila.className =
-              "region";
-
-
-            const nombre =
-              document.createElement(
-                "span"
-              );
-
-
-            nombre.textContent =
-              region;
-
-
-            const total =
-              document.createElement(
-                "strong"
-              );
-
-
-            total.textContent =
-              numero;
-
-
-            fila.appendChild(
-              nombre
-            );
-
-
-            fila.appendChild(
-              total
-            );
-
-
-            lista.appendChild(
-              fila
-            );
-
-          }
-        );
-
-
-        const filaTotal =
-          document.createElement(
-            "div"
-          );
-
-
-        filaTotal.className =
-          "region";
-
-
-        const textoTotal =
-          document.createElement(
-            "span"
-          );
-
-
-        const strong =
-          document.createElement(
-            "strong"
-          );
-
-
-        strong.textContent =
-          "Total de hoy";
-
-
-        textoTotal.appendChild(
-          strong
-        );
-
-
-        const numeroTotal =
-          document.createElement(
-            "strong"
-          );
-
-
-        numeroTotal.textContent =
-          totalDia;
-
-
-        filaTotal.appendChild(
-          textoTotal
-        );
-
-
-        filaTotal.appendChild(
-          numeroTotal
-        );
-
-
-        lista.appendChild(
-          filaTotal
-        );
-
-      },
-
-      error => {
-
-        console.error(
-          "Error leyendo estadísticas:",
-          error
-        );
-
-      }
-
-    );
-
-
-
-
-    /* =========================================
-       ESTADÍSTICAS DE PERMANENCIA Y ESCUCHA
+       ESTADÍSTICAS DIARIAS Y TIEMPOS
+       Se vuelven a conectar automáticamente
+       cuando cambia el día en Chile, incluso
+       si el panel queda abierto toda la noche.
     ========================================= */
     let historialPermanencia = {};
     let historialEscucha = {};
+    let fechaSuscritaChile = null;
+    let desuscribirDiario = null;
+    let desuscribirPermanencia = null;
+    let desuscribirEscucha = null;
 
     function formatoDuracion(segundos) {
       const total = Math.max(0, Math.floor(Number(segundos) || 0));
@@ -1449,35 +1225,83 @@
     }
 
     function actualizarTiempos() {
-      const hoy = obtenerFechaLocal();
+      const hoy = obtenerFechaChile();
       const visitas = Object.values(historialPermanencia).filter(r => r && r.fecha === hoy);
       const escuchas = Object.values(historialEscucha).filter(r => r && r.fecha === hoy);
-
-      // Una fila por página visitada. Los reproductores también miden
-      // su permanencia; para el total web se cuentan solo registros tipo web.
-      const visitasWeb = visitas;
-      const totalWeb = visitasWeb.reduce((s,r) => s + (Number(r.duracionSegundos) || 0), 0);
-      const totalEscucha = escuchas.reduce((s,r) => s + (Number(r.duracionSegundos) || 0), 0);
-      const promedioWeb = visitasWeb.length ? totalWeb / visitasWeb.length : 0;
+      const totalWeb = visitas.reduce((s, r) => s + (Number(r.duracionSegundos) || 0), 0);
+      const totalEscucha = escuchas.reduce((s, r) => s + (Number(r.duracionSegundos) || 0), 0);
+      const promedioWeb = visitas.length ? totalWeb / visitas.length : 0;
       const promedioEscucha = escuchas.length ? totalEscucha / escuchas.length : 0;
-
       document.getElementById("tiempo-web-total").textContent = formatoDuracion(totalWeb);
       document.getElementById("tiempo-escucha-total").textContent = formatoDuracion(totalEscucha);
-      document.getElementById("sesiones-web").textContent = visitasWeb.length;
+      document.getElementById("sesiones-web").textContent = visitas.length;
       document.getElementById("sesiones-escucha").textContent = escuchas.length;
       document.getElementById("promedio-web").textContent = formatoDuracion(promedioWeb);
       document.getElementById("promedio-escucha").textContent = formatoDuracion(promedioEscucha);
     }
 
-    onValue(ref(db, "historial_permanencia/" + obtenerFechaLocal()), snapshot => {
-      historialPermanencia = snapshot.val() || {};
-      actualizarTiempos();
-    }, error => console.error("Error leyendo permanencia:", error));
+    function cargarEstadisticasDelDiaChile() {
+      const hoy = obtenerFechaChile();
+      if (hoy === fechaSuscritaChile) return;
+      fechaSuscritaChile = hoy;
 
-    onValue(ref(db, "historial_escucha/" + obtenerFechaLocal()), snapshot => {
-      historialEscucha = snapshot.val() || {};
+      if (desuscribirDiario) desuscribirDiario();
+      if (desuscribirPermanencia) desuscribirPermanencia();
+      if (desuscribirEscucha) desuscribirEscucha();
+
+      historialPermanencia = {};
+      historialEscucha = {};
       actualizarTiempos();
-    }, error => console.error("Error leyendo escucha:", error));
+
+      const lista = document.getElementById("lista-regiones");
+      lista.textContent = "Cargando estadísticas de hoy (Chile)...";
+
+      desuscribirDiario = onValue(ref(db, "conexiones_diarias/" + hoy), snapshot => {
+        const datos = snapshot.val() || {};
+        lista.innerHTML = "";
+        const regiones = Object.entries(datos).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+        if (!regiones.length) {
+          lista.textContent = "Todavía no hay visitas registradas hoy (hora de Chile).";
+          return;
+        }
+        let totalDia = 0;
+        regiones.forEach(([region, cantidad]) => {
+          const numero = Number(cantidad) || 0;
+          totalDia += numero;
+          const fila = document.createElement("div");
+          fila.className = "region";
+          const nombre = document.createElement("span");
+          nombre.textContent = region;
+          const total = document.createElement("strong");
+          total.textContent = numero;
+          fila.appendChild(nombre);
+          fila.appendChild(total);
+          lista.appendChild(fila);
+        });
+        const filaTotal = document.createElement("div");
+        filaTotal.className = "region";
+        const etiqueta = document.createElement("strong");
+        etiqueta.textContent = "Total de hoy";
+        const total = document.createElement("strong");
+        total.textContent = totalDia;
+        filaTotal.appendChild(etiqueta);
+        filaTotal.appendChild(total);
+        lista.appendChild(filaTotal);
+      }, error => console.error("Error leyendo estadísticas diarias:", error));
+
+      desuscribirPermanencia = onValue(ref(db, "historial_permanencia/" + hoy), snapshot => {
+        historialPermanencia = snapshot.val() || {};
+        actualizarTiempos();
+      }, error => console.error("Error leyendo permanencia:", error));
+
+      desuscribirEscucha = onValue(ref(db, "historial_escucha/" + hoy), snapshot => {
+        historialEscucha = snapshot.val() || {};
+        actualizarTiempos();
+      }, error => console.error("Error leyendo escucha:", error));
+    }
+
+    cargarEstadisticasDelDiaChile();
+    setInterval(cargarEstadisticasDelDiaChile, 30000);
 
 
   </script>

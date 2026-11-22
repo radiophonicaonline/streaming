@@ -300,10 +300,7 @@ fetch("https://ipapi.co/json/")
     // CONTADOR DIARIO
     // ==================================================
 
-    const hoy =
-      new Date()
-        .toISOString()
-        .split("T")[0];
+    const hoy = fechaChile();
 
 
     const claveDia =
@@ -377,17 +374,21 @@ fetch("https://ipapi.co/json/")
 // ======================================================
 // MEDICIÓN DE PERMANENCIA EN LA PÁGINA WEB
 // ======================================================
-function fechaLocalPermanencia(fecha = new Date()) {
-  const y = fecha.getFullYear();
-  const m = String(fecha.getMonth() + 1).padStart(2, "0");
-  const d = String(fecha.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function fechaChile(fecha = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(fecha);
+  const obtener = tipo => partes.find(p => p.type === tipo)?.value || "00";
+  return `${obtener("year")}-${obtener("month")}-${obtener("day")}`;
 }
 
 const permanenciaWebId = "pagina_web_" + Date.now().toString(36) + "_" +
   Math.random().toString(36).slice(2, 10);
 const permanenciaWebInicio = Date.now();
-const permanenciaWebFecha = fechaLocalPermanencia(new Date(permanenciaWebInicio));
+const permanenciaWebFecha = fechaChile(new Date(permanenciaWebInicio));
 const permanenciaWebRef = ref(db, "historial_permanencia/" + permanenciaWebFecha + "/" + permanenciaWebId);
 const permanenciaWebActivaRef = ref(db, "permanencia_en_vivo/" + permanenciaWebId);
 let permanenciaWebFinalizada = false;
