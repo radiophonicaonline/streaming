@@ -12,6 +12,18 @@ import {
 
 
 // ======================================================
+// FECHA Y HORA OFICIAL DE RADIOPHONICA: CHILE CONTINENTAL
+// ======================================================
+function fechaHoraChile(fecha = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+  }).formatToParts(fecha);
+  const p = Object.fromEntries(partes.map(x => [x.type, x.value]));
+  return { fecha: `${p.year}-${p.month}-${p.day}`, hora: `${p.hour}:${p.minute}:${p.second}` };
+}
+
+// ======================================================
 // FIREBASE
 // ======================================================
 
@@ -112,6 +124,8 @@ set(
     timestamp:
       Date.now(),
 
+    fechaChile: fechaHoraChile().fecha,
+    horaEntradaChile: fechaHoraChile().hora,
     dispositivo:
       detectarDispositivo(),
 
@@ -188,6 +202,8 @@ setInterval(() => {
 
       timestamp:
         Date.now(),
+      fechaChile: fechaHoraChile().fecha,
+      horaUltimaActualizacionChile: fechaHoraChile().hora,
 
       dispositivo:
         detectarDispositivo(),
@@ -209,6 +225,10 @@ setInterval(() => {
 
 }, 30000);
 
+
+let ubicacionDiagnostico = {
+  city: "Consultando ubicación", region: "Desconocida", country: "Desconocido"
+};
 
 // ======================================================
 // 3. UBICACIÓN APROXIMADA POR IP
@@ -271,6 +291,8 @@ fetch("https://ipapi.co/json/")
 
   };
 
+  ubicacionDiagnostico = { city: ubicacion.city, region: ubicacion.region, country: ubicacion.country };
+  try { localStorage.setItem("radiophonica_ubicacion_ip", JSON.stringify(ubicacionDiagnostico)); } catch (_) {}
 
   // ====================================================
   // AGREGAR UBICACIÓN A LA CONEXIÓN
@@ -281,6 +303,8 @@ fetch("https://ipapi.co/json/")
     {
 
       ubicacion,
+      fechaChile: fechaHoraChile().fecha,
+      horaUltimaActualizacionChile: fechaHoraChile().hora,
 
       timestamp:
         Date.now()
@@ -300,7 +324,7 @@ fetch("https://ipapi.co/json/")
     // CONTADOR DIARIO
     // ==================================================
 
-    const hoy = fechaChile();
+    const hoy = fechaHoraChile().fecha;
 
 
     const claveDia =
@@ -372,38 +396,32 @@ fetch("https://ipapi.co/json/")
 
 
 // ======================================================
-// MEDICIÓN DE PERMANENCIA EN LA PÁGINA WEB
+// MEDICIÓN DE PERMANENCIA + DIAGNÓSTICO DE VISITA
 // ======================================================
-function fechaChile(fecha = new Date()) {
-  const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Santiago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(fecha);
-  const obtener = tipo => partes.find(p => p.type === tipo)?.value || "00";
-  return `${obtener("year")}-${obtener("month")}-${obtener("day")}`;
-}
-
-const permanenciaWebId = "pagina_web_" + Date.now().toString(36) + "_" +
-  Math.random().toString(36).slice(2, 10);
+const permanenciaWebId = "pagina_web_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
 const permanenciaWebInicio = Date.now();
-const permanenciaWebFecha = fechaChile(new Date(permanenciaWebInicio));
+const permanenciaWebReloj = fechaHoraChile(new Date(permanenciaWebInicio));
+const permanenciaWebFecha = permanenciaWebReloj.fecha;
 const permanenciaWebRef = ref(db, "historial_permanencia/" + permanenciaWebFecha + "/" + permanenciaWebId);
 const permanenciaWebActivaRef = ref(db, "permanencia_en_vivo/" + permanenciaWebId);
 let permanenciaWebFinalizada = false;
 
+try {
+  const cacheUbicacion = localStorage.getItem("radiophonica_ubicacion_ip");
+  if (cacheUbicacion) ubicacionDiagnostico = JSON.parse(cacheUbicacion);
+} catch (_) {}
+
 function guardarPermanenciaWeb() {
   if (permanenciaWebFinalizada) return;
   const ahora = Date.now();
+  const relojAhora = fechaHoraChile(new Date(ahora));
   const datos = {
-    inicio: permanenciaWebInicio,
-    ultimaActualizacion: ahora,
-    duracionSegundos: Math.max(0, Math.floor((ahora - permanenciaWebInicio) / 1000)),
-    fecha: permanenciaWebFecha,
-    tipo: "web",
-    pagina: window.location.pathname || "Página principal",
-    dispositivo: detectarDispositivo()
+    idSesion: permanenciaWebId, inicio: permanenciaWebInicio, timestamp: permanenciaWebInicio,
+    ultimaActualizacion: ahora, duracionSegundos: Math.max(0, Math.floor((ahora - permanenciaWebInicio) / 1000)),
+    fecha: permanenciaWebFecha, fechaChile: permanenciaWebFecha, horaEntradaChile: permanenciaWebReloj.hora,
+    horaUltimaActualizacionChile: relojAhora.hora, tipo: "web",
+    pagina: window.location.pathname || "Página principal", dispositivo: detectarDispositivo(),
+    ubicacion: ubicacionDiagnostico
   };
   update(permanenciaWebRef, datos).catch(e => console.warn("Error permanencia web:", e));
   update(permanenciaWebActivaRef, datos).catch(() => {});
