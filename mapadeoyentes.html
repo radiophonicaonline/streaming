@@ -193,7 +193,7 @@
     }
 
 
-    #diagnostico-visitas { padding:20px; background:#181818; border-top:1px solid #333; }
+
     #tabla-diagnostico-wrap { overflow-x:auto; border-radius:10px; }
     #tabla-diagnostico { width:100%; border-collapse:collapse; min-width:760px; font-size:13px; }
     #tabla-diagnostico th, #tabla-diagnostico td { padding:10px 9px; border-bottom:1px solid #383838; text-align:left; white-space:nowrap; }
@@ -294,38 +294,16 @@
 
 
 
-  <!-- =========================================
-       DIAGNÓSTICO DE VISITAS RECIENTES
-  ========================================= -->
-  <section id="diagnostico-visitas">
-    <h2 style="text-align:center;margin-top:0;">🕵️ Detalle de visitas de hoy</h2>
-    <p style="text-align:center;color:#aaa;font-size:13px;">Solo sesiones del día actual en Chile continental · ubicación aproximada por IP</p>
-    <div id="tabla-diagnostico-wrap">
-      <table id="tabla-diagnostico">
-        <thead><tr><th>Fecha y hora (Chile)</th><th>Ciudad</th><th>Región</th><th>Página</th><th>Dispositivo</th><th>Duración</th><th>ID de sesión</th></tr></thead>
-        <tbody id="filas-diagnostico"><tr><td colspan="7">Cargando registros...</td></tr></tbody>
-      </table>
-    </div>
-    <p class="diag-aviso">Cada fila representa una sesión de página, no una persona única. La ciudad y región son aproximadas y provienen de la IP; no se registra la dirección IP ni se usa GPS. Las visitas antiguas que no tengan estos campos aparecerán como “Sin dato”.</p>
-  </section>
-
-  <!-- =========================================
-       TIEMPOS DE PERMANENCIA Y ESCUCHA
-  ========================================= -->
+  <!-- Tiempo de escucha: único indicador de duración -->
   <div id="tiempos" style="padding:20px;background:#181818;border-top:1px solid #333;">
-    <h2 style="text-align:center;margin-top:0;">⏱️ Tiempo de permanencia y escucha de hoy</h2>
+    <h2 style="text-align:center;margin-top:0;">🎧 Tiempo de escucha de hoy</h2>
     <div id="resumen-tiempos" style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;">
-      <div class="tarjeta">🌐 Permanencia total<strong id="tiempo-web-total">0 min</strong></div>
-      <div class="tarjeta">🎧 Escucha total<strong id="tiempo-escucha-total">0 min</strong></div>
-      <div class="tarjeta">📄 Visitas medidas<strong id="sesiones-web">0</strong></div>
-      <div class="tarjeta">🎵 Sesiones de escucha<strong id="sesiones-escucha">0</strong></div>
-      <div class="tarjeta">📊 Promedio por visita<strong id="promedio-web">0 min</strong></div>
-      <div class="tarjeta">🎧 Promedio por escucha<strong id="promedio-escucha">0 min</strong></div>
+      <div class="tarjeta">🎧 Tiempo total escuchado<strong id="tiempo-escucha-total">0 min</strong></div>
+      <div class="tarjeta">▶️ Sesiones de escucha<strong id="sesiones-escucha">0</strong></div>
+      <div class="tarjeta">⏱️ Promedio por sesión<strong id="promedio-escucha">0 min</strong></div>
     </div>
     <p style="max-width:900px;margin:14px auto 0;color:#aaa;text-align:center;font-size:12px;line-height:1.5;">
-      Los tiempos se guardan en intervalos de 15 segundos. Si alguien cierra el navegador de golpe,
-      se conserva el último intervalo confirmado, por lo que puede existir una diferencia de hasta unos segundos.
-      La permanencia y la escucha se contabilizan por separado.
+      Solo se suma el tiempo en que el reproductor confirma que el audio está reproduciéndose. Pausas, cargas y páginas abiertas no suman escucha.
     </p>
   </div>
 
@@ -1440,11 +1418,9 @@
 
 
     /* =========================================
-       ESTADÍSTICAS DE PERMANENCIA Y ESCUCHA
+       ESTADÍSTICAS: SOLO TIEMPO DE ESCUCHA
     ========================================= */
-    let historialPermanencia = {};
     let historialEscucha = {};
-
     function formatoDuracion(segundos) {
       const total = Math.max(0, Math.floor(Number(segundos) || 0));
       const horas = Math.floor(total / 3600);
@@ -1454,85 +1430,15 @@
       if (minutos > 0) return `${minutos} min ${seg} s`;
       return `${seg} s`;
     }
-
     function actualizarTiempos() {
       const hoy = obtenerFechaLocal();
-      const visitas = Object.values(historialPermanencia).filter(r => r && r.fecha === hoy);
-      const escuchas = Object.values(historialEscucha).filter(r => r && r.fecha === hoy);
-
-      // Cuenta sesiones de página de web, reproductor principal y vertical.
-      const visitasWeb = visitas;
-      const totalWeb = visitasWeb.reduce((s,r) => s + (Number(r.duracionSegundos) || 0), 0);
-      const totalEscucha = escuchas.reduce((s,r) => s + (Number(r.duracionSegundos) || 0), 0);
-      const promedioWeb = visitasWeb.length ? totalWeb / visitasWeb.length : 0;
-      const promedioEscucha = escuchas.length ? totalEscucha / escuchas.length : 0;
-
-      document.getElementById("tiempo-web-total").textContent = formatoDuracion(totalWeb);
-      document.getElementById("tiempo-escucha-total").textContent = formatoDuracion(totalEscucha);
-      document.getElementById("sesiones-web").textContent = visitasWeb.length;
+      const escuchas = Object.values(historialEscucha).filter(r => r && (r.fechaChile || r.fecha) === hoy);
+      const total = escuchas.reduce((s, r) => s + (Number(r.duracionSegundos) || 0), 0);
+      const promedio = escuchas.length ? total / escuchas.length : 0;
+      document.getElementById("tiempo-escucha-total").textContent = formatoDuracion(total);
       document.getElementById("sesiones-escucha").textContent = escuchas.length;
-      document.getElementById("promedio-web").textContent = formatoDuracion(promedioWeb);
-      document.getElementById("promedio-escucha").textContent = formatoDuracion(promedioEscucha);
+      document.getElementById("promedio-escucha").textContent = formatoDuracion(promedio);
     }
-
-    const historialDiagnostico = {};
-    function actualizarTablaDiagnostico() {
-      const tbody = document.getElementById("filas-diagnostico");
-      if (!tbody) return;
-      const filas = Object.entries(historialDiagnostico).flatMap(([fecha, registros]) =>
-        Object.entries(registros || {}).map(([id, r]) => ({ id, fechaRegistro: fecha, ...(r || {}) }))
-      ).sort((a,b) => Number(b.inicio || b.timestamp || 0) - Number(a.inicio || a.timestamp || 0)).slice(0, 50);
-      if (!filas.length) { tbody.innerHTML = '<tr><td colspan="7">Todavía no hay sesiones registradas hoy.</td></tr>'; return; }
-      tbody.innerHTML = filas.map(r => {
-        const ubic = r.ubicacion || {};
-        const ciudad = ubic.city || r.ciudad || "Sin dato";
-        const region = ubic.region || r.region || "Sin dato";
-        const hora = (r.fechaChile || r.fecha || r.fechaRegistro) + " " + (r.horaEntradaChile || horaDesdeTimestamp(r.inicio || r.timestamp));
-        const pagina = r.pagina || r.tipo || "Sin dato";
-        const dispositivo = r.dispositivo || "Sin dato";
-        const idCorto = String(r.idSesion || r.id || "").slice(-12) || "Sin dato";
-        return `<tr><td>${escaparHTML(hora)}</td><td>${escaparHTML(ciudad)}</td><td>${escaparHTML(region)}</td><td>${escaparHTML(pagina)}</td><td>${escaparHTML(dispositivo)}</td><td>${escaparHTML(formatoDuracionDiagnostico(r.duracionSegundos))}</td><td title="${escaparHTML(r.idSesion || r.id || "")}">${escaparHTML(idCorto)}</td></tr>`;
-      }).join("");
-    }
-
-    // Estadísticas agregadas del día chileno actual.
-    onValue(ref(db, "historial_permanencia/" + obtenerFechaLocal()), snapshot => {
-      historialPermanencia = snapshot.val() || {};
-      actualizarTiempos();
-    }, error => console.error("Error leyendo permanencia:", error));
-
-    // Diagnóstico: mostrar EXCLUSIVAMENTE las sesiones del día chileno actual.
-    // Si el mapa permanece abierto al pasar la medianoche, cambia automáticamente
-    // la suscripción al nuevo día de America/Santiago.
-    let fechaDiagnosticoActiva = null;
-    let cancelarDiagnostico = null;
-
-    function suscribirDiagnosticoDelDia() {
-      const fechaNueva = obtenerFechaLocal();
-      if (fechaNueva === fechaDiagnosticoActiva) return;
-
-      if (typeof cancelarDiagnostico === "function") {
-        cancelarDiagnostico();
-      }
-
-      fechaDiagnosticoActiva = fechaNueva;
-      Object.keys(historialDiagnostico).forEach(k => delete historialDiagnostico[k]);
-      document.getElementById("filas-diagnostico").innerHTML =
-        '<tr><td colspan="7">Cargando sesiones de hoy...</td></tr>';
-
-      cancelarDiagnostico = onValue(
-        ref(db, "historial_permanencia/" + fechaNueva),
-        snapshot => {
-          historialDiagnostico[fechaNueva] = snapshot.val() || {};
-          actualizarTablaDiagnostico();
-        },
-        error => console.error("Error leyendo diagnóstico de visitas:", fechaNueva, error)
-      );
-    }
-
-    suscribirDiagnosticoDelDia();
-    setInterval(suscribirDiagnosticoDelDia, 15000);
-
     onValue(ref(db, "historial_escucha/" + obtenerFechaLocal()), snapshot => {
       historialEscucha = snapshot.val() || {};
       actualizarTiempos();
