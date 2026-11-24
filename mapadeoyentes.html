@@ -299,7 +299,7 @@
   ========================================= -->
   <section id="diagnostico-visitas">
     <h2 style="text-align:center;margin-top:0;">🕵️ Detalle de visitas de hoy</h2>
-    <p style="text-align:center;color:#aaa;font-size:13px;">Hora de Chile continental · ubicación aproximada por IP · sesiones de los últimos 7 días</p>
+    <p style="text-align:center;color:#aaa;font-size:13px;">Solo sesiones del día actual en Chile continental · ubicación aproximada por IP</p>
     <div id="tabla-diagnostico-wrap">
       <table id="tabla-diagnostico">
         <thead><tr><th>Fecha y hora (Chile)</th><th>Ciudad</th><th>Región</th><th>Página</th><th>Dispositivo</th><th>Duración</th><th>ID de sesión</th></tr></thead>
@@ -1476,20 +1476,13 @@
     }
 
     const historialDiagnostico = {};
-    function fechaChileHaceDias(dias) {
-      const hoy = obtenerFechaLocal().split("-").map(Number);
-      const d = new Date(Date.UTC(hoy[0], hoy[1] - 1, hoy[2]));
-      d.setUTCDate(d.getUTCDate() - dias);
-      return d.toISOString().slice(0, 10);
-    }
-
     function actualizarTablaDiagnostico() {
       const tbody = document.getElementById("filas-diagnostico");
       if (!tbody) return;
       const filas = Object.entries(historialDiagnostico).flatMap(([fecha, registros]) =>
         Object.entries(registros || {}).map(([id, r]) => ({ id, fechaRegistro: fecha, ...(r || {}) }))
       ).sort((a,b) => Number(b.inicio || b.timestamp || 0) - Number(a.inicio || a.timestamp || 0)).slice(0, 50);
-      if (!filas.length) { tbody.innerHTML = '<tr><td colspan="7">Todavía no hay sesiones registradas en los últimos 7 días.</td></tr>'; return; }
+      if (!filas.length) { tbody.innerHTML = '<tr><td colspan="7">Todavía no hay sesiones registradas hoy.</td></tr>'; return; }
       tbody.innerHTML = filas.map(r => {
         const ubic = r.ubicacion || {};
         const ciudad = ubic.city || r.ciudad || "Sin dato";
@@ -1508,14 +1501,37 @@
       actualizarTiempos();
     }, error => console.error("Error leyendo permanencia:", error));
 
-    // Diagnóstico: consulta sesiones de hoy y de los seis días anteriores.
-    for (let i = 0; i < 7; i++) {
-      const fechaConsulta = fechaChileHaceDias(i);
-      onValue(ref(db, "historial_permanencia/" + fechaConsulta), snapshot => {
-        historialDiagnostico[fechaConsulta] = snapshot.val() || {};
-        actualizarTablaDiagnostico();
-      }, error => console.error("Error leyendo diagnóstico de visitas:", fechaConsulta, error));
+    // Diagnóstico: mostrar EXCLUSIVAMENTE las sesiones del día chileno actual.
+    // Si el mapa permanece abierto al pasar la medianoche, cambia automáticamente
+    // la suscripción al nuevo día de America/Santiago.
+    let fechaDiagnosticoActiva = null;
+    let cancelarDiagnostico = null;
+
+    function suscribirDiagnosticoDelDia() {
+      const fechaNueva = obtenerFechaLocal();
+      if (fechaNueva === fechaDiagnosticoActiva) return;
+
+      if (typeof cancelarDiagnostico === "function") {
+        cancelarDiagnostico();
+      }
+
+      fechaDiagnosticoActiva = fechaNueva;
+      Object.keys(historialDiagnostico).forEach(k => delete historialDiagnostico[k]);
+      document.getElementById("filas-diagnostico").innerHTML =
+        '<tr><td colspan="7">Cargando sesiones de hoy...</td></tr>';
+
+      cancelarDiagnostico = onValue(
+        ref(db, "historial_permanencia/" + fechaNueva),
+        snapshot => {
+          historialDiagnostico[fechaNueva] = snapshot.val() || {};
+          actualizarTablaDiagnostico();
+        },
+        error => console.error("Error leyendo diagnóstico de visitas:", fechaNueva, error)
+      );
     }
+
+    suscribirDiagnosticoDelDia();
+    setInterval(suscribirDiagnosticoDelDia, 15000);
 
     onValue(ref(db, "historial_escucha/" + obtenerFechaLocal()), snapshot => {
       historialEscucha = snapshot.val() || {};
