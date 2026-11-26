@@ -300,10 +300,13 @@ fetch("https://ipapi.co/json/")
     // CONTADOR DIARIO
     // ==================================================
 
-    const hoy =
-      new Date()
-        .toISOString()
-        .split("T")[0];
+    // Usar siempre el día calendario de Chile, no UTC.
+    const hoy = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(new Date());
 
 
     const claveDia =

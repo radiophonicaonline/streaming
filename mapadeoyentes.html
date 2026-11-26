@@ -1203,6 +1203,15 @@
       return { fecha: `${p.year}-${p.month}-${p.day}`, hora: `${p.hour}:${p.minute}:${p.second}` };
     }
     function obtenerFechaLocal() { return relojChile().fecha; }
+
+    // Si el mapa permanece abierto al llegar la medianoche chilena,
+    // recargarlo para suscribirse automáticamente al nuevo día.
+    setInterval(() => {
+      if (obtenerFechaLocal() !== fechaHoy) {
+        window.location.reload();
+      }
+    }, 15000);
+
     function horaDesdeTimestamp(ts) {
       if (!ts) return "Sin dato";
       return new Intl.DateTimeFormat("es-CL", { timeZone: "America/Santiago", dateStyle: "short", timeStyle: "medium" }).format(new Date(Number(ts)));
