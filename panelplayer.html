@@ -577,7 +577,14 @@ function pickFolderWithHandles(){
     publishPlaybackOptions();
   });
 });
-document.getElementById("auto").addEventListener("change",e=>canal.postMessage({type:"setAutoplay",value:e.target.checked}));
+// Mantener sincronizado el autoavance entre el panel y la fuente Player.
+// El panel puede recargarse mientras el reproductor continúa abierto en OBS;
+// por eso enviamos el estado al cargar y cada vez que cambia la casilla.
+function publishAutoplayState(){
+  const enabled=document.getElementById("auto").checked;
+  canal.postMessage({type:"setAutoplay",value:enabled});
+}
+document.getElementById("auto").addEventListener("change",publishAutoplayState);
 publishPlaybackOptions();
 clearPreviousPlaylistSession();
 
@@ -1126,6 +1133,11 @@ renderPlaybackTime(e.data);
 if(e.data && e.data.type==="requestPlaybackOptions"){
   publishPlaybackOptions();
 }
+// Si el reproductor se inicia después del panel, vuelve a recibir el ajuste.
+if(e.data && e.data.type==="playerReady"){
+  publishAutoplayState();
+  publishPlaybackOptions();
+}
 if(e.data && ["nowPlayingState","nowPlayingUpdate"].includes(e.data.type) && e.data.state){
 npPanelState = {...npPanelState, ...e.data.state};
 try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify(npPanelState));}catch(err){}
@@ -1135,6 +1147,8 @@ if(items.length===0) return;
 advancePlaylist();
 }
 };
+// Enviar el estado inicial después de registrar el receptor BroadcastChannel.
+publishAutoplayState();
 
 function cargarVideos(){ pickFilesWithHandles(); }
 
@@ -1189,7 +1203,18 @@ function toggleNowPlayingOverlay(){
 
 function advancePlaylist(){
   if(!items.length) return;
-  // Si el elemento actual es una carpeta, termina primero su mezcla completa.
+  // Una entrada marcada SIGUIENTE tiene prioridad sobre los videos restantes
+  // de la carpeta que está al aire. Se reproduce al terminar el video actual.
+  let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
+  if(targetIndex >= 0){
+    nextItemRef=null;
+    playItem(targetIndex);
+    return;
+  }
+  if(nextItemRef) nextItemRef=null;
+
+  // Sin una entrada marcada, termina la mezcla actual de la carpeta antes
+  // de avanzar al siguiente elemento de la playlist.
   const current=items[currentIndex];
   if(current && current.type==="folder" && current.shuffleList && current.shuffleIndex < current.shuffleList.length){
     playItem(currentIndex);
@@ -1199,7 +1224,6 @@ function advancePlaylist(){
     current.shuffleList=null;
     current.shuffleIndex=0;
   }
-  let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
   if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
     const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
     targetIndex=choices[Math.floor(Math.random()*choices.length)];

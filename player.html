@@ -585,7 +585,10 @@ canal.onmessage=e=>{
     case "pause": pause(); break;
     case "stop": stop(); break;
     case "volume": main.volume=d.value; fx.volume=d.value; break;
-    case "setAutoplay": autoplay=d.value; break;
+    case "setAutoplay":
+      autoplay=!!d.value;
+      canal.postMessage({type:"autoplayState",value:autoplay});
+      break;
     case "setPlaybackOptions":
       if(d.options && typeof d.options === "object") playbackOptions={...playbackOptions,...d.options};
       break;
@@ -600,6 +603,8 @@ canal.onmessage=e=>{
     case "requestPlaybackTime": reportPlayback(true); break;
   }
 };
+// Avisar al panel cuando esta fuente Player ya puede recibir su configuración.
+canal.postMessage({type:"playerReady"});
 canal.postMessage({type:"requestNowPlayingState"});
 canal.postMessage({type:"requestPlaybackOptions"});
 
