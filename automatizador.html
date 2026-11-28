@@ -7,7 +7,7 @@
 <h2>Control general</h2><div class="master"><div><strong id="masterText">Automatizador activado</strong><small id="masterHint">Las reglas pueden ejecutarse automáticamente.</small></div><input id="master" class="switch" type="checkbox" checked aria-label="Activar automatizador"></div>
 <h2>Crear programación o bloque</h2><label>Nombre</label><input id="name" placeholder="Ej. Bloque comercial mediodía">
 <label>Tipo de programación</label><select id="mode"><option value="interval">Cada cierto intervalo</option><option value="time">Todos los días a una hora</option><option value="datetime">Un día y hora específicos</option></select>
-<div id="intervalBox"><label>Intervalo (minutos)</label><input id="minutes" type="number" min="1" max="10080" value="30"><label>Cómo contar el intervalo</label><select id="intervalSync"><option value="elapsed">Desde que se activa (ej. 22:32 → 22:47 → 23:02)</option><option value="clock">Sincronizado con el reloj (ej. 22:30 → 22:45 → 23:00)</option></select><p class="muted" style="margin:5px 0 0">La modalidad sincronizada ejecuta en los múltiplos del intervalo según el reloj local. Para 15 minutos: :00, :15, :30 y :45.</p></div>
+<div id="intervalBox"><label>Intervalo (minutos)</label><input id="minutes" type="number" min="1" max="10080" value="30"></div>
 <div id="timeBox" class="hidden"><label>Hora</label><input id="at" type="time" value="12:00"></div>
 <div id="dateBox" class="hidden"><label>Fecha</label><input id="date" type="date"></div>
 <label>Cuándo ejecutar</label><select id="when"><option value="end">Esperar a que termine lo que está sonando</option><option value="now">Ejecutar inmediatamente</option></select>
@@ -24,31 +24,59 @@ async function api(path,opt={}){const r=await fetch(API+path,{cache:'no-store',.
 function say(t,ok=true){$('status').textContent=t;$('status').style.color=ok?'#8bd8a7':'#ff9b9b'}
 function modeUi(){const m=$('mode').value;$('intervalBox').classList.toggle('hidden',m!=='interval');$('timeBox').classList.toggle('hidden',m==='interval');$('dateBox').classList.toggle('hidden',m!=='datetime')}
 $('mode').onchange=modeUi;
-function renderItems(){ $('items').innerHTML=blockItems.length?blockItems.map((x,i)=>`<div class="item"><span>${i+1}. ${esc(x.name)} <small class="muted">${esc(x.category)}</small></span><button class="danger" data-rm="${i}">×</button></div>`).join(''):'<div class="empty">Aún no agregas elementos al bloque.</div>';document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{blockItems.splice(+b.dataset.rm,1);renderItems()}); }
+function renderItems(){ $('items').innerHTML=blockItems.length?blockItems.map((x,i)=>`<div class="item"><span>${i+1}. ${esc(x.name)} <small class="muted">${esc(x.category)}${x.type==='folder'?' · carpeta aleatoria':''}</small></span><button class="danger" data-rm="${i}">×</button></div>`).join(''):'<div class="empty">Aún no agregas elementos al bloque.</div>';document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{blockItems.splice(+b.dataset.rm,1);renderItems()}); }
 function itemTypeUi(){
  const type=$('itemType').value;
  $('libraryFields').classList.remove('hidden');
  const preferred={anuncio:['anuncios','anunciosAudio'],jingle:['jingles','jinglesAudio'],hour:['time'],temperature:['temperature'],humidity:['humidity']};
  const candidates=preferred[type]||[];
- const match=candidates.find(k=>roots.some(r=>r.key===k && r.available));
+ const match=candidates.find(k=>roots.some(r=>r.key===k));
  if(match){$('root').value=match;$('folder').value='';currentFolder='';browse().catch(()=>{});}
- else if(candidates.length){
-   $('files').innerHTML='<div class="empty">La biblioteca seleccionada no está disponible en el servidor. Revisa que Google Drive esté montado como H: y que exista la carpeta correspondiente.</div>';
-   say(type==='jingle'?'No está disponible la biblioteca Jingles.':'La biblioteca seleccionada no está disponible.',false);
- }
  $('addDynamic').classList.toggle('hidden',!['hour','temperature','humidity'].includes(type));
 }
 $('itemType').onchange=itemTypeUi;
 async function loadRoots(){const d=await api('/api/library/roots');roots=d.roots||[];$('root').innerHTML=roots.map(r=>`<option value="${esc(r.key)}">${esc(r.label)}${r.available?'':' (no disponible)'}</option>`).join('');}
 
-async function browse(){try{const root=$('root').value,path=$('folder').value.trim();currentFolder=path;const d=await api('/api/library/list?root='+encodeURIComponent(root)+'&path='+encodeURIComponent(path));let html=(d.folders||[]).map(f=>`<div class="file"><span>📁 ${esc(f.name)}</span><button class="secondary" data-dir="${esc(f.path)}">Abrir</button></div>`).join('');html+=(d.files||[]).map(f=>`<div class="file"><span>${/\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(f.name)?'🎬':'🎵'} ${esc(f.name)}</span><button data-file="${esc(f.path)}" data-name="${esc(f.name)}">Agregar</button></div>`).join('');$('files').innerHTML=html||'<div class="empty">No hay archivos compatibles.</div>';document.querySelectorAll('[data-dir]').forEach(b=>b.onclick=()=>{$('folder').value=b.dataset.dir;browse()});document.querySelectorAll('[data-file]').forEach(b=>b.onclick=()=>{blockItems.push({category:['anuncio','jingle'].includes($('itemType').value)?$('itemType').value:'media',root:$('root').value,path:b.dataset.file,name:b.dataset.name});renderItems()})}catch(e){say(e.message,false)}}
-$('browse').onclick=browse;$('root').onchange=()=>{$('folder').value='';currentFolder='';browse()};$('up').onclick=()=>{$('folder').value=currentFolder.split('/').slice(0,-1).join('/');browse()};
+function addFolderToBlock(rootKey,relativePath,folderLabel){
+ const category=$('itemType').value;
+ if(!['anuncio','jingle'].includes(category)){
+   say('La carga de carpetas completas está disponible para Anuncios y Jingles.',false);
+   return;
+ }
+ const rootInfo=roots.find(r=>r.key===rootKey);
+ const cleanPath=String(relativePath||'').replace(/\\/g,'/');
+ const label=folderLabel || (cleanPath.split('/').filter(Boolean).pop()) || rootInfo?.label || 'Carpeta';
+ blockItems.push({type:'folder',category,root:rootKey,path:cleanPath,name:`📁 ${label} · carpeta completa (aleatorio)`});
+ renderItems();
+ say(`Carpeta “${label}” agregada al bloque. Sus archivos se mezclarán al azar sin repetirse.`);
+}
+async function browse(){
+ try{
+   const root=$('root').value,path=$('folder').value.trim();
+   currentFolder=path;
+   const d=await api('/api/library/list?root='+encodeURIComponent(root)+'&path='+encodeURIComponent(path));
+   const canAddFolder=['anuncio','jingle'].includes($('itemType').value);
+   const rootInfo=roots.find(r=>r.key===root);
+   const currentName=path.split('/').filter(Boolean).pop() || rootInfo?.label || 'Carpeta actual';
+   let html=canAddFolder
+     ? `<div class="file" style="background:#17252d"><span>📁 ${esc(currentName)} · carpeta actual completa</span><button data-add-current="1">Agregar carpeta (aleatorio)</button></div>`
+     : '';
+   html+=(d.folders||[]).map(f=>`<div class="file"><span>📁 ${esc(f.name)}</span><button class="secondary" data-dir="${esc(f.path)}">Abrir</button>${canAddFolder?`<button data-add-dir="${esc(f.path)}" data-name="${esc(f.name)}">Agregar carpeta</button>`:''}</div>`).join('');
+   html+=(d.files||[]).map(f=>`<div class="file"><span>${/\.(mp4|mkv|mov|webm|avi|m4v)$/i.test(f.name)?'🎬':'🎵'} ${esc(f.name)}</span><button data-file="${esc(f.path)}" data-name="${esc(f.name)}">Agregar archivo</button></div>`).join('');
+   $('files').innerHTML=html||'<div class="empty">No hay archivos compatibles.</div>';
+   $('files').querySelectorAll('[data-dir]').forEach(b=>b.onclick=()=>{$('folder').value=b.dataset.dir;browse()});
+   $('files').querySelectorAll('[data-add-dir]').forEach(b=>b.onclick=()=>addFolderToBlock(root,b.dataset.addDir,b.dataset.name));
+   $('files').querySelectorAll('[data-add-current]').forEach(b=>b.onclick=()=>addFolderToBlock(root,path,currentName));
+   $('files').querySelectorAll('[data-file]').forEach(b=>b.onclick=()=>{blockItems.push({category:['anuncio','jingle'].includes($('itemType').value)?$('itemType').value:'media',root:$('root').value,path:b.dataset.file,name:b.dataset.name});renderItems()});
+ }catch(e){say(e.message,false)}
+}
+$('browse').onclick=browse;$('up').onclick=()=>{$('folder').value=currentFolder.split('/').slice(0,-1).join('/');browse()};
 $('addDynamic').onclick=()=>{const category=$('itemType').value;if(!['hour','temperature','humidity'].includes(category))return;const labels={hour:'Locución horaria automática',temperature:'Locución de temperatura automática',humidity:'Locución de humedad automática'};blockItems.push({category,name:labels[category]});renderItems();};
-function renderRules(){if(!rules.length){$('rules').innerHTML='<div class="empty">No hay programaciones guardadas.</div>';return}$('rules').innerHTML=rules.map((r,i)=>{const when=r.mode==='interval'?`Cada ${r.minutes} min · ${r.intervalSync==='clock'?'sincronizado con el reloj':'desde activación'}`:r.mode==='datetime'?`${r.date} · ${r.at}`:`Todos los días · ${r.at}`;return `<div class="rule"><div class="desc"><strong>${esc(r.name)}</strong><small>${esc(when)} · ${r.items?.length||0} elementos · ${r.when==='end'?'Al terminar reproducción':'Inmediato'}${r.delaySeconds?` · +${r.delaySeconds}s`:''}</small></div><div class="actions"><input style="width:18px" type="checkbox" data-enabled="${i}" ${r.enabled?'checked':''} title="Activar regla"><button class="danger" data-delete="${i}">Quitar</button></div></div>`}).join('');document.querySelectorAll('[data-enabled]').forEach(c=>c.onchange=()=>{rules[+c.dataset.enabled].enabled=c.checked;$('saveState').textContent='Cambios pendientes'});document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{rules.splice(+b.dataset.delete,1);renderRules();$('saveState').textContent='Cambios pendientes'})}
+function renderRules(){if(!rules.length){$('rules').innerHTML='<div class="empty">No hay programaciones guardadas.</div>';return}$('rules').innerHTML=rules.map((r,i)=>{const when=r.mode==='interval'?`Cada ${r.minutes} min`:r.mode==='datetime'?`${r.date} · ${r.at}`:`Todos los días · ${r.at}`;return `<div class="rule"><div class="desc"><strong>${esc(r.name)}</strong><small>${esc(when)} · ${r.items?.length||0} elementos · ${r.when==='end'?'Al terminar reproducción':'Inmediato'}${r.delaySeconds?` · +${r.delaySeconds}s`:''}</small></div><div class="actions"><input style="width:18px" type="checkbox" data-enabled="${i}" ${r.enabled?'checked':''} title="Activar regla"><button class="danger" data-delete="${i}">Quitar</button></div></div>`}).join('');document.querySelectorAll('[data-enabled]').forEach(c=>c.onchange=()=>{rules[+c.dataset.enabled].enabled=c.checked;$('saveState').textContent='Cambios pendientes'});document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{rules.splice(+b.dataset.delete,1);renderRules();$('saveState').textContent='Cambios pendientes'})}
 async function load(){try{const d=await api('/api/automation');rules=d.rules||[];$('master').checked=d.control?.enabled!==false;masterUi();renderRules();$('saveState').textContent='Guardado';say('Servidor conectado')}catch(e){say(e.message,false)}}
 function masterUi(){$('masterText').textContent=$('master').checked?'Automatizador activado':'Automatizador desactivado';$('masterHint').textContent=$('master').checked?'Las reglas pueden ejecutarse automáticamente.':'Pausa general: no se lanzarán nuevas automatizaciones.'}
 $('master').onchange=async()=>{try{await api('/api/automation/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:$('master').checked})});masterUi();say($('master').checked?'Automatizador activado':'Automatizador pausado')}catch(e){$('master').checked=!$('master').checked;masterUi();say(e.message,false)}};
-$('addRule').onclick=()=>{if(!blockItems.length){alert('Agrega al menos un archivo o locución al bloque.');return}const mode=$('mode').value;const r={id:'auto_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),name:$('name').value.trim()||'Nueva programación',category:'block',mode,enabled:true,createdAtMs:Date.now(),when:$('when').value,delaySeconds:Math.max(0,Math.min(3600,Number($('delay').value)||0)),items:blockItems.slice()};if(mode==='interval'){r.minutes=Math.max(1,Math.min(10080,Number($('minutes').value)||30));r.intervalSync=$('intervalSync').value;}else{r.at=$('at').value;if(mode==='datetime')r.date=$('date').value}if(mode!=='interval'&&(!r.at||(mode==='datetime'&&!r.date))){alert('Completa la hora y la fecha correspondiente.');return}rules.push(r);blockItems=[];renderItems();renderRules();$('saveState').textContent='Cambios pendientes'};
+$('addRule').onclick=()=>{if(!blockItems.length){alert('Agrega al menos un archivo, carpeta o locución al bloque.');return}const mode=$('mode').value;const r={id:'auto_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),name:$('name').value.trim()||'Nueva programación',category:'block',mode,enabled:true,createdAtMs:Date.now(),when:$('when').value,delaySeconds:Math.max(0,Math.min(3600,Number($('delay').value)||0)),items:blockItems.slice()};if(mode==='interval')r.minutes=Math.max(1,Math.min(10080,Number($('minutes').value)||30));else{r.at=$('at').value;if(mode==='datetime')r.date=$('date').value}if(mode!=='interval'&&(!r.at||(mode==='datetime'&&!r.date))){alert('Completa la hora y la fecha correspondiente.');return}rules.push(r);blockItems=[];renderItems();renderRules();$('saveState').textContent='Cambios pendientes'};
 $('save').onclick=async()=>{try{const d=await api('/api/automation',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules})});$('saveState').textContent=`Guardado · ${d.count} reglas`;say('Programación guardada')}catch(e){say(e.message,false);$('saveState').textContent='Error al guardar'}};$('refresh').onclick=load;
 (async()=>{modeUi();itemTypeUi();renderItems();try{await loadRoots();itemTypeUi();await load()}catch(e){say(e.message,false)}})();
 </script></body></html>

@@ -385,7 +385,52 @@ function playFX(file, name){
 }
 let automationBlocks = [];
 let currentAutomationBlock = null;
+let currentAutomationFolder = null;
 let automationWaitingTimer = null;
+let automationMediaToken = 0;
+function shuffleAutomationFiles(files){
+  const copy=[...(Array.isArray(files)?files:[])];
+  for(let i=copy.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]];}
+  return copy;
+}
+function playAutomationMedia(url,name,label='AUTOMATIZADOR'){
+  const token=++automationMediaToken;
+  currentMediaKind='automation'; activeSequence=null; hideHourVisual();
+  showNowPlaying(name||'Contenido programado',label);
+  main.onerror=()=>{
+    if(token!==automationMediaToken) return;
+    console.warn('No se pudo cargar el archivo programado:',name||url);
+    advanceAfterAutomationMediaError(token);
+  };
+  main.playbackRate=1; main.src=url; main.load();
+  main.play().catch(err=>{
+    if(token!==automationMediaToken) return;
+    console.warn('No se pudo iniciar el archivo programado:',err);
+    advanceAfterAutomationMediaError(token);
+  });
+}
+function advanceAfterAutomationMediaError(token){
+  if(token!==automationMediaToken) return;
+  automationMediaToken++;
+  main.onerror=null;
+  if(currentAutomationFolder) playNextAutomationFolderFile();
+  else if(currentAutomationBlock) playNextAutomationItem();
+  else if(autoplay) canal.postMessage({type:'next'});
+}
+function playNextAutomationFolderFile(){
+  if(!currentAutomationFolder) return;
+  const selected=currentAutomationFolder.files[currentAutomationFolder.index++];
+  if(!selected){
+    currentAutomationFolder=null;
+    automationMediaToken++;
+    main.onerror=null;
+    playNextAutomationItem();
+    return;
+  }
+  const title=selected.name||'Archivo de carpeta';
+  const folderName=currentAutomationFolder.name||'Carpeta programada';
+  playAutomationMedia(selected.url, title, folderName+' · ALEATORIO');
+}
 function startAutomationBlock(block){
   if(!block) return;
   currentAutomationBlock=block;
@@ -400,25 +445,32 @@ function playNextAutomationItem(){
   const item=currentAutomationBlock.items[currentAutomationBlock.index++];
   if(!item){
     currentAutomationBlock=null;
+    currentAutomationFolder=null;
+    automationMediaToken++;
+    main.onerror=null;
     if(automationBlocks.length) startAutomationBlock(automationBlocks.shift());
     else if(!playbackOptions.stopAtEnd && autoplay) canal.postMessage({type:"next"});
     return;
   }
   if(item.category==='hour'){
+    automationMediaToken++; main.onerror=null;
     currentAutomationBlock.waitingDynamic=true;
     window.currentLocutionCaption='LOCUCIÓN DE HORA';
     playHourSequence();
     return;
   }
   if(item.category==='temperature'||item.category==='humidity'){
+    automationMediaToken++; main.onerror=null;
     currentAutomationBlock.waitingDynamic=true;
     playWeatherSequence(item.category);
     return;
   }
-  currentMediaKind='automation'; activeSequence=null; hideHourVisual();
-  showNowPlaying(item.name||'Contenido programado','AUTOMATIZADOR');
-  main.playbackRate=1; main.src=item.url; main.load();
-  main.play().catch(err=>console.warn('No se pudo reproducir bloque:',err));
+  if(item.type==='folder' && Array.isArray(item.files) && item.files.length){
+    currentAutomationFolder={name:item.name||'Carpeta programada',files:shuffleAutomationFiles(item.files),index:0};
+    playNextAutomationFolderFile();
+    return;
+  }
+  playAutomationMedia(item.url,item.name||'Contenido programado','AUTOMATIZADOR');
 }
 function automationItemEnded(){
   if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); return true; }
@@ -432,6 +484,7 @@ function queueAutomationBlock(block){
   startAutomationBlock(block);
 }
 main.onended=()=>{
+  if(currentAutomationFolder){ playNextAutomationFolderFile(); return; }
   if(automationBlocks.length && automationBlocks[0]._waitCurrent){ const b=automationBlocks.shift(); delete b._waitCurrent; startAutomationBlock(b); return; }
   if(currentAutomationBlock && !currentAutomationBlock.waitingDynamic){ playNextAutomationItem(); return; }
   // Bucle vuelve a iniciar el archivo actual sin avanzar la playlist.
@@ -467,6 +520,9 @@ function pause(){
 }
 function stop(){
   activeSequence=null;
+  currentAutomationFolder=null;
+  automationMediaToken++;
+  main.onerror=null;
   hideHourVisual();
   main.pause();
   main.playbackRate=1;

@@ -1152,19 +1152,32 @@ function cargarCarpeta(){ pickFolderWithHandles(); }
 
 folder.onchange=e=>{
   const picked=[...(e.target.files||[])];
-  const additions=picked.filter(f=>isVideoFile(f.name)).map(f=>({
-    id:makeItemId(),type:"file",name:"🎬 "+(f.webkitRelativePath||f.name),file:f,handle:null
-  }));
-  if(!additions.length){
+  const videos=picked.filter(f=>isVideoFile(f.name));
+  if(!videos.length){
     persistenceEl.textContent=picked.length
       ? "La carpeta seleccionada no contiene videos compatibles (MP4, MKV, MOV, WEBM, AVI o M4V)."
       : "No se seleccionó ninguna carpeta.";
-  }else{
-    insertItemsAtCurrentPosition(additions);
-    const relative=picked.find(f=>f.webkitRelativePath)?.webkitRelativePath||"";
-    const folderName=relative.split("/")[0]||"Carpeta seleccionada";
-    persistenceEl.textContent=`Carpeta “${folderName}” cargada: ${additions.length} video(s), incluidas sus subcarpetas. La lista dura esta sesión y comienza vacía al volver a abrir el panel.`;
+    folder.value="";
+    return;
   }
+  // La carpeta completa se conserva como UN solo elemento de playlist.
+  // Los archivos de sus subcarpetas quedan dentro del grupo y se mezclan
+  // al iniciar su reproducción, sin desglosarse en la lista principal.
+  const relative=videos.find(f=>f.webkitRelativePath)?.webkitRelativePath||"";
+  const folderName=relative.split("/")[0]||"Carpeta seleccionada";
+  const folderFiles=videos.map(file=>({file,relative:file.webkitRelativePath||file.name}));
+  const folderItem={
+    id:makeItemId(),
+    type:"folder",
+    name:`📁 ${folderName} (${folderFiles.length} videos · aleatorio)`,
+    rootName:folderName,
+    handle:null,
+    files:folderFiles,
+    shuffleList:null,
+    shuffleIndex:0
+  };
+  insertItemsAtCurrentPosition([folderItem]);
+  persistenceEl.textContent=`Carpeta “${folderName}” agregada como un solo elemento · ${folderFiles.length} videos de todas sus subcarpetas. Se reproducirán al azar sin repetir hasta terminar.`;
   folder.value="";
 };
 
@@ -1176,6 +1189,16 @@ function toggleNowPlayingOverlay(){
 
 function advancePlaylist(){
   if(!items.length) return;
+  // Si el elemento actual es una carpeta, termina primero su mezcla completa.
+  const current=items[currentIndex];
+  if(current && current.type==="folder" && current.shuffleList && current.shuffleIndex < current.shuffleList.length){
+    playItem(currentIndex);
+    return;
+  }
+  if(current && current.type==="folder"){
+    current.shuffleList=null;
+    current.shuffleIndex=0;
+  }
   let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
   if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
     const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
