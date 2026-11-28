@@ -478,6 +478,24 @@ function playNextAutomationItem(){
     return;
   }
   if(item.type==='folder' && Array.isArray(item.files) && item.files.length){
+    // En el Automatizador una carpeta de JINGLES representa una sola
+    // selección aleatoria por ejecución del bloque. No debe recorrer toda
+    // la carpeta. Las carpetas de anuncios conservan el recorrido completo.
+    if(item.category==='jingle'){
+      currentAutomationFolder=null;
+      const selected=shuffleAutomationFiles(item.files)[0];
+      if(!selected || !selected.url){
+        console.warn('La carpeta de jingles no contiene un archivo reproducible.');
+        playNextAutomationItem();
+        return;
+      }
+      const title=selected.name||'Jingle aleatorio';
+      const folderName=item.name||'Jingles';
+      playAutomationMedia(selected.url,title,folderName+' · UN JINGLE ALEATORIO');
+      return;
+    }
+    // Para otros tipos de carpeta del Automatizador se mantiene el recorrido
+    // aleatorio completo, sin repetir, antes de avanzar al siguiente elemento.
     currentAutomationFolder={name:item.name||'Carpeta programada',files:shuffleAutomationFiles(item.files),index:0};
     playNextAutomationFolderFile();
     return;
