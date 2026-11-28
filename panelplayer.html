@@ -551,20 +551,21 @@ async function pickFilesWithHandles(){
   }
   files.click();
 }
-async function pickFolderWithHandles(){
-  if(window.showDirectoryPicker){
-    try{
-      const directory=await window.showDirectoryPicker({mode:"read"});
-      const entries=await collectDirectoryFiles(directory);
-      if(!entries.length){ alert("Esta carpeta no contiene videos compatibles."); return; }
-      const folderItem={id:makeItemId(),type:"folder",name:"📁 "+directory.name+" ("+entries.length+" videos)",handle:directory,rootName:directory.name,files:entries,shuffleList:null,shuffleIndex:0};
-      insertItemsAtCurrentPosition([folderItem]);
-      await savePlaylistPersistent();
-      persistenceEl.textContent=`Carpeta “${directory.name}” agregada para esta sesión · ${entries.length} videos disponibles.`;
-      return;
-    }catch(err){ if(err.name!=="AbortError") alert("No se pudo abrir la carpeta: "+err.message); return; }
+function pickFolderWithHandles(){
+  // OBS Browser Source puede exponer showDirectoryPicker aunque no pueda
+  // completar la selección. Usamos el selector webkitdirectory tradicional,
+  // que devuelve todos los videos de la carpeta y sus subcarpetas.
+  try{
+    folder.value="";
+    folder.setAttribute("webkitdirectory", "");
+    folder.setAttribute("directory", "");
+    folder.setAttribute("multiple", "");
+    folder.setAttribute("accept", "video/*,.mp4,.mkv,.mov,.webm,.avi,.m4v");
+    folder.click();
+  }catch(err){
+    persistenceEl.textContent="No se pudo abrir el selector de carpetas: "+(err.message||err);
+    console.error("Error abriendo selector de carpetas:",err);
   }
-  folder.click();
 }
 
 ["shuffle","stopAtEnd","loopTrack"].forEach(id=>{
@@ -1150,11 +1151,20 @@ files.onchange=e=>{
 function cargarCarpeta(){ pickFolderWithHandles(); }
 
 folder.onchange=e=>{
-  const additions=[...e.target.files].filter(f=>isVideoFile(f.name)).map(f=>({
+  const picked=[...(e.target.files||[])];
+  const additions=picked.filter(f=>isVideoFile(f.name)).map(f=>({
     id:makeItemId(),type:"file",name:"🎬 "+(f.webkitRelativePath||f.name),file:f,handle:null
   }));
-  insertItemsAtCurrentPosition(additions);
-  persistenceEl.textContent="Carpeta agregada a la playlist de esta sesión. Al actualizar o cerrar el panel, la lista comenzará vacía.";
+  if(!additions.length){
+    persistenceEl.textContent=picked.length
+      ? "La carpeta seleccionada no contiene videos compatibles (MP4, MKV, MOV, WEBM, AVI o M4V)."
+      : "No se seleccionó ninguna carpeta.";
+  }else{
+    insertItemsAtCurrentPosition(additions);
+    const relative=picked.find(f=>f.webkitRelativePath)?.webkitRelativePath||"";
+    const folderName=relative.split("/")[0]||"Carpeta seleccionada";
+    persistenceEl.textContent=`Carpeta “${folderName}” cargada: ${additions.length} video(s), incluidas sus subcarpetas. La lista dura esta sesión y comienza vacía al volver a abrir el panel.`;
+  }
   folder.value="";
 };
 
