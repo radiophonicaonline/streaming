@@ -181,7 +181,6 @@ oninput="setVolume(this.value)">
 
 <button onclick="cargarVideos()">Videos</button>
 <button onclick="cargarCarpeta()">Carpeta</button>
-<button onclick="agregarBibliotecaVideos()">📁 Videos musicales + subcarpetas</button>
 <button onclick="agregarLocucionHora()">🕒 Locución hora</button>
 <button onclick="agregarLocucionClima('temperature')">🌡️ Locución temperatura</button>
 <button onclick="agregarLocucionClima('humidity')">💧 Locución humedad</button>
@@ -431,6 +430,7 @@ const persistenceEl = document.getElementById("playlistPersistence");
 const reconnectFilesBtn = document.getElementById("reconnectFilesBtn");
 let dbPromise = null;
 let restoringPlaylist = true;
+let removedLegacyServerFolder = false;
 
 function openPlaylistDB(){
   if(dbPromise) return dbPromise;
@@ -468,7 +468,7 @@ async function savePlaylistPersistent(){
       type:it.type,
       name:it.name,
       handle:it.handle || null,
-      rootName:it.rootName || "", serverRoot:it.serverRoot || "", serverPath:it.serverPath || ""
+      rootName:it.rootName || ""
     }));
   try{
     await dbRequest("readwrite",store=>store.put(records,"items"));
@@ -484,9 +484,11 @@ async function restorePlaylistPersistent(){
   try{
     const records=await dbRequest("readonly",store=>store.get("items"));
     if(Array.isArray(records) && records.length){
-      items=records.sort((a,b)=>a.index-b.index).map(r=>({
+      removedLegacyServerFolder = records.some(r => r && r.type === "serverFolder");
+      const compatibleRecords = records.filter(r => r && r.type !== "serverFolder");
+      items=compatibleRecords.sort((a,b)=>a.index-b.index).map(r=>({
         id:r.id || makeItemId(), type:r.type, name:r.name,
-        handle:r.handle || null, rootName:r.rootName || "", serverRoot:r.serverRoot || "", serverPath:r.serverPath || "", file:null, files:null, shuffleList:null, shuffleIndex:0
+        handle:r.handle || null, rootName:r.rootName || "", file:null, files:null, shuffleList:null, shuffleIndex:0
       }));
       actualizarLista();
       const needsAccess=items.some(it=>it.handle);
@@ -512,6 +514,10 @@ async function restorePlaylistPersistent(){
     persistenceEl.textContent="Guardado persistente no disponible: "+err.message;
   }finally{
     restoringPlaylist=false;
+    if(removedLegacyServerFolder){
+      persistenceEl.textContent="Se retiró el antiguo elemento Videos musicales + subcarpetas. El resto de la playlist se conservó.";
+      await savePlaylistPersistent();
+    }
   }
 }
 async function reconnectFileAccess(){
@@ -649,7 +655,7 @@ async function addItemToPreviewList(i){
 function duplicatePlaylistItem(i){
   const it = items[i];
   if(!it) return;
-  const copy = it.type === "file" || it.type === "folder" || it.type === "serverFolder" || ["hour","temperature","humidity"].includes(it.type)
+  const copy = it.type === "file" || it.type === "folder" || ["hour","temperature","humidity"].includes(it.type)
     ? {...it, id:makeItemId(), shuffleList:null, shuffleIndex:0}
     : {...it, files:[...it.files], shuffleList:null, shuffleIndex:0};
   items.splice(i+1, 0, copy);
@@ -837,22 +843,7 @@ async function playItem(i){
     npPanelState.subtitle=it.type === "hour" ? "CONSULTANDO RELOJ" : "CONSULTANDO CLIMA";
     try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
     canal.postMessage({type:it.type === "hour" ? "playHour" : "playWeather", weatherType:it.type});
-  }else if(it.type==="serverFolder") {
-    try{
-      if(!it.files || !it.files.length) await refreshServerFolder(it);
-      if(!it.shuffleList || it.shuffleList.length===0){
-        it.shuffleList=[...it.files];
-        for(let j=it.shuffleList.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[it.shuffleList[j],it.shuffleList[k]]=[it.shuffleList[k],it.shuffleList[j]];}
-        it.shuffleIndex=0;
-      }
-      const selected=it.shuffleList[it.shuffleIndex++];
-      // Conserva el orden aleatorio hasta que terminen TODOS los videos.
-      // El avance al siguiente elemento de playlist se realiza al recibir "next".
-      document.getElementById('nowPlaying').textContent=selected.name;
-      npPanelState.title=selected.name; npPanelState.subtitle='REPRODUCIENDO'; try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
-      canal.postMessage({type:'playUrl',url:selected.url,name:selected.name});
-    }catch(err){persistenceEl.textContent='Error en Videos musicales: '+err.message;return;}
-  }else if(it.type==="file"){
+  }else if(it.type==="file"){ 
     try{
       if(!it.file && it.handle) it.file=await it.handle.getFile();
       if(!it.file) throw new Error("Vuelve a conectar el acceso al archivo.");
@@ -899,10 +890,7 @@ if(["hour","temperature","humidity"].includes(it.type)){
   return;
 }
 
-if(it.type==="serverFolder"){
-  try{if(!it.files || !it.files.length) await refreshServerFolder(it); const selected=it.files[Math.floor(Math.random()*it.files.length)]; previewVideo.src=selected.url; previewItemData={url:selected.url,name:selected.name};}
-  catch(e){alert('No se pudo abrir la vista previa: '+e.message);return;}
-}else if(it.type==="file"){
+if(it.type==="file"){ 
 
 try{ if(!it.file && it.handle) it.file=await it.handle.getFile(); }catch(e){}
 if(!it.file){ persistenceEl.textContent="Vuelve a conectar el acceso a archivos para usar el Preview."; reconnectFilesBtn.style.display="inline-block"; return; }
@@ -1150,17 +1138,6 @@ try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify(npPanelState));}catch(err
 }
 if(e.data.type==="next"){
 if(items.length===0) return;
-const current=items[currentIndex];
-// Si está sonando el elemento agrupado "Videos musicales", continúa
-// con el siguiente video de su mezcla antes de avanzar en la playlist.
-if(current && current.type==="serverFolder" && Array.isArray(current.shuffleList) && current.shuffleIndex < current.shuffleList.length){
-  playItem(currentIndex);
-  return;
-}
-if(current && current.type==="serverFolder"){
-  current.shuffleList=null;
-  current.shuffleIndex=0;
-}
 let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
 if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
   const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
@@ -1173,36 +1150,6 @@ playItem(targetIndex);
 }
 };
 
-async function agregarBibliotecaVideos(){
-  const btn = [...document.querySelectorAll('button')].find(b=>b.textContent.includes('Videos musicales + subcarpetas'));
-  if(btn){btn.disabled=true;btn.textContent='Buscando videos…';}
-  try{
-    const response=await fetch('http://127.0.0.1:3030/api/library/recursive?root=videos&path=',{cache:'no-store'});
-    const data=await response.json();
-    if(!response.ok || !data.ok) throw new Error(data.error || 'No se pudo leer la biblioteca.');
-    if(!data.count) throw new Error('No se encontraron videos dentro de Videos musicales.');
-    const existing=items.find(it=>it.type==='serverFolder' && it.serverRoot==='videos' && it.serverPath==='');
-    if(existing){
-      existing.name=`📁 Videos musicales (${data.count} videos · subcarpetas)`;
-      existing.files=data.files; existing.shuffleList=null; existing.shuffleIndex=0;
-      actualizarLista();
-      persistenceEl.textContent=`Biblioteca actualizada: ${data.count} videos encontrados en todas las subcarpetas.`;
-    }else{
-      const folderItem={id:makeItemId(),type:'serverFolder',name:`📁 Videos musicales (${data.count} videos · subcarpetas)`,serverRoot:'videos',serverPath:'',files:data.files,shuffleList:null,shuffleIndex:0};
-      insertItemsAtCurrentPosition([folderItem]);
-      persistenceEl.textContent=`✓ Videos musicales agregados como un solo elemento. ${data.count} videos encontrados en subcarpetas y guardados en la playlist.`;
-    }
-    await savePlaylistPersistent();
-  }catch(err){
-    alert('No se pudo cargar Videos musicales: '+err.message+'\n\nComprueba que Radiophonica Player esté iniciado y que Google Drive esté montado como H:.');
-  }finally{if(btn){btn.disabled=false;btn.textContent='📁 Videos musicales + subcarpetas';}}
-}
-async function refreshServerFolder(it){
-  const url=`http://127.0.0.1:3030/api/library/recursive?root=${encodeURIComponent(it.serverRoot)}&path=${encodeURIComponent(it.serverPath||'')}`;
-  const response=await fetch(url,{cache:'no-store'}); const data=await response.json();
-  if(!response.ok || !data.ok) throw new Error(data.error || 'No se pudo leer la carpeta.');
-  it.files=data.files||[]; it.name=`📁 Videos musicales (${data.count} videos · subcarpetas)`; return it.files;
-}
 function cargarVideos(){ pickFilesWithHandles(); }
 
 // Compatibilidad para navegadores antiguos: esta selección dura solo la sesión.
