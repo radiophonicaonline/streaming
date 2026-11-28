@@ -104,6 +104,8 @@ margin-top:5px;
 #npLogoPreview{width:58px;height:58px;object-fit:contain;background:#202830;border:1px solid #3a4650;border-radius:7px;padding:3px;display:none;}
 
 .item{align-items:center;gap:6px;user-select:none}
+.item.multi-selected{background:#384522;border-left-color:#a6cf55;outline:1px solid rgba(166,207,85,.55)}
+.item.multi-selected span{color:#f4ffd9}
 .item.dragging{opacity:.4}
 .item.drag-over{border-top:2px solid #55c9ef}
 .item span{flex:1;min-width:0}
@@ -151,6 +153,8 @@ margin-top:5px;
 
 <h3>Controles Player</h3>
 <div id="nowPlaying" style="color:#6cf;font-size:14px;margin:0 0 9px;padding:7px 9px;background:#15191e;border:1px solid #2b333b;border-radius:7px;overflow-wrap:anywhere">ninguno</div>
+<button onclick="playerPrevious()" title="Reproducir canción anterior">⏮ Anterior</button>
+<button onclick="playerNext()" title="Reproducir canción siguiente">Siguiente ⏭</button>
 <button onclick="playerPlay()">▶</button>
 <button onclick="playerPause()">⏸</button>
 <button onclick="playerStop()">⏹</button>
@@ -196,6 +200,11 @@ oninput="setVolume(this.value)">
   <span class="legend-chip"><i class="legend-dot" style="background:#ff6475"></i> AL AIRE</span>
   <span class="legend-chip"><i class="legend-dot" style="background:#4b9dff"></i> SIGUIENTE · 1 clic</span>
   <span class="legend-chip">2 clics · REPRODUCIR AHORA</span>
+</div>
+<div id="playlistMultiActions" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 2px">
+  <span id="selectionCount" style="font-size:11px;color:#aebbc5;flex:1">0 seleccionados · Ctrl + clic para seleccionar varios</span>
+  <button type="button" id="deleteSelectedBtn" onclick="deleteSelectedPlaylistItems()" disabled style="background:#64272b">🗑 Borrar seleccionados</button>
+  <button type="button" id="clearSelectionBtn" onclick="clearPlaylistSelection()">Limpiar selección</button>
 </div>
 <div id="lista"></div>
 
@@ -405,6 +414,7 @@ let items=[];
 let currentIndex=-1;
 let currentItemRef=null;
 let nextItemRef=null;
+let selectedItems = new Set();
 let playbackOptions = {shuffle:false, stopAtEnd:false, loopTrack:false};
 
 let previewItemData=null;
@@ -421,20 +431,20 @@ const files=document.getElementById("files");
 const folder=document.getElementById("folder");
 
 
-// PLAYLIST PERSISTENTE: guarda referencias (File System Access handles),
-// no duplica los videos dentro del servidor ni en una biblioteca adicional.
+// PLAYLIST TEMPORAL: cada vez que se abre/actualiza el panel comienza vacía.
+// Se limpian los datos antiguos de IndexedDB para que no reaparezcan carpetas
+// ni archivos de sesiones anteriores.
 const DB_NAME = "RadiophonicaPlayerDB";
 const DB_VERSION = 1;
 const DB_STORE = "playlist";
 const persistenceEl = document.getElementById("playlistPersistence");
 const reconnectFilesBtn = document.getElementById("reconnectFilesBtn");
 let dbPromise = null;
-let restoringPlaylist = true;
 
 function openPlaylistDB(){
   if(dbPromise) return dbPromise;
   dbPromise = new Promise((resolve,reject)=>{
-    if(!("indexedDB" in window)){ reject(new Error("Este navegador no permite guardar la playlist localmente.")); return; }
+    if(!("indexedDB" in window)){ reject(new Error("IndexedDB no está disponible.")); return; }
     const request=indexedDB.open(DB_NAME,DB_VERSION);
     request.onupgradeneeded=()=>{
       const db=request.result;
@@ -445,79 +455,29 @@ function openPlaylistDB(){
   });
   return dbPromise;
 }
-function dbRequest(mode, action){
-  return openPlaylistDB().then(db=>new Promise((resolve,reject)=>{
-    const tx=db.transaction(DB_STORE,mode);
-    const store=tx.objectStore(DB_STORE);
-    let req;
-    try{ req=action(store); }catch(err){reject(err);return;}
-    if(req){ req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error); }
-    else { tx.oncomplete=()=>resolve(true); tx.onerror=()=>reject(tx.error); }
-  }));
-}
-async function savePlaylistPersistent(){
-  if(restoringPlaylist) return;
-  // Los videos sin FileSystemHandle (selector antiguo) no se guardan como
-  // si fueran recuperables: solo persistimos locuciones y archivos con handle.
-  const records=items
-    .filter(it => it.type !== "serverFolder" && (it.type !== "file" || !!it.handle))
-    .map((it,index)=>({
-      id:it.id || (it.id=makeItemId()),
-      index,
-      type:it.type,
-      name:it.name,
-      handle:it.handle || null,
-      rootName:it.rootName || ""
-    }));
+async function clearPreviousPlaylistSession(){
   try{
-    await dbRequest("readwrite",store=>store.put(records,"items"));
-    const temporary=items.filter(it=>it.type==="file" && !it.handle).length;
-    persistenceEl.textContent=`✓ Playlist guardada · ${records.length} elementos permanentes.${temporary?` ${temporary} archivo(s) seleccionados con el método antiguo solo duran esta sesión.`:" Los videos permanecen en sus carpetas originales."}`;
-    reconnectFilesBtn.style.display=items.some(it=>it.handle && !it.file)?"inline-block":"none";
+    const db=await openPlaylistDB();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(DB_STORE,"readwrite");
+      tx.objectStore(DB_STORE).clear();
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error || new Error("No se pudo limpiar la playlist anterior."));
+      tx.onabort=()=>reject(tx.error || new Error("Se canceló la limpieza de la playlist anterior."));
+    });
+    db.close(); dbPromise=null;
+    persistenceEl.textContent="Playlist vacía · los archivos que agregues estarán disponibles durante esta sesión.";
   }catch(err){
-    persistenceEl.textContent="No se pudo guardar la playlist: "+err.message;
+    persistenceEl.textContent="Playlist de sesión · no se restauran elementos anteriores.";
+    console.warn("No se pudo limpiar el almacenamiento antiguo:",err);
   }
+  reconnectFilesBtn.style.display="none";
+}
+function savePlaylistPersistent(){
+  // Intencionalmente no guarda ni restaura archivos entre sesiones.
+  if(persistenceEl) persistenceEl.textContent="Playlist de sesión · al actualizar o cerrar el panel comenzará vacía.";
 }
 function makeItemId(){ return "rp_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,9); }
-async function restorePlaylistPersistent(){
-  try{
-    const records=await dbRequest("readonly",store=>store.get("items"));
-    const savedRecords = Array.isArray(records) ? records : [];
-    const usableRecords = savedRecords.filter(r => r && r.type !== "serverFolder");
-    if(usableRecords.length !== savedRecords.length){
-      await dbRequest("readwrite",store=>store.put(usableRecords,"items"));
-    }
-    if(usableRecords.length){
-      items=usableRecords.sort((a,b)=>a.index-b.index).map(r=>({
-        id:r.id || makeItemId(), type:r.type, name:r.name,
-        handle:r.handle || null, rootName:r.rootName || "", file:null, files:null, shuffleList:null, shuffleIndex:0
-      }));
-      actualizarLista();
-      const needsAccess=items.some(it=>it.handle);
-      persistenceEl.textContent=`✓ Playlist recuperada · ${items.length} elementos. ${needsAccess?"Comprueba el acceso a los archivos.":""}`;
-      reconnectFilesBtn.style.display=needsAccess?"inline-block":"none";
-      // Si el permiso sigue vigente, recupera los File sin pedir intervención.
-      for(const it of items){
-        if(it.handle){
-          try{
-            const permission=await it.handle.queryPermission({mode:"read"});
-            if(permission==="granted") {
-              if(it.type==="folder") it.files=await collectDirectoryFiles(it.handle);
-              else it.file=await it.handle.getFile();
-            }
-          }catch(e){}
-        }
-      }
-      actualizarLista();
-    }else{
-      persistenceEl.textContent="La playlist se guardará aquí automáticamente al agregar o mover archivos.";
-    }
-  }catch(err){
-    persistenceEl.textContent="Guardado persistente no disponible: "+err.message;
-  }finally{
-    restoringPlaylist=false;
-  }
-}
 async function reconnectFileAccess(){
   let ok=0, pending=0;
   for(const it of items){
@@ -600,7 +560,7 @@ async function pickFolderWithHandles(){
       const folderItem={id:makeItemId(),type:"folder",name:"📁 "+directory.name+" ("+entries.length+" videos)",handle:directory,rootName:directory.name,files:entries,shuffleList:null,shuffleIndex:0};
       insertItemsAtCurrentPosition([folderItem]);
       await savePlaylistPersistent();
-      persistenceEl.textContent=`Carpeta “${directory.name}” agregada como un solo elemento · ${entries.length} videos disponibles para reproducción aleatoria.`;
+      persistenceEl.textContent=`Carpeta “${directory.name}” agregada para esta sesión · ${entries.length} videos disponibles.`;
       return;
     }catch(err){ if(err.name!=="AbortError") alert("No se pudo abrir la carpeta: "+err.message); return; }
   }
@@ -618,7 +578,7 @@ async function pickFolderWithHandles(){
 });
 document.getElementById("auto").addEventListener("change",e=>canal.postMessage({type:"setAutoplay",value:e.target.checked}));
 publishPlaybackOptions();
-restorePlaylistPersistent();
+clearPreviousPlaylistSession();
 
 /* ===================== LISTA PRINCIPAL ===================== */
 
@@ -663,11 +623,37 @@ function duplicatePlaylistItem(i){
 function deletePlaylistItem(i){
   if(i < 0 || i >= items.length) return;
   const removed = items[i];
+  selectedItems.delete(removed);
   if(removed === nextItemRef) nextItemRef = null;
   if(removed === currentItemRef){ currentItemRef = null; currentIndex = -1; }
   items.splice(i,1);
   if(currentIndex > i) currentIndex--;
   actualizarLista();
+}
+function updatePlaylistSelectionUI(){
+  const count=selectedItems.size;
+  const label=document.getElementById("selectionCount");
+  const remove=document.getElementById("deleteSelectedBtn");
+  if(label) label.textContent=count ? `${count} elemento(s) seleccionados · Ctrl + clic para agregar/quitar` : "0 seleccionados · Ctrl + clic para seleccionar varios";
+  if(remove) remove.disabled=count===0;
+}
+function clearPlaylistSelection(){
+  selectedItems.clear();
+  actualizarLista();
+}
+function deleteSelectedPlaylistItems(){
+  if(!selectedItems.size) return;
+  const count=selectedItems.size;
+  const removedCurrent=selectedItems.has(currentItemRef);
+  const removedBeforeCurrent=currentIndex>=0 ? items.slice(0,currentIndex).filter(it=>selectedItems.has(it)).length : 0;
+  if(removedCurrent) canal.postMessage({type:"stop"});
+  items=items.filter(it=>!selectedItems.has(it));
+  if(selectedItems.has(nextItemRef)) nextItemRef=null;
+  if(removedCurrent){ currentItemRef=null; currentIndex=-1; }
+  else if(currentIndex>=0) currentIndex=Math.max(0,currentIndex-removedBeforeCurrent);
+  selectedItems.clear();
+  actualizarLista();
+  persistenceEl.textContent=`${count} elemento(s) eliminado(s) de la playlist.`;
 }
 
 function markAsNext(item){
@@ -731,6 +717,7 @@ function actualizarLista(){
   items.forEach((it,i)=>{
     const div=document.createElement("div");
     div.className="item";
+    if(selectedItems.has(it)) div.classList.add("multi-selected");
     div.draggable=true;
     div.dataset.index=i;
     const isPlaying = it === currentItemRef || (currentItemRef === null && i === currentIndex);
@@ -743,7 +730,14 @@ function actualizarLista(){
 
     // Un clic marca la próxima pista; doble clic la envía al aire inmediatamente.
     let clickTimer = null;
-    span.addEventListener("click",()=>{
+    span.addEventListener("click",(event)=>{
+      if(event.ctrlKey || event.metaKey){
+        if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; }
+        if(selectedItems.has(it)) selectedItems.delete(it);
+        else selectedItems.add(it);
+        actualizarLista();
+        return;
+      }
       if(clickTimer){
         clearTimeout(clickTimer);
         clickTimer = null;
@@ -809,6 +803,7 @@ function actualizarLista(){
     if(tag.textContent) div.append(tag);
     lista.appendChild(div);
   });
+  updatePlaylistSelectionUI();
   savePlaylistPersistent();
 }
 
@@ -1136,16 +1131,7 @@ try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify(npPanelState));}catch(err
 }
 if(e.data.type==="next"){
 if(items.length===0) return;
-const current=items[currentIndex];
-let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
-if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
-  const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
-  targetIndex=choices[Math.floor(Math.random()*choices.length)];
-}else if(targetIndex < 0){
-  targetIndex = currentIndex + 1;
-  if(targetIndex >= items.length) targetIndex = 0;
-}
-playItem(targetIndex);
+advancePlaylist();
 }
 };
 
@@ -1157,7 +1143,7 @@ files.onchange=e=>{
     id:makeItemId(),type:"file",name:"🎬 "+f.name,file:f,handle:null
   }));
   insertItemsAtCurrentPosition(additions);
-  persistenceEl.textContent="Estos archivos quedaron cargados en esta sesión, pero este navegador no permite guardar sus referencias. Usa Chrome o Edge actualizado para conservarlos.";
+  persistenceEl.textContent="Archivos agregados a la playlist de esta sesión. Al actualizar o cerrar el panel, la lista comenzará vacía.";
   files.value="";
 };
 
@@ -1168,7 +1154,7 @@ folder.onchange=e=>{
     id:makeItemId(),type:"file",name:"🎬 "+(f.webkitRelativePath||f.name),file:f,handle:null
   }));
   insertItemsAtCurrentPosition(additions);
-  persistenceEl.textContent="Carpeta cargada para esta sesión. Para conservar el acceso después de cerrar, usa Chrome o Edge actualizado.";
+  persistenceEl.textContent="Carpeta agregada a la playlist de esta sesión. Al actualizar o cerrar el panel, la lista comenzará vacía.";
   folder.value="";
 };
 
@@ -1178,6 +1164,26 @@ function toggleNowPlayingOverlay(){
   canal.postMessage({type:"togglePlayerNowPlaying"});
 }
 
+function advancePlaylist(){
+  if(!items.length) return;
+  let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
+  if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
+    const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
+    targetIndex=choices[Math.floor(Math.random()*choices.length)];
+  }else if(targetIndex < 0){
+    targetIndex = currentIndex < 0 ? 0 : currentIndex + 1;
+    if(targetIndex >= items.length) targetIndex = 0;
+  }
+  playItem(targetIndex);
+}
+function playerNext(){ advancePlaylist(); }
+function playerPrevious(){
+  if(!items.length) return;
+  nextItemRef=null;
+  let targetIndex = currentIndex < 0 ? 0 : currentIndex - 1;
+  if(targetIndex < 0) targetIndex=items.length-1;
+  playItem(targetIndex);
+}
 function playerPlay(){ canal.postMessage({type:"play"}); }
 function playerPause(){ canal.postMessage({type:"pause"}); }
 function playerStop(){ canal.postMessage({type:"stop"}); }
