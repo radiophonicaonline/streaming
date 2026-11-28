@@ -357,7 +357,8 @@ async function playWeatherSequence(type){
     activeSequence = null;
     hideHourVisual();
     canal.postMessage({type:"weatherSequenceError", weatherType:type, message:String(err.message || err)});
-    if(autoplay) canal.postMessage({type:"next"});
+    if(currentAutomationBlock){ currentAutomationBlock.waitingDynamic=false; playNextAutomationItem(); }
+    else if(autoplay) canal.postMessage({type:"next"});
   }
 }
 
@@ -404,14 +405,12 @@ function playNextAutomationItem(){
     return;
   }
   if(item.category==='hour'){
-    currentAutomationBlock.index--;
     currentAutomationBlock.waitingDynamic=true;
     window.currentLocutionCaption='LOCUCIÓN DE HORA';
     playHourSequence();
     return;
   }
   if(item.category==='temperature'||item.category==='humidity'){
-    currentAutomationBlock.index--;
     currentAutomationBlock.waitingDynamic=true;
     playWeatherSequence(item.category);
     return;

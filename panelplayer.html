@@ -430,7 +430,6 @@ const persistenceEl = document.getElementById("playlistPersistence");
 const reconnectFilesBtn = document.getElementById("reconnectFilesBtn");
 let dbPromise = null;
 let restoringPlaylist = true;
-let removedLegacyServerFolder = false;
 
 function openPlaylistDB(){
   if(dbPromise) return dbPromise;
@@ -461,7 +460,7 @@ async function savePlaylistPersistent(){
   // Los videos sin FileSystemHandle (selector antiguo) no se guardan como
   // si fueran recuperables: solo persistimos locuciones y archivos con handle.
   const records=items
-    .filter(it => it.type !== "file" || !!it.handle)
+    .filter(it => it.type !== "serverFolder" && (it.type !== "file" || !!it.handle))
     .map((it,index)=>({
       id:it.id || (it.id=makeItemId()),
       index,
@@ -483,10 +482,13 @@ function makeItemId(){ return "rp_"+Date.now().toString(36)+"_"+Math.random().to
 async function restorePlaylistPersistent(){
   try{
     const records=await dbRequest("readonly",store=>store.get("items"));
-    if(Array.isArray(records) && records.length){
-      removedLegacyServerFolder = records.some(r => r && r.type === "serverFolder");
-      const compatibleRecords = records.filter(r => r && r.type !== "serverFolder");
-      items=compatibleRecords.sort((a,b)=>a.index-b.index).map(r=>({
+    const savedRecords = Array.isArray(records) ? records : [];
+    const usableRecords = savedRecords.filter(r => r && r.type !== "serverFolder");
+    if(usableRecords.length !== savedRecords.length){
+      await dbRequest("readwrite",store=>store.put(usableRecords,"items"));
+    }
+    if(usableRecords.length){
+      items=usableRecords.sort((a,b)=>a.index-b.index).map(r=>({
         id:r.id || makeItemId(), type:r.type, name:r.name,
         handle:r.handle || null, rootName:r.rootName || "", file:null, files:null, shuffleList:null, shuffleIndex:0
       }));
@@ -514,10 +516,6 @@ async function restorePlaylistPersistent(){
     persistenceEl.textContent="Guardado persistente no disponible: "+err.message;
   }finally{
     restoringPlaylist=false;
-    if(removedLegacyServerFolder){
-      persistenceEl.textContent="Se retiró el antiguo elemento Videos musicales + subcarpetas. El resto de la playlist se conservó.";
-      await savePlaylistPersistent();
-    }
   }
 }
 async function reconnectFileAccess(){
@@ -843,7 +841,7 @@ async function playItem(i){
     npPanelState.subtitle=it.type === "hour" ? "CONSULTANDO RELOJ" : "CONSULTANDO CLIMA";
     try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify({...npPanelState,visible:true}));}catch(e){}
     canal.postMessage({type:it.type === "hour" ? "playHour" : "playWeather", weatherType:it.type});
-  }else if(it.type==="file"){ 
+  }else if(it.type==="file"){
     try{
       if(!it.file && it.handle) it.file=await it.handle.getFile();
       if(!it.file) throw new Error("Vuelve a conectar el acceso al archivo.");
@@ -890,7 +888,7 @@ if(["hour","temperature","humidity"].includes(it.type)){
   return;
 }
 
-if(it.type==="file"){ 
+if(it.type==="file"){
 
 try{ if(!it.file && it.handle) it.file=await it.handle.getFile(); }catch(e){}
 if(!it.file){ persistenceEl.textContent="Vuelve a conectar el acceso a archivos para usar el Preview."; reconnectFilesBtn.style.display="inline-block"; return; }
@@ -1138,6 +1136,7 @@ try{localStorage.setItem(NP_STORAGE_KEY,JSON.stringify(npPanelState));}catch(err
 }
 if(e.data.type==="next"){
 if(items.length===0) return;
+const current=items[currentIndex];
 let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
 if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
   const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
