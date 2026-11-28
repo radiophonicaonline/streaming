@@ -292,8 +292,19 @@ function playReplay(url, name){
   });
 }
 
+function cancelAutomationForManualPlaylist(){
+  // Una selección manual de la playlist toma el control del reproductor.
+  // Evita que una carpeta de un bloque anterior intercepte el siguiente "ended".
+  if(automationWaitingTimer){ clearTimeout(automationWaitingTimer); automationWaitingTimer=null; }
+  currentAutomationFolder=null;
+  currentAutomationBlock=null;
+  automationBlocks.length=0;
+  automationMediaToken++;
+  main.onerror=null;
+}
 function playUrl(url, name){
   if(!url) return;
+  cancelAutomationForManualPlaylist();
   currentMediaKind = "file";
   activeSequence = null;
   hideHourVisual();
@@ -305,6 +316,7 @@ function playUrl(url, name){
 }
 function playFile(file, name){
   if(!file) return;
+  cancelAutomationForManualPlaylist();
   currentMediaKind = "file";
   hideHourVisual();
   showNowPlaying(name || file.name || "Archivo en reproducción", "REPRODUCIENDO");
@@ -566,8 +578,8 @@ canal.onmessage=e=>{
     case "playFile": playFile(d.file, d.name); break;
     case "playUrl": playUrl(d.url, d.name); break;
      case "playReplay": playReplay(d.url, d.name); break;
-     case "playHour": window.currentLocutionCaption="LOCUCIÓN DE HORA"; playHourSequence(); break;
-    case "playWeather": playWeatherSequence(d.weatherType); break;
+     case "playHour": cancelAutomationForManualPlaylist(); window.currentLocutionCaption="LOCUCIÓN DE HORA"; playHourSequence(); break;
+    case "playWeather": cancelAutomationForManualPlaylist(); playWeatherSequence(d.weatherType); break;
     case "fx": playFX(d.file, d.name); break;
     case "toggleNowPlaying": toggleNowPlaying(); break;
     case "togglePlayerNowPlaying": toggleNowPlaying(); break;

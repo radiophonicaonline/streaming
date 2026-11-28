@@ -861,7 +861,7 @@ async function playItem(i){
       reconnectFilesBtn.style.display=it.handle?"inline-block":"none";
       return;
     }
-    if(!it.shuffleList || it.shuffleList.length===0){
+    if(!it.shuffleList || it.shuffleList.length===0 || Number(it.shuffleIndex||0)>=it.shuffleList.length){
       it.shuffleList=[...it.files];
       for(let j=it.shuffleList.length-1;j>0;j--){
         const k=Math.floor(Math.random()*(j+1));
@@ -869,8 +869,10 @@ async function playItem(i){
       }
       it.shuffleIndex=0;
     }
+    // No vaciar shuffleList al seleccionar el último archivo. Se conserva
+    // hasta que ese archivo termine; así advancePlaylist puede distinguir
+    // entre "quedan videos en esta carpeta" y "carpeta terminada".
     const selected=it.shuffleList[it.shuffleIndex++];
-    if(it.shuffleIndex>=it.shuffleList.length) it.shuffleList=null;
     let f=selected.file || null;
     if(!f && selected.handle){ try{ f=await selected.handle.getFile(); }catch(e){} }
     if(!f){ persistenceEl.textContent="No se pudo acceder a un video de la carpeta. Reconecta el acceso."; reconnectFilesBtn.style.display="inline-block"; return; }
@@ -1201,39 +1203,62 @@ function toggleNowPlayingOverlay(){
   canal.postMessage({type:"togglePlayerNowPlaying"});
 }
 
-function advancePlaylist(){
+function isFolderPlaylistItem(item){
+  return !!item && (item.type === "folder" || item.type === "serverFolder");
+}
+
+function advancePlaylist(forceTopLevel=false){
   if(!items.length) return;
-  // Una entrada marcada SIGUIENTE tiene prioridad sobre los videos restantes
-  // de la carpeta que está al aire. Se reproduce al terminar el video actual.
+
+  // Mantener currentIndex sincronizado con el objeto real, aunque la lista
+  // haya sido reordenada mediante arrastrar y soltar.
+  if(currentItemRef){
+    const liveIndex=items.indexOf(currentItemRef);
+    if(liveIndex>=0) currentIndex=liveIndex;
+  }
+  const current=items[currentIndex] || null;
+
+  // Una entrada marcada como SIGUIENTE siempre gana, incluso si la carpeta
+  // actual todavía tiene videos pendientes.
   let targetIndex = nextItemRef ? items.indexOf(nextItemRef) : -1;
-  if(targetIndex >= 0){
+  if(targetIndex >= 0 && items[targetIndex] !== current){
     nextItemRef=null;
+    if(isFolderPlaylistItem(current)){
+      current.shuffleList=null;
+      current.shuffleIndex=0;
+    }
     playItem(targetIndex);
     return;
   }
   if(nextItemRef) nextItemRef=null;
 
-  // Sin una entrada marcada, termina la mezcla actual de la carpeta antes
-  // de avanzar al siguiente elemento de la playlist.
-  const current=items[currentIndex];
-  if(current && current.type==="folder" && current.shuffleList && current.shuffleIndex < current.shuffleList.length){
-    playItem(currentIndex);
-    return;
+  // En avance automático se completa la carpeta actual antes de saltar a la
+  // siguiente carpeta/archivo de la playlist. El botón Siguiente, en cambio,
+  // permite saltar directamente al próximo elemento principal.
+  if(!forceTopLevel && isFolderPlaylistItem(current) && Array.isArray(current.shuffleList)){
+    if(Number(current.shuffleIndex || 0) < current.shuffleList.length){
+      playItem(currentIndex);
+      return;
+    }
   }
-  if(current && current.type==="folder"){
+
+  // Carpeta agotada (o salto manual): reiniciar su mezcla para la próxima vez
+  // que el usuario la reproduzca, y pasar al siguiente elemento principal.
+  if(isFolderPlaylistItem(current)){
     current.shuffleList=null;
     current.shuffleIndex=0;
   }
-  if(targetIndex < 0 && playbackOptions.shuffle && items.length>1){
+
+  if(playbackOptions.shuffle && items.length>1){
     const choices=items.map((_,idx)=>idx).filter(idx=>idx!==currentIndex);
     targetIndex=choices[Math.floor(Math.random()*choices.length)];
-  }else if(targetIndex < 0){
-    targetIndex = currentIndex < 0 ? 0 : currentIndex + 1;
-    if(targetIndex >= items.length) targetIndex = 0;
+  }else{
+    targetIndex=currentIndex<0 ? 0 : currentIndex+1;
+    if(targetIndex>=items.length) targetIndex=0;
   }
   playItem(targetIndex);
 }
-function playerNext(){ advancePlaylist(); }
+function playerNext(){ advancePlaylist(true); }
 function playerPrevious(){
   if(!items.length) return;
   nextItemRef=null;
